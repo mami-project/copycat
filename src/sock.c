@@ -42,12 +42,13 @@ int udp_sock(int port) {
    return s;
 }
 
-int raw_tcp_sock(const char *addr, int port, const char *dev) {
-   return raw_sock(addr, port, dev, IPPROTO_TCP);
+int raw_tcp_sock(const char *addr, int port, const struct sock_fprog * bpf) {
+   return raw_sock(addr, port, bpf, IPPROTO_TCP);
 }
-
-int raw_sock(const char *addr, int port, const char *dev, int proto) {
-   int s, rc;
+//TODO: set non-blocking socket for safe use with select ?
+//  fcntl(fd, F_SETFL, O_NONBLOCK))
+int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, int proto) {
+   int s;
    struct sockaddr_in sin;
    //create a UDP socket
    if ((s=socket(PF_INET, SOCK_RAW, proto)) == -1)
@@ -59,9 +60,7 @@ int raw_sock(const char *addr, int port, const char *dev, int proto) {
    setsockopt(s, 0, IP_HDRINCL, & tmp, sizeof(tmp));
 
    //set input filter
-   struct sock_fprog *bpf = gen_bpf(dev, addr, 9876, 34500);
-
-   if (setsockopt(s, SOL_SOCKET, SO_ATTACH_FILTER, bpf, sizeof(struct sock_fprog)) < 0 )
+   if (bpf && setsockopt(s, SOL_SOCKET, SO_ATTACH_FILTER, bpf, sizeof(struct sock_fprog)) < 0 )
    {
        die("Cannot attach filter");
    }
@@ -85,20 +84,25 @@ int raw_sock(const char *addr, int port, const char *dev, int proto) {
  * @returns the compiled bpf program: tcpdump -i dev 'src port sport and dst port dport'
  */
 struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dport) {
-    pcap_t *handle;		/* Session handle */
-	 char errbuf[PCAP_ERRBUF_SIZE];	/* Error string */
-	 struct bpf_program *fp= malloc(sizeof(struct bpf_program));/* The compiled filter expression */
-    
-	 char filter_exp[128]; // "src port " p " and dst port " p2
-    sprintf(filter_exp, "src port %d and dst port %d", sport, dport);
-	 bpf_u_int32 net = inet_addr(addr);
-	 handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
-	 if (!handle) {
-		 die( "Couldn't open device %s: %s");
-	 }
-	 if (pcap_compile(handle, fp, filter_exp, 0, net) == -1) {
-		die("Couldn't parse filter %s: %s\n");
-	 }
+   pcap_t *handle;		/* Session handle */
+   char errbuf[PCAP_ERRBUF_SIZE];	/* Error string */
+   struct bpf_program *fp= malloc(sizeof(struct bpf_program));/* The compiled filter expression */
+
+   char filter_exp[64]; // "src port " p " and dst port " p2
+   if (sport && dport)
+      sprintf(filter_exp, "src port %d and dst port %d", sport, dport);
+   else if (sport && !dport)
+      sprintf(filter_exp, "src port %d", sport);
+   else if (!sport && dport)
+      sprintf(filter_exp, "dst port %d", dport);
+   bpf_u_int32 net = inet_addr(addr);
+   handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
+   if (!handle) {
+      die( "Couldn't open device %s: %s");
+   }
+   if (pcap_compile(handle, fp, filter_exp, 0, net) == -1) {
+      die("Couldn't parse filter %s: %s\n");
+   }
 
    return (struct sock_fprog *)fp;
 }

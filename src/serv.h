@@ -12,8 +12,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <signal.h>
 
-//#include "udptun.h"
+#include "udptun.h"
 #include "sock.h"
 
 void tun_serv(struct arguments *);

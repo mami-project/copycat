@@ -12,7 +12,7 @@ const char *argp_program_bug_address = "korian.edeline@ulg.ac.be";
 static char doc[]      = "forward tcp packets to/from a udp tunnel";
 static char args_doc[] = "\nSERVER mode usage: -s --udp-lport PORT --tcp-daddr ADDR -tcp-dport PORT\n"
                          "CLIENT mode usage: -c --udp-daddr ADDR --udp-dport PORT --udp-sport PORT"
-                         " --tcp-laddr ADDR --tcp-lport PORT (--tcp-ndport PORT)";
+                         " --tcp-saddr ADDR --tcp-sport PORT --tcp-dport PORT (--tcp-ndport PORT)";
 static struct argp_option options[] = { 
   {"verbose",    'v', 0,        0,  "produce verbose output" },
   {"quiet",      'q', 0,        0,  "don't produce any output" },
@@ -21,13 +21,13 @@ static struct argp_option options[] = {
   //{"tun", 't', 0, 0, "tun interface"},
   {"udp-daddr",  '1', "STRING", 0, "udp dst addr"},
   {"tcp-daddr",  '2', "STRING", 0, "tcp dst addr"},
-  {"tcp-laddr",  '3', "STRING", 0, "tcp listen addr"},
+  {"tcp-saddr",  '3', "STRING", 0, "tcp src addr"}, //
   {"udp-dport",  '4', "PORT",   0, "udp dst port"},
   {"udp-sport",  '5', "PORT",   0, "udp src port"},
   {"udp-lport",  '6', "PORT",   0, "udp listen port"},
   {"tcp-dport",  '7', "PORT",   0, "tcp dst port"},
-  {"tcp-lport",  '8', "PORT",   0, "tcp listen port"},
-  {"tcp-ndport", 'n', "PORT",   0, "tcp new dst port"},
+  {"tcp-sport",  '8', "PORT",   0, "tcp src port"}, //
+  {"tcp-ndport", 'n', "PORT",   0, "tcp new dst port, use this if you are going to run both cli and serv on the same host"},
     { 0 } 
 };
 
@@ -54,7 +54,7 @@ error_t parse_args(int key, char *arg, struct argp_state *state) {
       case '2':
          arguments->tcp_daddr = arg;break;
       case '3':
-         arguments->tcp_laddr = arg;break;
+         arguments->tcp_saddr = arg;break;
       case '4':
           arguments->udp_dport=strtol(arg, NULL, 10);
           break;
@@ -68,7 +68,7 @@ error_t parse_args(int key, char *arg, struct argp_state *state) {
           arguments->tcp_dport=strtol(arg, NULL, 10);
           break;
       case '8':
-          arguments->tcp_lport=strtol(arg, NULL, 10);
+          arguments->tcp_sport=strtol(arg, NULL, 10);
           break;
       case 'n':
           arguments->tcp_ndport=strtol(arg, NULL, 10);
@@ -88,12 +88,12 @@ void init_args(struct arguments *args) {
    args->silent     = 0;
    args->udp_daddr  = NULL;
    args->tcp_daddr  = NULL;
-   args->tcp_laddr  = NULL;
+   args->tcp_saddr  = NULL;
    args->udp_dport  = 0;
    args->udp_sport  = 0;
    args->udp_lport  = 0;
    args->tcp_dport  = 0;
-   args->tcp_lport  = 0;
+   args->tcp_sport  = 0;
    args->tcp_ndport = 0;
 }
 
@@ -105,8 +105,9 @@ void print_args(struct arguments *args) {
          fprintf(stderr,"\tudp dst addr:%s\n",args->udp_daddr);
          fprintf(stderr,"\tudp dst port:%d\n",args->udp_dport);
          fprintf(stderr,"\tudp src port:%d\n",args->udp_sport);
-         fprintf(stderr,"\ttcp listen addr:%s\n",args->tcp_laddr);
-         fprintf(stderr,"\ttcp listen port:%d\n",args->tcp_lport);
+         fprintf(stderr,"\ttcp src addr:%s\n",args->tcp_saddr);
+         fprintf(stderr,"\ttcp src port:%d\n",args->tcp_sport);
+         fprintf(stderr,"\ttcp dst port:%d\n",args->tcp_dport);
          fprintf(stderr,"\ttcp new dst port:%d\n",args->tcp_ndport);
          break;
       case SERV_MODE:
@@ -125,7 +126,8 @@ int validate_args(struct arguments *args) {
    switch (args->mode) {
       case CLI_MODE:
          if (!args->udp_daddr || !args->udp_dport || !args->udp_sport ||
-               !args->tcp_laddr || !args->tcp_lport || !args->tcp_ndport) {
+             !args->tcp_saddr || !args->tcp_sport || !args->tcp_dport ||
+             !args->tcp_ndport) {
             errno=EINVAL;
             die("client args missing");
          } 

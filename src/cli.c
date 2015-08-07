@@ -7,41 +7,95 @@
 
 #include "cli.h"
 
-void tun_cli(struct arguments *args) {
-   /*
-    * ./udptun -c --udp-daddr=109.89.113.79 --udp-dport=9876 --udp-sport=5001 --tcp-laddr=192.168.2.1 --tcp-lport=9877 --tcp-ndport=9876
-    * TODO: bind tcp-connect to tun otherwise kernel will answer
-    */
-   //open udp sendto
-   const char *prefix="24";
-   char content[__BUFFSIZE], content2[__BUFFSIZE];
+static volatile int loop = 1;
+static void int_handler(int sig);
+static void tun_cli_in(int fd_udp, int fd_raw, struct sockaddr_in *udp_addr, char *buf);
+static void tun_cli_out(int fd_udp, int fd_raw, struct sockaddr_in *tcp_addr, char *buf);
 
-   char *if_name=create_tun(args->tcp_laddr, prefix, 0);
-   int fd_udp=udp_sock(args->udp_sport);
+void int_handler(int sig) { loop = 0; }
 
-   int fd_raw=raw_tcp_sock(args->tcp_laddr, args->tcp_lport, if_name);//TODO: add filter for 
+void tun_cli_in(int fd_udp, int fd_raw, struct sockaddr_in *udp_addr, char *buf) {
 
-   struct sockaddr_in *udp_addr = get_addr(args->udp_daddr, args->udp_dport);
 
-   //xsendto(fd_udp, udp_addr, content, strlen(content));
+      int recv_s=xrecv(fd_raw, buf, __BUFFSIZE);
 
-   //open raw recv
-   int recv_s =0;
-   //struct sockaddr_in *tcp_addr = get_addr(NULL, args->tcp_lport); TODO:filter raw socket by port
-   //int addrlen=sizeof(struct sockaddr);
-   while (1) {
-      recv_s=xrecv(fd_raw, content, sizeof(content));
-
-      printf ("SIZE:%d\n", recv_s);
+      //todo change dport to args->ndport
+      printf ("recvd %db from raw\n", recv_s);
       for (int i=0;i<recv_s;i++) {
-         printf("%x ",content[i]);
+         printf("%x ",buf[i]);
          if (!((i+1)%16)) printf("\n"); 
       }
       printf("\n");  
-      sleep(1);
-      xsendto(fd_udp, udp_addr, content, recv_s);
+
+      xsendto(fd_udp, udp_addr, buf, recv_s);
+}
+
+void tun_cli_out(int fd_udp, int fd_raw, struct sockaddr_in *tcp_addr, char *buf) {
+
+      int recv_s=xrecv(fd_udp, buf, __BUFFSIZE);
+
+      //todo change dport to args->ndport
+      printf ("recvd %db from udp\n", recv_s);
+      for (int i=0;i<recv_s;i++) {
+         printf("%x ",buf[i]);
+         if (!((i+1)%16)) printf("\n"); 
+      }
+      printf("\n");  
+
+      xsendto(fd_raw, tcp_addr, buf, recv_s);
+}
+
+void tun_cli(struct arguments *args) {
+   /*
+    * ./udptun -c --udp-daddr=109.89.113.79 --udp-dport=9876 --udp-sport=5001 --tcp-saddr=192.168.2.1 --tcp-sport=C_PORT --tcp-dport=9877 --tcp-ndport=9876
+    */
+   int fd_max = 0, fd_udp = 0, fd_raw = 0, sel = 0;
+   char *if_name = NULL;
+   struct sockaddr_in *udp_addr = NULL, *tcp_addr = NULL;
+   struct sock_fprog *bpf = NULL;
+
+   //init tun itf
+   const char *prefix = "24";
+   if_name  = create_tun(args->tcp_saddr, prefix, 0);
+   //udp sock & dst sockaddr
+   fd_udp   = udp_sock(args->udp_sport);
+   udp_addr = get_addr(args->udp_daddr, args->udp_dport);
+   //raw tcp sock with tcp dport bpf
+   bpf      = gen_bpf(if_name, args->tcp_saddr, 0, args->tcp_dport);
+   //raw sock & dst sockaddr
+   fd_raw   = raw_tcp_sock(args->tcp_saddr, args->tcp_dport, bpf);
+   tcp_addr = get_addr(args->tcp_saddr, args->tcp_sport);
+
+   signal(SIGINT, int_handler);
+
+   fd_set input_set;//, output_set;
+   fd_max = max(fd_udp, fd_raw);
+   struct timeval tv;
+   char buf[__BUFFSIZE];
+
+   while (loop) {
+      //select list
+      FD_ZERO(&input_set);
+      FD_SET(fd_udp, &input_set);
+      FD_SET(fd_raw, &input_set);
+      //FD_ZERO(&output_set);  TODO
+      //FD_SET(fd_udp, &output_set);
+      //FD_SET(fd_raw, &output_set);
+      tv.tv_sec  = 1;
+      tv.tv_usec = 0;
+
+      sel = select(fd_max+1, &input_set, NULL, NULL, &tv);
+      if (sel < 0) die("select");
+      else if (sel > 0) {
+         if (FD_ISSET(fd_raw, &input_set))      
+            tun_cli_in(fd_udp, fd_raw, udp_addr, buf);
+         else if (FD_ISSET(fd_udp, &input_set)) 
+            tun_cli_out(fd_udp, fd_raw, tcp_addr, buf);
+      }
    }
 
-   free(if_name);
+   close(fd_udp);close(fd_raw);
+   free(if_name);free((struct bpf_program *)bpf);
+
    return;
 }

@@ -31,11 +31,11 @@
 #define VSYS_VIFUP_IN "/vsys/vif_up.in"
 #define VSYS_VIFUP_OUT "/vsys/vif_up.out"
 
-#define __BUFFSIZE 1440
+#define __BUFFSIZE 8192
 
 int udp_sock(int port);
-int raw_tcp_sock(const char *addr, int port, const char* dev);
-int raw_sock(const char *addr, int port, const char *dev, int proto);
+int raw_tcp_sock(const char *addr, int port, const struct sock_fprog * bpf);
+int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, int proto);
 
 struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dport);
 void xsendto(int fd, struct sockaddr_in * addr, const void *buf, size_t buflen);

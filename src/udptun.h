@@ -20,8 +20,6 @@
 
 #include <sys/types.h>
 
-#include "config.h"
-
 struct arguments;
 
 #include "cli.h"
@@ -30,11 +28,16 @@ struct arguments;
 struct arguments {
     enum { CLI_MODE, SERV_MODE, NONE_MODE } mode;
     int verbose, silent;
-    char *udp_daddr, *tcp_daddr, *tcp_laddr;
+    char *udp_daddr, *tcp_daddr, *tcp_saddr;
     int   udp_dport,  udp_sport,  udp_lport;
-    int   tcp_dport,  tcp_lport,  tcp_ndport;
+    int   tcp_dport,  tcp_sport,  tcp_ndport;
 };
 
 void die(char *s);
+
+#define max(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a > _b ? _a : _b; })
 
 #endif
