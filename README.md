@@ -1,15 +1,9 @@
 # udptun
-# 
-# tcp tunneling over udp
-# @author k.edeline
+tcp tunneling over udp
 
-
-# standard and libs
+# standard & libs
 - gnu99
 - libpcap-devel/libpcap-dev for BPFs
 
-
-# TODO
-- non-PL raw sockets
-- non-PL tun interface creation
-- other protocol tunneling capabilities via magic numbers
+# contact
+k.edeline
