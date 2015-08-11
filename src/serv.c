@@ -6,6 +6,7 @@
  */
 
 #include "serv.h"
+#include <glib.h>
 
 static volatile int loop;
 

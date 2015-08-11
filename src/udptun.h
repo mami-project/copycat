@@ -31,7 +31,7 @@ struct arguments {
 #include "cli.h"
 #include "serv.h"
 
-void die(char *s);
+
 
 #define max(a,b) \
    __extension__({ __typeof__ (a) _a = (a); \

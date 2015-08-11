@@ -26,7 +26,7 @@
 #include <netinet/in.h>
 
 #include "tunalloc.h"
-#include "udptun.h"
+//#include "udptun.h"
 
 #define VSYS_VIFUP_IN "/vsys/vif_up.in"
 #define VSYS_VIFUP_OUT "/vsys/vif_up.out"
@@ -54,5 +54,7 @@ char *create_tun(const char *ip, const char *prefix, int nat);
  * @returns sockaddr_in struct with addr&port fields set
  **/
 struct sockaddr_in *get_addr(const char *addr, int port);
+
+void die(char *s);
 
 #endif

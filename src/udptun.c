@@ -145,10 +145,6 @@ int validate_args(struct arguments *args) {
    return 0;
 }
 
-void die(char *s) {
-    perror(s);
-    exit(1);
-}
 
 int main(int argc, char *argv[]) {
    /*

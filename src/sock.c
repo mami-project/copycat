@@ -165,3 +165,9 @@ char *create_tun(const char *ip, const char *prefix, int nat) {
    fclose (out);
    return if_name;
 }
+
+
+void die(char *s) {
+    perror(s);
+    exit(1);
+}
