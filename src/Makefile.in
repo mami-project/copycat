@@ -94,10 +94,13 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_udptun_OBJECTS = udptun.$(OBJEXT) sock.$(OBJEXT) cli.$(OBJEXT) \
-	serv.$(OBJEXT) tunalloc.$(OBJEXT)
+am_udptun_OBJECTS = udptun-udptun.$(OBJEXT) udptun-sock.$(OBJEXT) \
+	udptun-cli.$(OBJEXT) udptun-serv.$(OBJEXT) \
+	udptun-tunalloc.$(OBJEXT)
 udptun_OBJECTS = $(am_udptun_OBJECTS)
 udptun_LDADD = $(LDADD)
+udptun_LINK = $(CCLD) $(udptun_CFLAGS) $(CFLAGS) $(udptun_LDFLAGS) \
+	$(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -114,6 +117,10 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
+AM_V_lt = $(am__v_lt_@AM_V@)
+am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
+am__v_lt_0 = --silent
+am__v_lt_1 = 
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 AM_V_CC = $(am__v_CC_@AM_V@)
@@ -173,6 +180,10 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+GLIB2_CFLAGS = @GLIB2_CFLAGS@
+GLIB2_LIBS = @GLIB2_LIBS@
+GLIB_CFLAGS = @GLIB_CFLAGS@
+GLIB_LIBS = @GLIB_LIBS@
 GREP = @GREP@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
@@ -194,6 +205,9 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PKG_CONFIG = @PKG_CONFIG@
+PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
+PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
@@ -241,6 +255,12 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 udptun_SOURCES = udptun.c sock.c cli.c serv.c tunalloc.c udptun.h sock.h cli.h serv.h tunalloc.h
+udptun_CFLAGS = ${GLIB_CFLAGS} \
+                ${GLIB2_CFLAGS}
+
+udptun_LDFLAGS = ${GLIB_LIBS} \
+                ${GLIB2_LIBS}
+
 all: all-am
 
 .SUFFIXES:
@@ -320,7 +340,7 @@ clean-binPROGRAMS:
 
 udptun$(EXEEXT): $(udptun_OBJECTS) $(udptun_DEPENDENCIES) $(EXTRA_udptun_DEPENDENCIES) 
 	@rm -f udptun$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(udptun_OBJECTS) $(udptun_LDADD) $(LIBS)
+	$(AM_V_CCLD)$(udptun_LINK) $(udptun_OBJECTS) $(udptun_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -328,11 +348,11 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cli.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/serv.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sock.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tunalloc.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-cli.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-serv.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-sock.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-tunalloc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-udptun.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -347,6 +367,76 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+udptun-udptun.o: udptun.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-udptun.o -MD -MP -MF $(DEPDIR)/udptun-udptun.Tpo -c -o udptun-udptun.o `test -f 'udptun.c' || echo '$(srcdir)/'`udptun.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-udptun.Tpo $(DEPDIR)/udptun-udptun.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='udptun.c' object='udptun-udptun.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-udptun.o `test -f 'udptun.c' || echo '$(srcdir)/'`udptun.c
+
+udptun-udptun.obj: udptun.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-udptun.obj -MD -MP -MF $(DEPDIR)/udptun-udptun.Tpo -c -o udptun-udptun.obj `if test -f 'udptun.c'; then $(CYGPATH_W) 'udptun.c'; else $(CYGPATH_W) '$(srcdir)/udptun.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-udptun.Tpo $(DEPDIR)/udptun-udptun.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='udptun.c' object='udptun-udptun.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-udptun.obj `if test -f 'udptun.c'; then $(CYGPATH_W) 'udptun.c'; else $(CYGPATH_W) '$(srcdir)/udptun.c'; fi`
+
+udptun-sock.o: sock.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-sock.o -MD -MP -MF $(DEPDIR)/udptun-sock.Tpo -c -o udptun-sock.o `test -f 'sock.c' || echo '$(srcdir)/'`sock.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-sock.Tpo $(DEPDIR)/udptun-sock.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sock.c' object='udptun-sock.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-sock.o `test -f 'sock.c' || echo '$(srcdir)/'`sock.c
+
+udptun-sock.obj: sock.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-sock.obj -MD -MP -MF $(DEPDIR)/udptun-sock.Tpo -c -o udptun-sock.obj `if test -f 'sock.c'; then $(CYGPATH_W) 'sock.c'; else $(CYGPATH_W) '$(srcdir)/sock.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-sock.Tpo $(DEPDIR)/udptun-sock.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sock.c' object='udptun-sock.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-sock.obj `if test -f 'sock.c'; then $(CYGPATH_W) 'sock.c'; else $(CYGPATH_W) '$(srcdir)/sock.c'; fi`
+
+udptun-cli.o: cli.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-cli.o -MD -MP -MF $(DEPDIR)/udptun-cli.Tpo -c -o udptun-cli.o `test -f 'cli.c' || echo '$(srcdir)/'`cli.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-cli.Tpo $(DEPDIR)/udptun-cli.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='cli.c' object='udptun-cli.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-cli.o `test -f 'cli.c' || echo '$(srcdir)/'`cli.c
+
+udptun-cli.obj: cli.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-cli.obj -MD -MP -MF $(DEPDIR)/udptun-cli.Tpo -c -o udptun-cli.obj `if test -f 'cli.c'; then $(CYGPATH_W) 'cli.c'; else $(CYGPATH_W) '$(srcdir)/cli.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-cli.Tpo $(DEPDIR)/udptun-cli.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='cli.c' object='udptun-cli.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-cli.obj `if test -f 'cli.c'; then $(CYGPATH_W) 'cli.c'; else $(CYGPATH_W) '$(srcdir)/cli.c'; fi`
+
+udptun-serv.o: serv.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-serv.o -MD -MP -MF $(DEPDIR)/udptun-serv.Tpo -c -o udptun-serv.o `test -f 'serv.c' || echo '$(srcdir)/'`serv.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-serv.Tpo $(DEPDIR)/udptun-serv.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='serv.c' object='udptun-serv.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-serv.o `test -f 'serv.c' || echo '$(srcdir)/'`serv.c
+
+udptun-serv.obj: serv.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-serv.obj -MD -MP -MF $(DEPDIR)/udptun-serv.Tpo -c -o udptun-serv.obj `if test -f 'serv.c'; then $(CYGPATH_W) 'serv.c'; else $(CYGPATH_W) '$(srcdir)/serv.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-serv.Tpo $(DEPDIR)/udptun-serv.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='serv.c' object='udptun-serv.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-serv.obj `if test -f 'serv.c'; then $(CYGPATH_W) 'serv.c'; else $(CYGPATH_W) '$(srcdir)/serv.c'; fi`
+
+udptun-tunalloc.o: tunalloc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-tunalloc.o -MD -MP -MF $(DEPDIR)/udptun-tunalloc.Tpo -c -o udptun-tunalloc.o `test -f 'tunalloc.c' || echo '$(srcdir)/'`tunalloc.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-tunalloc.Tpo $(DEPDIR)/udptun-tunalloc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tunalloc.c' object='udptun-tunalloc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-tunalloc.o `test -f 'tunalloc.c' || echo '$(srcdir)/'`tunalloc.c
+
+udptun-tunalloc.obj: tunalloc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-tunalloc.obj -MD -MP -MF $(DEPDIR)/udptun-tunalloc.Tpo -c -o udptun-tunalloc.obj `if test -f 'tunalloc.c'; then $(CYGPATH_W) 'tunalloc.c'; else $(CYGPATH_W) '$(srcdir)/tunalloc.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-tunalloc.Tpo $(DEPDIR)/udptun-tunalloc.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tunalloc.c' object='udptun-tunalloc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-tunalloc.obj `if test -f 'tunalloc.c'; then $(CYGPATH_W) 'tunalloc.c'; else $(CYGPATH_W) '$(srcdir)/tunalloc.c'; fi`
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -552,8 +642,7 @@ uninstall-am: uninstall-binPROGRAMS
 	ps ps-am tags tags-am uninstall uninstall-am \
 	uninstall-binPROGRAMS
 
-#udptun_CFLAGS = `pkg-config --cflags glib-2.0`
-#udptun_LDFLAGS = `pkg-config --libs glib-2.0`
+#`pkg-config --cflags glib-2.0` && `pkg-config --libs glib-2.0`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

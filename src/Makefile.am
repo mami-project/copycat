@@ -5,5 +5,8 @@
 bin_PROGRAMS = udptun
 
 udptun_SOURCES = udptun.c sock.c cli.c serv.c tunalloc.c udptun.h sock.h cli.h serv.h tunalloc.h
-#udptun_CFLAGS = `pkg-config --cflags glib-2.0`
-#udptun_LDFLAGS = `pkg-config --libs glib-2.0`
+udptun_CFLAGS = ${GLIB_CFLAGS} \
+                ${GLIB2_CFLAGS}
+udptun_LDFLAGS = ${GLIB_LIBS} \
+                ${GLIB2_LIBS}
+#`pkg-config --cflags glib-2.0` && `pkg-config --libs glib-2.0`

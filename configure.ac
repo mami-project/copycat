@@ -18,13 +18,17 @@ AC_CHECK_LIB([glib-2.0], [g_hash_table_lookup], [],
    [AC_CHECK_LIB([glib], [g_hash_table_lookup])]
 )
 
+# Checks for modules.
+GLIB2=[glib-2.0]
+GLIB=[glib]
+PKG_CHECK_MODULES(GLIB2, [glib-2.0 >= 2.0], [],
+   [PKG_CHECK_MODULES(GLIB, [glib >= 1.2.10])]
+)
+
 # Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADER(glib.h)
+#AC_CHECK_HEADER(glib.h)
 AC_CHECK_HEADERS([arpa/inet.h netinet/in.h pcap.h stdlib.h string.h sys/socket.h unistd.h])
-
-#DEPS=[glib-2.0]
-#PKG_CHECK_MODULES(DEPS, [glib-2.0 >= 2.0])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
