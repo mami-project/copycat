@@ -5,8 +5,8 @@
  * VNI: tun*-0
  * @author k.edeline
  */
-#ifndef __UDP_TUN_SOCK__
-#define __UDP_TUN_SOCK__
+#ifndef _UDPTUN_SOCK_H
+#define _UDPTUN_SOCK_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,6 +40,7 @@ int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, int prot
 struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dport);
 void xsendto(int fd, struct sockaddr_in * addr, const void *buf, size_t buflen);
 int xrecv(int fd, void *buf, size_t buflen);
+int xrecvfrom(int fd, void *buf, size_t buflen, struct sockaddr *sa, unsigned int *salen);
 
 
 /**

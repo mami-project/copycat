@@ -4,8 +4,8 @@
  *
  * @author k.edeline
  */
-#ifndef __UDP_TUN_CLI__
-#define __UDP_TUN_CLI__
+#ifndef _UDPTUN_CLI_H
+#define _UDPTUN_CLI_H
 
 #include <stdio.h>
 #include <stdlib.h>

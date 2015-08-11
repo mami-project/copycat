@@ -7,7 +7,8 @@
 
 #include "cli.h"
 
-static volatile int loop = 1;
+static volatile int loop;
+
 static void int_handler(int sig);
 static void tun_cli_in(int fd_udp, int fd_raw, struct sockaddr_in *udp_addr, char *buf);
 static void tun_cli_out(int fd_udp, int fd_raw, struct sockaddr_in *tcp_addr, char *buf);
@@ -25,9 +26,9 @@ void tun_cli_in(int fd_udp, int fd_raw, struct sockaddr_in *udp_addr, char *buf)
          printf("%x ",buf[i]);
          if (!((i+1)%16)) printf("\n"); 
       }
-      printf("\n");  
-
-      xsendto(fd_udp, udp_addr, buf, recv_s);
+      printf("\n"); 
+ 
+      if (recv_s > 0) xsendto(fd_udp, udp_addr, buf, recv_s);
 }
 
 void tun_cli_out(int fd_udp, int fd_raw, struct sockaddr_in *tcp_addr, char *buf) {
@@ -42,12 +43,12 @@ void tun_cli_out(int fd_udp, int fd_raw, struct sockaddr_in *tcp_addr, char *buf
       }
       printf("\n");  
 
-      xsendto(fd_raw, tcp_addr, buf, recv_s);
+      if (recv_s > 0) xsendto(fd_raw, tcp_addr, buf, recv_s);
 }
 
 void tun_cli(struct arguments *args) {
    /*
-    * ./udptun -c --udp-daddr=109.89.113.79 --udp-dport=9876 --udp-sport=5001 --tcp-saddr=192.168.2.1 --tcp-sport=C_PORT --tcp-dport=9877 --tcp-ndport=9876
+    * udptun -c --udp-daddr=132.227.62.120 --udp-sport=34501 --udp-dport=5001 --tcp-saddr=192.168.2.1 --tcp-sport=34500 --tcp-dport=9877 --tcp-ndport=9876
     */
    int fd_max = 0, fd_udp = 0, fd_raw = 0, sel = 0;
    char *if_name = NULL;
@@ -66,6 +67,7 @@ void tun_cli(struct arguments *args) {
    fd_raw   = raw_tcp_sock(args->tcp_saddr, args->tcp_dport, bpf);
    tcp_addr = get_addr(args->tcp_saddr, args->tcp_sport);
 
+   loop = 1;
    signal(SIGINT, int_handler);
 
    fd_set input_set;//, output_set;
@@ -89,7 +91,7 @@ void tun_cli(struct arguments *args) {
       else if (sel > 0) {
          if (FD_ISSET(fd_raw, &input_set))      
             tun_cli_in(fd_udp, fd_raw, udp_addr, buf);
-         else if (FD_ISSET(fd_udp, &input_set)) 
+         if (FD_ISSET(fd_udp, &input_set)) 
             tun_cli_out(fd_udp, fd_raw, tcp_addr, buf);
       }
    }

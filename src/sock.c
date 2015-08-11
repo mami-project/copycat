@@ -50,7 +50,6 @@ int raw_tcp_sock(const char *addr, int port, const struct sock_fprog * bpf) {
 int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, int proto) {
    int s;
    struct sockaddr_in sin;
-   //create a UDP socket
    if ((s=socket(PF_INET, SOCK_RAW, proto)) == -1)
    {
      die("socket");
@@ -59,18 +58,17 @@ int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, int prot
    int tmp = 1;
    setsockopt(s, 0, IP_HDRINCL, & tmp, sizeof(tmp));
 
-   //set input filter
+   //set bpf
    if (bpf && setsockopt(s, SOL_SOCKET, SO_ATTACH_FILTER, bpf, sizeof(struct sock_fprog)) < 0 )
    {
        die("Cannot attach filter");
    }
 
-   // zero out the structure
    memset(&sin, 0, sizeof(sin));
    sin.sin_family = AF_INET;
    sin.sin_port = htons(port);
 
-   //bind socket to port
+   //bind socket to port (PL-specific)
    if( bind(s, (struct sockaddr*)&sin, sizeof(sin) ) == -1)
    {
      die("bind");
@@ -109,15 +107,23 @@ struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dpo
 
 void xsendto(int fd, struct sockaddr_in *addr, const void *buf, size_t buflen) {
    if (sendto(fd,buf,buflen,0,
-       (struct sockaddr *)addr,sizeof(struct sockaddr))==-1) {
-       die(strerror(errno));
+       (struct sockaddr *)addr,sizeof(struct sockaddr))<0) {
+       die("sendto");
    }
 }
 
 int xrecv(int fd, void *buf, size_t buflen) {
    int recvd = 0;
    if ( (recvd = recvfrom(fd, buf, buflen, 0, NULL, 0)) < 0) {
-      die("nothing recvd");
+      die("recvd");
+   }
+   return recvd;
+}
+
+int xrecvfrom(int fd, void *buf, size_t buflen, struct sockaddr *sa, unsigned int *salen) {
+   int recvd = 0;
+   if ( (recvd = recvfrom(fd, buf, buflen, 0, sa, salen)) < 0) {
+      die("recvfrom");
    }
    return recvd;
 }

@@ -5,8 +5,8 @@
  * VNI: tun639-0
  * k.edeline
  */
-#ifndef __UDP_TUN_MAIN__
-#define __UDP_TUN_MAIN__
+#ifndef _UDPTUN_MAIN_H
+#define _UDPTUN_MAIN_H
 
 #define __DEBUG
 
@@ -20,11 +20,6 @@
 
 #include <sys/types.h>
 
-struct arguments;
-
-#include "cli.h"
-#include "serv.h"
-
 struct arguments {
     enum { CLI_MODE, SERV_MODE, NONE_MODE } mode;
     int verbose, silent;
@@ -33,10 +28,13 @@ struct arguments {
     int   tcp_dport,  tcp_sport,  tcp_ndport;
 };
 
+#include "cli.h"
+#include "serv.h"
+
 void die(char *s);
 
 #define max(a,b) \
-   ({ __typeof__ (a) _a = (a); \
+   __extension__({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
      _a > _b ? _a : _b; })
 

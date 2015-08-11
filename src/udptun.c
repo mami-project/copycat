@@ -18,7 +18,6 @@ static struct argp_option options[] = {
   {"quiet",      'q', 0,        0,  "don't produce any output" },
   {"client",     'c', 0,        0,  "client mode" },
   {"server",     's', 0,        0,  "server mode" },
-  //{"tun", 't', 0, 0, "tun interface"},
   {"udp-daddr",  '1', "STRING", 0, "udp dst addr"},
   {"tcp-daddr",  '2', "STRING", 0, "tcp dst addr"},
   {"tcp-saddr",  '3', "STRING", 0, "tcp src addr"}, //
@@ -165,10 +164,6 @@ int main(int argc, char *argv[]) {
    argp_parse(&argp, argc, argv, 0, 0, &args);
    validate_args(&args);
    if (args.verbose) print_args(&args);
-
-   //char *ip="192.168.2.1";
-   //char *prefix="24";  
-   //create_tun(ip, prefix, 1);
 
    if (args.mode == CLI_MODE) {
       tun_cli(&args);

@@ -4,8 +4,8 @@
  *
  * @author k.edeline
  */
-#ifndef __UDP_TUN_SERV__
-#define __UDP_TUN_SERV__
+#ifndef _UDPTUN_SERV_H
+#define _UDPTUN_SERV_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,9 +13,12 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
+#include <glib.h>
 
 #include "udptun.h"
 #include "sock.h"
+
+#define UDP_TUN_FDLIM 512
 
 void tun_serv(struct arguments *);
 
