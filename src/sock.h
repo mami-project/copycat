@@ -26,7 +26,6 @@
 #include <netinet/in.h>
 
 #include "tunalloc.h"
-//#include "udptun.h"
 
 #define VSYS_VIFUP_IN "/vsys/vif_up.in"
 #define VSYS_VIFUP_OUT "/vsys/vif_up.out"
@@ -34,13 +33,17 @@
 #define __BUFFSIZE 8192
 
 int udp_sock(int port);
-int raw_tcp_sock(const char *addr, int port, const struct sock_fprog * bpf);
-int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, int proto);
+int raw_tcp_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev);
+int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev, int proto);
 
 struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dport);
-void xsendto(int fd, struct sockaddr_in * addr, const void *buf, size_t buflen);
+
+int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen);
 int xrecv(int fd, void *buf, size_t buflen);
-int xrecvfrom(int fd, void *buf, size_t buflen, struct sockaddr *sa, unsigned int *salen);
+int xrecvfrom(int fd, struct sockaddr *sa, unsigned int *salen, void *buf, size_t buflen);
+
+int xread(int fd, char *buf, int n);
+int xwrite(int fd, char *buf, int n);
 
 
 /**
@@ -48,7 +51,7 @@ int xrecvfrom(int fd, void *buf, size_t buflen, struct sockaddr *sa, unsigned in
  * @returns interface name
  *
  **/
-char *create_tun(const char *ip, const char *prefix, int nat);
+char *create_tun(const char *ip, const char *prefix, int nat, int *tun_fds);
 
 /**
  * @returns sockaddr_in struct with addr&port fields set

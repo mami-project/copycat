@@ -42,12 +42,12 @@ int udp_sock(int port) {
    return s;
 }
 
-int raw_tcp_sock(const char *addr, int port, const struct sock_fprog * bpf) {
-   return raw_sock(addr, port, bpf, IPPROTO_TCP);
+int raw_tcp_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev) {
+   return raw_sock(addr, port, bpf, dev, IPPROTO_TCP);
 }
 //TODO: set non-blocking socket for safe use with select ?
 //  fcntl(fd, F_SETFL, O_NONBLOCK))
-int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, int proto) {
+int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev, int proto) {
    int s;
    struct sockaddr_in sin;
    if ((s=socket(PF_INET, SOCK_RAW, proto)) == -1)
@@ -57,6 +57,10 @@ int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, int prot
 
    int tmp = 1;
    setsockopt(s, 0, IP_HDRINCL, & tmp, sizeof(tmp));
+
+   if (dev && setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev))) {
+      die("Cannot bind to device");
+   }
 
    //set bpf
    if (bpf && setsockopt(s, SOL_SOCKET, SO_ATTACH_FILTER, bpf, sizeof(struct sock_fprog)) < 0 )
@@ -105,11 +109,12 @@ struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dpo
    return (struct sock_fprog *)fp;
 }
 
-void xsendto(int fd, struct sockaddr_in *addr, const void *buf, size_t buflen) {
-   if (sendto(fd,buf,buflen,0,
-       (struct sockaddr *)addr,sizeof(struct sockaddr))<0) {
+int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen) {
+   int sent = 0;
+   if ( (sent = sendto(fd,buf,buflen,0,sa,sizeof(sa)) ) < 0) {
        die("sendto");
    }
+   return sent;
 }
 
 int xrecv(int fd, void *buf, size_t buflen) {
@@ -120,7 +125,7 @@ int xrecv(int fd, void *buf, size_t buflen) {
    return recvd;
 }
 
-int xrecvfrom(int fd, void *buf, size_t buflen, struct sockaddr *sa, unsigned int *salen) {
+int xrecvfrom(int fd, struct sockaddr *sa, unsigned int *salen, void *buf, size_t buflen) {
    int recvd = 0;
    if ( (recvd = recvfrom(fd, buf, buflen, 0, sa, salen)) < 0) {
       die("recvfrom");
@@ -128,7 +133,7 @@ int xrecvfrom(int fd, void *buf, size_t buflen, struct sockaddr *sa, unsigned in
    return recvd;
 }
 
-char *create_tun(const char *ip, const char *prefix, int nat) {
+char *create_tun(const char *ip, const char *prefix, int nat, int *tun_fds) {
    char *if_name = malloc(IFNAMSIZ);
 
    FILE *in;
@@ -137,6 +142,7 @@ char *create_tun(const char *ip, const char *prefix, int nat) {
    memset(errbuff, 0, 4096);
 
    int tun_fd = tun_alloc(IFF_TUN, if_name);
+   if (tun_fds) *tun_fds = tun_fd;
 #ifdef __DEBUG
    fprintf(stderr,"allocated tun device: %s fd=%d\n", if_name, tun_fd);
 #endif
@@ -171,3 +177,25 @@ void die(char *s) {
     perror(s);
     exit(1);
 }
+
+
+int xread(int fd, char *buf, int n){
+  
+  int nread;
+
+  if((nread=read(fd, buf, n)) < 0){
+    die("Reading data");
+  }
+  return nread;
+}
+
+int xwrite(int fd, char *buf, int n){
+  
+  int nwrite;
+
+  if((nwrite=write(fd, buf, n)) < 0){
+    die("Writing data");
+  }
+  return nwrite;
+}
+
