@@ -20,13 +20,13 @@ void tun_cli_in(int fd_udp, int fd_tun, struct sockaddr_in *udp_addr, char *buf)
       int recvd=xread(fd_tun, buf, __BUFFSIZE);
 #ifdef __DEBUG
       //todo change dport to args->ndport
-      fprintf (stderr,"recvd %db from tun\n", recvd);
+      fprintf (stderr,"cli: recvd %db from tun\n", recvd);
 #endif
 
       if (recvd > 0) { 
          int sent = xsendto(fd_udp, (struct sockaddr *)udp_addr, buf, recvd);
 #ifdef __DEBUG
-         fprintf(stderr,"WROTE %d bytes to udp\n",sent);
+         fprintf(stderr,"cli: wrote %db to udp\n",sent);
 #endif
       }
 }
@@ -36,19 +36,17 @@ void tun_cli_out(int fd_udp, int fd_tun, char *buf) {
       int recvd=xrecv(fd_udp, buf, __BUFFSIZE);
 #ifdef __DEBUG
       //todo change dport to args->ndport
-       fprintf (stderr,"recvd %db from udp\n", recvd);
+       fprintf (stderr,"cli: recvd %db from udp\n", recvd);
       if (recvd > 32) {
          fprintf(stderr,"ports %d %d\n",ntohs( *((uint16_t *)buf+24) ),
                                         ntohs( *((uint16_t *)buf+26) ));
-         fprintf(stderr,"ports %d %d\n",*((uint16_t *)buf+24),
-                                        *((uint16_t *)buf+26));
       }
 #endif
 
       if (recvd > 0) { 
          int sent = xwrite(fd_tun, buf, recvd);
 #ifdef __DEBUG
-         fprintf(stderr,"WROTE %d bytes to tun\n",sent);
+         fprintf(stderr,"cli: wrote %db to tun\n",sent);
 #endif
       }
 }

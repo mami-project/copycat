@@ -111,7 +111,7 @@ struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dpo
 
 int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen) {
    int sent = 0;
-   if ( (sent = sendto(fd,buf,buflen,0,sa,sizeof(sa)) ) < 0) {
+   if ( (sent = sendto(fd,buf,buflen,0,sa,sizeof(struct sockaddr)) ) < 0) {
        die("sendto");
    }
    return sent;

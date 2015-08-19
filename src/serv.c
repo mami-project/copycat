@@ -49,7 +49,7 @@ void tun_serv_in(int fd_udp, int fd_tun, struct tun_serv_state *state, char *buf
    int recvd=xread(fd_tun, buf, __BUFFSIZE);
 
 #ifdef __DEBUG
-   fprintf (stderr,"recvd %db from tun\n", recvd);
+   fprintf (stderr,"serv: recvd %db from tun\n", recvd);
    //todo change dport to args->ndport
    if (recvd == 0) fprintf(stderr,"RECVFROM UDP RETURNED 0\n");
 #endif
@@ -71,7 +71,7 @@ void tun_serv_in(int fd_udp, int fd_tun, struct tun_serv_state *state, char *buf
 
          int sent = xsendto(fd_udp, rec->sa, buf, recvd);
 #ifdef __DEBUG
-         fprintf(stderr,"WROTE %d to udp\n",sent);
+         fprintf(stderr,"serv: wrote %db to udp\n",sent);
 #endif
       } else {
          errno=EFAULT;
@@ -91,34 +91,37 @@ void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_ser
    int recvd=xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, &nrec->slen, buf, __BUFFSIZE);
 
 #ifdef __DEBUG
-   fprintf (stderr,"recvd %db from udp\n", recvd);
+   fprintf (stderr,"serv: recvd %db from udp\n", recvd);
    //todo change dport to args->ndport
    if (recvd == 0) fprintf(stderr,"RECVFROM UDP RETURNED 0\n");
 #endif
 
    if (recvd > 4) {
+      fprintf(stderr,"frame: %2x %2x %2x %2x\n", buf[0], buf[1], buf[2], buf[3]);
       struct tun_rec *rec = NULL;
       int sport           = ntohs(((struct sockaddr_in *)nrec->sa)->sin_port);
-
+      int sent            = 0;
       if ( (rec = g_hash_table_lookup(state->sport, &sport)) ) {
          //forward
-         xwrite(fd_tun, buf, recvd);
+         sent = xwrite(fd_tun, buf, recvd);
          free_tun_rec(nrec);
       } else if (g_hash_table_size(state->sport) <= UDP_TUN_FDLIM) { //add new record to lookup tables  
-         int sent = xwrite(fd_tun, buf, recvd);
+         sent = xwrite(fd_tun, buf, recvd);
 
          nrec->sport = sport;
          g_hash_table_insert(state->sport, &nrec->sport, nrec);
 
-#ifdef __DEBUG
-         fprintf(stderr,"WROTE %d to tun\n",sent);   
-         fprintf(stderr,"ADDED new entry: %d\n",sport);
+#ifdef __DEBUG  
+         fprintf(stderr,"serv: added new entry: %d\n",sport);
 #endif
       } else {
          errno=EUSERS; //TODO no need to exit but safer
          die("socket()");
       }
-
+#ifdef __DEBUG
+         fprintf(stderr,"serv: wrote %d to tun\n",sent);   
+#endif
+   
    }
 }
 
