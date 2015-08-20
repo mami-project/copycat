@@ -1,14 +1,13 @@
 /*
  * udptun.h: udp tun header
  * 
- * VN: 192.168.2.0/24
- * VNI: tun639-0
- * k.edeline
+ *
+ * @author: k.edeline
  */
 #ifndef _UDPTUN_MAIN_H
 #define _UDPTUN_MAIN_H
 
-#define __DEBUG
+//#define __DEBUG
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,6 +27,7 @@ struct arguments {
     int   tcp_dport,  tcp_sport,  tcp_ndport;
 };
 
+#include "debug.h"
 #include "cli.h"
 #include "serv.h"
 

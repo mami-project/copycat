@@ -1,7 +1,7 @@
 /*
  * sock.h: socket handling
  *         raw socket/tun itf related functions are PL-specific
- * VN: 192.168.2.0/24
+ * 
  * VNI: tun*-0
  * @author k.edeline
  */
@@ -14,7 +14,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include <pcap.h>
+//#include <pcap.h>
 
 #include <arpa/inet.h>
 #include <sys/types.h>
@@ -25,6 +25,7 @@
 #include <linux/filter.h>
 #include <netinet/in.h>
 
+#include "debug.h"
 #include "tunalloc.h"
 
 #define VSYS_VIFUP_IN "/vsys/vif_up.in"
@@ -36,7 +37,7 @@ int udp_sock(int port);
 int raw_tcp_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev);
 int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev, int proto);
 
-struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dport);
+//struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dport);
 
 int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen);
 int xrecv(int fd, void *buf, size_t buflen);

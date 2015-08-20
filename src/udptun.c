@@ -155,6 +155,12 @@ int main(int argc, char *argv[]) {
     * e.g.:
     * 
     */
+   debug_print("test\n");
+   int z=5;
+   debug_print("%d\n",z);
+   debug_print("t %s\n","zezer");
+   debug_print("\n");
+
    struct arguments args;
    init_args(&args);
    argp_parse(&argp, argc, argv, 0, 0, &args);

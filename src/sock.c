@@ -85,10 +85,11 @@ int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, const ch
  *
  * @returns the compiled bpf program: tcpdump -i dev 'src port sport and dst port dport'
  */
+
 struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dport) {
-   pcap_t *handle;		/* Session handle */
-   char errbuf[PCAP_ERRBUF_SIZE];	/* Error string */
-   struct bpf_program *fp= malloc(sizeof(struct bpf_program));/* The compiled filter expression */
+   pcap_t *handle;		// Session handle 
+   char errbuf[PCAP_ERRBUF_SIZE];	// Error string 
+   struct bpf_program *fp= malloc(sizeof(struct bpf_program));// The compiled filter expression 
 
    char filter_exp[64]; // "src port " p " and dst port " p2
    if (sport && dport)
@@ -143,6 +144,7 @@ char *create_tun(const char *ip, const char *prefix, int nat, int *tun_fds) {
 
    int tun_fd = tun_alloc(IFF_TUN, if_name);
    if (tun_fds) *tun_fds = tun_fd;
+
 #ifdef __DEBUG
    fprintf(stderr,"allocated tun device: %s fd=%d\n", if_name, tun_fd);
 #endif

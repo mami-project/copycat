@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <signal.h>
 
+#include "debug.h"
 #include "udptun.h"
 #include "sock.h"
 

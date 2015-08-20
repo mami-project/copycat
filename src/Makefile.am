@@ -4,7 +4,7 @@
 
 bin_PROGRAMS = udptun
 
-udptun_SOURCES = udptun.c sock.c cli.c serv.c tunalloc.c udptun.h sock.h cli.h serv.h tunalloc.h
+udptun_SOURCES = udptun.c sock.c cli.c serv.c tunalloc.c debug.h udptun.h sock.h cli.h serv.h tunalloc.h
 udptun_CFLAGS = ${GLIB_CFLAGS} \
                 ${GLIB2_CFLAGS}
 udptun_LDFLAGS = ${GLIB_LIBS} \
