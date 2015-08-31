@@ -11,6 +11,10 @@ PKG_PROG_PKG_CONFIG
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_CC_STDC
+AC_CHECK_PROGS([DOXYGEN], [doxygen])
+if test -z "$DOXYGEN";
+   then AC_MSG_WARN([Doxygen not found - continuing without Doxygen support])
+fi
 
 # Checks for libraries.
 AC_CHECK_LIB([pcap], [pcap_compile])
@@ -39,6 +43,8 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([inet_ntoa memset select socket strdup strtol])
 
 #PKG_CHECK_MODULES(GLIB, [glib-2.0])
+AM_CONDITIONAL([HAVE_DOXYGEN],
+[test -n "$DOXYGEN"])AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([doc/Doxyfile])])
 
 AC_CONFIG_FILES([
  Makefile

@@ -21,7 +21,7 @@
 #define VSYS_VIFUP_IN "/vsys/vif_up.in"
 
 /**
- * \def VSYS_VIFUP_OUTPUT
+ * \def VSYS_VIFUP_OUT
  * \brief planetlab vsys control file descriptor
  */
 #define VSYS_VIFUP_OUT "/vsys/vif_up.out"

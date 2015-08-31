@@ -51,7 +51,7 @@
 int udp_sock(int port);
 
 /**
- * \fn int udp_sock(int port)
+ * \fn int raw_tcp_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev)
  * \brief Create and bind a TCP RAW socket.
  *    Equivalent to raw_sock(addr, port, bpf, dev, IPPROTO_TCP).
  *    This function is planetlab-specific.
@@ -65,7 +65,7 @@ int udp_sock(int port);
 int raw_tcp_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev);
 
 /**
- * \fn int udp_sock(int port)
+ * \fn int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev, int proto)
  * \brief Create and bind a RAW socket.
  *    This function is planetlab-specific.
  *
@@ -129,7 +129,7 @@ int xrecv(int fd, void *buf, size_t buflen);
 int xrecvfrom(int fd, struct sockaddr *sa, unsigned int *salen, void *buf, size_t buflen);
 
 /**
- * \fn int xread(int fd, char *buf, int n)
+ * \fn int xread(int fd, char *buf, int buflen)
  * \brief read syscall wrapper that dies with failure.
  *
  * \param fd The file descriptor of the receiving socket. 
@@ -140,7 +140,7 @@ int xrecvfrom(int fd, struct sockaddr *sa, unsigned int *salen, void *buf, size_
 int xread(int fd, char *buf, int buflen);
 
 /**
- * \fn int xwrite(int fd, char *buf, int n)
+ * \fn int xwrite(int fd, char *buf, int buflen)
  * \brief write syscall wrapper that dies with failure.
  *
  * \param fd The file descriptor of the sending socket.

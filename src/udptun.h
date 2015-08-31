@@ -18,22 +18,22 @@
 #include <sys/types.h>
 
 /** 
- * \struct struct arguments
+ * \struct arguments
  *	\brief The programs arguments.
  */
 struct arguments {
-   enum { CLI_MODE, SERV_MODE, NONE_MODE } mode; /** The tunnelling mode. */
-   int verbose;      
-   int silent;       
-   char *udp_daddr;  /** The UDP destination address. */
-   char *tcp_daddr;  /** The TCP destination address. */
-   char *tcp_saddr;  /** The TCP source address. */
-   int   udp_dport;  /** The UDP destination port. */
-   int   udp_sport;  /** The UDP source port. */
-   int   udp_lport;  /** The UDP listen port. */
-   int   tcp_dport;  /** The TCP destination port. */
-   int   tcp_sport;  /** The TCP source port. */
-   int   tcp_ndport; /** The TCP destination port to set (Optional). */
+   enum { CLI_MODE, SERV_MODE, NONE_MODE } mode; /*!<  The tunnelling mode. */
+   int verbose;      /*!<  verbose mode */
+   int silent;       /*!<  silent mode */
+   char *udp_daddr;  /*!<  The UDP destination address. */
+   char *tcp_daddr;  /*!< The TCP destination address. */
+   char *tcp_saddr;  /*!<  The TCP source address. */
+   int   udp_dport;  /*!<  The UDP destination port. */
+   int   udp_sport;  /*!<   The UDP source port. */
+   int   udp_lport;  /*!<  The UDP listen port. */
+   int   tcp_dport;  /*!<  The TCP destination port. */
+   int   tcp_sport;  /*!<  The TCP source port. */
+   int   tcp_ndport; /*!<  The TCP destination port to set (Optional). */
 };
 
 #include "debug.h"

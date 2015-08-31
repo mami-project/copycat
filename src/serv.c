@@ -101,24 +101,24 @@ static struct tun_rec *init_tun_rec();
 static void free_tun_rec(struct tun_rec *rec);
 
 /** 
- * \struct struct tun_rec
+ * \struct tun_rec
  *	\brief A record represents a client.
  */
 struct tun_rec {
-   struct sockaddr *sa;    /** The address of the client. */
-   unsigned int     slen;  /** The size of the sockaddr. */
-   int              sport; /** The udp source port. */
+   struct sockaddr *sa;    /*!<  The address of the client. */
+   unsigned int     slen;  /*!<  The size of the sockaddr. */
+   int              sport; /*!<  The udp source port. */
 };
 
 /** 
- * \struct struct tun_serv_state 
+ * \struct tun_serv_state 
  *	\brief The state of the server.
  */
 struct tun_serv_state {
-   GHashTable      *sport;    /** A source port tun_rec lookup table. */
-   char            *if_name;  /** The tun interface name. */
-   struct sockaddr *tcp_sa;   /** The tcp endpoint address. */
-   unsigned int     tcp_slen; /** The size of the sockaddr. */
+   GHashTable      *sport;    /*!<  A source port tun_rec lookup table. */
+   char            *if_name;  /*!<  The tun interface name. */
+   struct sockaddr *tcp_sa;   /*!<  The tcp endpoint address. */
+   unsigned int     tcp_slen; /*!<  The size of the sockaddr. */
 };
 
 void int_handler(int sig) { loop = 0; }
