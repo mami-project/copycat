@@ -1,10 +1,10 @@
-/*
- * debug.h
- * 
- * 
- * 
- * k.edeline
+/**
+ * \file debug.h
+ * \brief Debugging macros.
+ * \author k.edeline
+ * \version 0.1
  */
+
 #ifndef DEBUG_H
 #define DEBUG_H
 
@@ -12,22 +12,24 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+/**
+ * \def DEBUG
+ * \brief Uncomment to allow debugging messages.
+ */
 #define DEBUG
 
-/* -- Macro Definitions */
 #ifdef DEBUG
+
+/**
+ * \def debug_print(fmt, ...)
+ * \brief Debugging stderr printing macro
+ *    Will only print if DEBUG is defined. Otherwise, will be removed.
+ */
 #define debug_print(fmt, ...) fprintf(stderr, "%s:%d:%s(): " fmt, __FILE__, \
                                 __LINE__, __func__, ##__VA_ARGS__)
-#define DEBUG_TEST 1
+
 #else
 #define debug_print(fmt, ...) 
-#define DEBUG_TEST 0
 #endif /* DEBUG */
-
-/* -- Declarations */
-
-#ifdef DEBUG
-extern  int     debug;
-#endif
 
 #endif  /* DEBUG_H */

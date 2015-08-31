@@ -1,9 +1,10 @@
-/*
- * cli.h: client
- * 
- *
- * @author k.edeline
+/**
+ * \file cli.h
+ * \brief Functions prototypes for the client.
+ * \author k.edeline
+ * \version 0.1
  */
+
 #ifndef _UDPTUN_CLI_H
 #define _UDPTUN_CLI_H
 
@@ -18,6 +19,12 @@
 #include "udptun.h"
 #include "sock.h"
 
-void tun_cli(struct arguments *);
+/**
+ * \fn void tun_cli(struct arguments *args)
+ * \brief Runs the client.
+ *
+ * \param args A pointer to the client arguments.
+ */ 
+void tun_cli(struct arguments *args);
 
 #endif

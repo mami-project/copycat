@@ -1,11 +1,30 @@
-/*
- * sock.c: socket handling
- * 
+/**
+ * \file sock.c
+ * \brief Socket handling.
  *
- * @author k.edeline
+ *    This contains system calls wrappers, socket and BPF creation 
+ *    functions, tun interface creation functions, network utility 
+ *    functions and die().
+ *    Note that raw socket and tun interface related functions are 
+ *    Planetlab-specific.
+ *
+ * \author k.edeline
+ * \version 0.1
  */
 
 #include "sock.h"
+
+/**
+ * \def VSYS_VIFUP_IN 
+ * \brief planetlab vsys control file descriptor
+ */
+#define VSYS_VIFUP_IN "/vsys/vif_up.in"
+
+/**
+ * \def VSYS_VIFUP_OUTPUT
+ * \brief planetlab vsys control file descriptor
+ */
+#define VSYS_VIFUP_OUT "/vsys/vif_up.out"
 
 struct sockaddr_in *get_addr(const char *addr, int port) {
    struct sockaddr_in *ret = malloc(sizeof(struct sockaddr));
@@ -45,8 +64,7 @@ int udp_sock(int port) {
 int raw_tcp_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev) {
    return raw_sock(addr, port, bpf, dev, IPPROTO_TCP);
 }
-//TODO: set non-blocking socket for safe use with select ?
-//  fcntl(fd, F_SETFL, O_NONBLOCK))
+
 int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev, int proto) {
    int s;
    struct sockaddr_in sin;
@@ -80,11 +98,6 @@ int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, const ch
 
    return s;
 }
-
-/*
- *
- * @returns the compiled bpf program: tcpdump -i dev 'src port sport and dst port dport'
- */
 
 struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dport) {
    pcap_t *handle;		// Session handle 
@@ -120,7 +133,7 @@ int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen) {
 
 int xrecv(int fd, void *buf, size_t buflen) {
    int recvd = 0;
-   if ( (recvd = recvfrom(fd, buf, buflen, 0, NULL, 0)) < 0) {
+   if ((recvd = recvfrom(fd, buf, buflen, 0, NULL, 0)) < 0) {
       die("recvd");
    }
    return recvd;
@@ -128,7 +141,7 @@ int xrecv(int fd, void *buf, size_t buflen) {
 
 int xrecvfrom(int fd, struct sockaddr *sa, unsigned int *salen, void *buf, size_t buflen) {
    int recvd = 0;
-   if ( (recvd = recvfrom(fd, buf, buflen, 0, sa, salen)) < 0) {
+   if ((recvd = recvfrom(fd, buf, buflen, 0, sa, salen)) < 0) {
       die("recvfrom");
    }
    return recvd;
@@ -145,18 +158,19 @@ char *create_tun(const char *ip, const char *prefix, int nat, int *tun_fds) {
    int tun_fd = tun_alloc(IFF_TUN, if_name);
    if (tun_fds) *tun_fds = tun_fd;
 
-#ifdef __DEBUG
-   fprintf(stderr,"allocated tun device: %s fd=%d\n", if_name, tun_fd);
-#endif
+   debug_print("allocated tun device: %s fd=%d\n", if_name, tun_fd);
 
    in = fopen (VSYS_VIFUP_IN, "a");
-   if (!in) 
-     fprintf(stderr,"Failed to open %s\n",VSYS_VIFUP_IN);
-   
+   if (!in) {
+     debug_print("Failed to open %s\n",VSYS_VIFUP_IN);
+     die("fopen VSYS_VIFUP_IN");
+   }
 
    out = fopen (VSYS_VIFUP_OUT, "r");
-   if (!out) 
-      fprintf(stderr,"Failed to open %s\n",VSYS_VIFUP_OUT);
+   if (!out) { 
+      debug_print("Failed to open %s\n",VSYS_VIFUP_OUT);
+      die("fopen VSYS_VIFUP_OUT");
+   }
    
    // send input to process
    if (nat)
@@ -168,34 +182,28 @@ char *create_tun(const char *ip, const char *prefix, int nat, int *tun_fds) {
    fclose (in);
 
    if (fread((void*)errbuff, 4096, 1, out) && strcmp(errbuff, ""))
-      fprintf(stderr,"%s\n",errbuff);
+      debug_print("%s\n",errbuff);
 
    fclose (out);
    return if_name;
 }
-
 
 void die(char *s) {
     perror(s);
     exit(1);
 }
 
-
-int xread(int fd, char *buf, int n){
-  
+int xread(int fd, char *buf, int buflen) {
   int nread;
-
-  if((nread=read(fd, buf, n)) < 0){
+  if((nread=read(fd, buf, buflen)) < 0 ) {
     die("Reading data");
   }
   return nread;
 }
 
-int xwrite(int fd, char *buf, int n){
-  
+int xwrite(int fd, char *buf, int buflen) {
   int nwrite;
-
-  if((nwrite=write(fd, buf, n)) < 0){
+  if((nwrite=write(fd, buf, buflen)) < 0 ) {
     die("Writing data");
   }
   return nwrite;

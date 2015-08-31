@@ -1,78 +1,147 @@
-/*
- * serv.c: server
- * 
- *
- * @author k.edeline
+/**
+ * \file serv.c
+ * \brief The server implementation.
+ * \author k.edeline
+ * \version 0.1
  */
 
 #include "serv.h"
+
 #include <glib.h>
 
+/**
+ * \def UDP_TUN_FDLIM
+ * \brief The maximum number of fd that the server can use for client sockets.
+ */
+#define UDP_TUN_FDLIM 512
+
+/**
+ * \var static volatile int loop
+ * \brief The server loop guardian.
+ */
 static volatile int loop;
 
 struct tun_rec;
 struct tun_serv_state;
 
+/**
+ * \fn static void int_handler(int sig)
+ * \brief Callback function for SIGINT catcher.
+ *
+ * \param sig Ignored
+ */ 
 static void int_handler(int sig);
+
+/**
+ * \fn static void tun_serv_in(int fd_udp, int fd_tun, struct tun_serv_state *state, char *buf)
+ * \brief Forward a packet in the tunnel.
+ *
+ * \param fd_udp The udp socket fd.
+ * \param fd_tun The tun interface fd.
+ * \param state The state of the server.
+ * \param buf The buffer.
+ */ 
 static void tun_serv_in(int fd_udp, int fd_tun, struct tun_serv_state *state, char *buf);
+
+/**
+ * \fn static void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_serv_state *state, char *buf)
+ * \brief Forward a packet out of the tunnel.
+ *
+ * \param fd_udp The udp socket fd.
+ * \param fd_tun The tun interface fd.
+ * \param args The arguments of the server.
+ * \param state The state of the server.
+ * \param buf The buffer.
+ */ 
 static void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_serv_state *state, char *buf);
-static void build_sel(fd_set *input_set, int len, int *fds_raw, int *max_fd_raw);
+
+/**
+ * \fn static build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw)
+ * \brief build a fd_set structure to be used with select() or similar.
+ *
+ * \param input_set modified on return to the fd_set.
+ * \param fds_raw The fd to set.
+ * \param len The number of fd.
+ * \param max_fd_raw modified on return to indicate the max fd value.
+ * \return 
+ */ 
+static void build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw);
+
+/**
+ * \fn static struct tun_serv_state *init_tun_serv(struct arguments *args)
+ * \brief Initialize the server state.
+ *
+ * \param args The server arguments.
+ * \return The server state.
+ */ 
 static struct tun_serv_state *init_tun_serv(struct arguments *args);
+
+/**
+ * \fn static void free_tun_serv(struct tun_serv_state *state)
+ * \brief Free the server state.
+ *
+ * \param state The server state.
+ */ 
 static void free_tun_serv(struct tun_serv_state *state);
+
+/**
+ * \fn static struct tun_rec *init_tun_rec()
+ * \brief Allocate a tun_rec structure.
+ *
+ * \return The allocated structure. 
+ */
 static struct tun_rec *init_tun_rec();
+
+/**
+ * \fn static void free_tun_rec(struct tun_rec *rec)
+ * \brief Free a tun_rec structure.
+ *
+ * \param rec The tun_rec structure. 
+ */
 static void free_tun_rec(struct tun_rec *rec);
 
+/** 
+ * \struct struct tun_rec
+ *	\brief A record represents a client.
+ */
 struct tun_rec {
-   struct sockaddr *sa;
-   unsigned int slen; 
-   int sport;  // udp sport
+   struct sockaddr *sa;    /** The address of the client. */
+   unsigned int     slen;  /** The size of the sockaddr. */
+   int              sport; /** The udp source port. */
 };
 
+/** 
+ * \struct struct tun_serv_state 
+ *	\brief The state of the server.
+ */
 struct tun_serv_state {
-   GHashTable *sport;
-   char *if_name;
-
-   /* tcp endpoint sa */
-   struct sockaddr *tcp_sa;
-   unsigned int tcp_slen;
-
+   GHashTable      *sport;    /** A source port tun_rec lookup table. */
+   char            *if_name;  /** The tun interface name. */
+   struct sockaddr *tcp_sa;   /** The tcp endpoint address. */
+   unsigned int     tcp_slen; /** The size of the sockaddr. */
 };
 
 void int_handler(int sig) { loop = 0; }
 
-/*
- *
- *
- */
 void tun_serv_in(int fd_udp, int fd_tun, struct tun_serv_state *state, char *buf) {
 
    int recvd=xread(fd_tun, buf, __BUFFSIZE);
 
-#ifdef __DEBUG
-   fprintf (stderr,"serv: recvd %db from tun\n", recvd);
-   //todo change dport to args->ndport
-   if (recvd == 0) fprintf(stderr,"RECVFROM UDP RETURNED 0\n");
-#endif
+   debug_print("serv: recvd %db from tun\n", recvd);
+   //TODO: change dport to args->ndport
+   if (recvd == 0) debug_print("RECVFROM UDP RETURNED 0\n");
 
    if (recvd > 32) {
 
       struct tun_rec *rec = NULL; 
       //read sport for clients mapping
       int sport           =  (int) ntohs( *((uint16_t *)(buf+26)) );
-      fprintf(stderr,"port is %d\n",sport);
+      debug_print("port is %d\n",sport);
       if ( (rec = g_hash_table_lookup(state->sport, &sport)) ) {   
-#ifdef __DEBUG
-         fprintf(stderr,"lookup: OK\n");
-         if (recvd > 32) {
-            fprintf(stderr,"ports %d %d\n",ntohs( *((uint16_t *)(buf+24)) ),
-                                           ntohs( *((uint16_t *)(buf+26)) ));
-         }
-#endif
+         debug_print("lookup: OK\n");
 
          int sent = xsendto(fd_udp, rec->sa, buf, recvd);
-#ifdef __DEBUG
-         fprintf(stderr,"serv: wrote %db to udp\n",sent);
-#endif
+         debug_print("serv: wrote %db to udp\n",sent);
       } else {
          errno=EFAULT;
          die("lookup");
@@ -81,23 +150,17 @@ void tun_serv_in(int fd_udp, int fd_tun, struct tun_serv_state *state, char *buf
 
 }
 
-/*
- *
- *
- */
 void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_serv_state *state, char *buf) {
 
    struct tun_rec *nrec = init_tun_rec();
    int recvd=xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, &nrec->slen, buf, __BUFFSIZE);
 
-#ifdef __DEBUG
-   fprintf (stderr,"serv: recvd %db from udp\n", recvd);
-   //todo change dport to args->ndport
-   if (recvd == 0) fprintf(stderr,"RECVFROM UDP RETURNED 0\n");
-#endif
+   debug_print("serv: recvd %db from udp\n", recvd);
+   //TODO: change dport to args->ndport
+   if (recvd == 0) debug_print("RECVFROM UDP RETURNED 0\n");
 
    if (recvd > 4) {
-      fprintf(stderr,"frame: %2x %2x %2x %2x\n", buf[0], buf[1], buf[2], buf[3]);
+      debug_print("frame: %2x %2x %2x %2x\n", buf[0], buf[1], buf[2], buf[3]);
       struct tun_rec *rec = NULL;
       int sport           = ntohs(((struct sockaddr_in *)nrec->sa)->sin_port);
       int sent            = 0;
@@ -105,23 +168,18 @@ void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_ser
          //forward
          sent = xwrite(fd_tun, buf, recvd);
          free_tun_rec(nrec);
-      } else if (g_hash_table_size(state->sport) <= UDP_TUN_FDLIM) { //add new record to lookup tables  
+      } else if (g_hash_table_size(state->sport) <= UDP_TUN_FDLIM) { 
          sent = xwrite(fd_tun, buf, recvd);
 
+         //add new record to lookup tables  
          nrec->sport = sport;
          g_hash_table_insert(state->sport, &nrec->sport, nrec);
-
-#ifdef __DEBUG  
-         fprintf(stderr,"serv: added new entry: %d\n",sport);
-#endif
+         debug_print("serv: added new entry: %d\n", sport);
       } else {
-         errno=EUSERS; //TODO no need to exit but safer
+         errno=EUSERS; //no need to exit but safer
          die("socket()");
       }
-#ifdef __DEBUG
-         fprintf(stderr,"serv: wrote %d to tun\n",sent);   
-#endif
-   
+      debug_print("serv: wrote %d to tun\n", sent);     
    }
 }
 
@@ -170,16 +228,12 @@ void tun_serv(struct arguments *args) {
       }
    }
 
-   close(fd_udp);////TODO
+   close(fd_udp);//TODO
    free_tun_serv(state);
    free(if_name);
 }
 
-/*
- * build fd_set from fds_raw and set max_fd_raw
- * 
- */
-void build_sel(fd_set *input_set, int len, int *fds_raw, int *max_fd_raw) {
+void build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw) {
    int i = 0, max_fd = 0, fd = 0;
    FD_ZERO(input_set);
    for (;i<len;i++) {
@@ -206,9 +260,8 @@ struct tun_serv_state *init_tun_serv(struct arguments *args) {
 }
 
 void free_tun_serv(struct tun_serv_state *state) {
-   g_hash_table_destroy(state->sport); //g_hash_table_foreach_remove  
-   free(state->if_name);
-   free(state);
+   g_hash_table_destroy(state->sport); 
+   free(state->if_name);free(state);
 }
 
 struct tun_rec *init_tun_rec() {
@@ -220,4 +273,7 @@ struct tun_rec *init_tun_rec() {
    return ret;
 }
 
-void free_tun_rec(struct tun_rec *rec) { free(rec->sa);free(rec); }
+void free_tun_rec(struct tun_rec *rec) { 
+   free(rec->sa);free(rec); 
+}
+

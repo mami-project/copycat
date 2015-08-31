@@ -1,11 +1,13 @@
-/*
- * udptun.c: udp tun header
- * 
- *
- * @author k.edeline
+/**
+ * \file udptun.c
+ * \brief This contains the main() and argument parsing functions, and help messages.
+ * \author k.edeline
+ * \version 0.1
  */
 
 #include "udptun.h"
+
+/* argp variables and structs */
 
 const char *argp_program_version     = "udptun 0.1";
 const char *argp_program_bug_address = "korian.edeline@ulg.ac.be";
@@ -13,6 +15,7 @@ static char doc[]      = "forward tcp packets to/from a udp tunnel";
 static char args_doc[] = "\nSERVER mode usage: -s --udp-lport PORT --tcp-daddr ADDR -tcp-dport PORT\n"
                          "CLIENT mode usage: -c --udp-daddr ADDR --udp-dport PORT --udp-sport PORT"
                          " --tcp-saddr ADDR --tcp-sport PORT --tcp-dport PORT (--tcp-ndport PORT)";
+
 static struct argp_option options[] = { 
   {"verbose",    'v', 0,        0,  "produce verbose output" },
   {"quiet",      'q', 0,        0,  "don't produce any output" },
@@ -30,9 +33,28 @@ static struct argp_option options[] = {
     { 0 } 
 };
 
+/**
+ * \fn static error_t parse_args(int key, char *arg, struct argp_state *state)
+ * \brief Parse one argument.
+ */
 static error_t parse_args(int key, char *arg, struct argp_state *state);
+
+/**
+ * \fn static void init_args(struct arguments *args)
+ * \brief Intialize the arguments to default values.
+ */
 static void init_args(struct arguments *args);
+
+/**
+ * \fn static void print_args(struct arguments *args)
+ * \brief Print the arguments.
+ */
 static void print_args(struct arguments *args);
+
+/**
+ * \fn static int validate_args(struct arguments *args)
+ * \brief Validate the arguments.
+ */
 static int validate_args(struct arguments *args);
 
 struct argp argp = { options, parse_args, args_doc, doc, 0, 0, 0 };
@@ -55,23 +77,23 @@ error_t parse_args(int key, char *arg, struct argp_state *state) {
       case '3':
          arguments->tcp_saddr = arg;break;
       case '4':
-          arguments->udp_dport=strtol(arg, NULL, 10);
-          break;
+         arguments->udp_dport=strtol(arg, NULL, 10);
+         break;
       case '5':
-          arguments->udp_sport=strtol(arg, NULL, 10);
-          break;
+         arguments->udp_sport=strtol(arg, NULL, 10);
+         break;
       case '6':
-          arguments->udp_lport=strtol(arg, NULL, 10);
-          break;
+         arguments->udp_lport=strtol(arg, NULL, 10);
+         break;
       case '7':
-          arguments->tcp_dport=strtol(arg, NULL, 10);
-          break;
+         arguments->tcp_dport=strtol(arg, NULL, 10);
+         break;
       case '8':
-          arguments->tcp_sport=strtol(arg, NULL, 10);
-          break;
+         arguments->tcp_sport=strtol(arg, NULL, 10);
+         break;
       case 'n':
-          arguments->tcp_ndport=strtol(arg, NULL, 10);
-          break;
+         arguments->tcp_ndport=strtol(arg, NULL, 10);
+         break;
       case ARGP_KEY_ARG: 
          return 0;
       default: 
@@ -81,7 +103,6 @@ error_t parse_args(int key, char *arg, struct argp_state *state) {
 }
 
 void init_args(struct arguments *args) {
-
    args->mode       = NONE_MODE;
    args->verbose    = 0;
    args->silent     = 0;
@@ -145,33 +166,18 @@ int validate_args(struct arguments *args) {
    return 0;
 }
 
-
 int main(int argc, char *argv[]) {
-   /*
-    * cli mode: udp daddr, udp dport, udp sport, tcp lport, tcp laddr (*.1), (tcp new_port)
-    *
-    * serv mode: udp lport, tcp daddr(*.1), tcp dport (+ connection pool based on udp/tcp port)
-    *
-    * e.g.:
-    * 
-    */
-   debug_print("test\n");
-   int z=5;
-   debug_print("%d\n",z);
-   debug_print("t %s\n","zezer");
-   debug_print("\n");
-
    struct arguments args;
    init_args(&args);
    argp_parse(&argp, argc, argv, 0, 0, &args);
    validate_args(&args);
    if (args.verbose) print_args(&args);
 
-   if (args.mode == CLI_MODE) {
+   if (args.mode == CLI_MODE) 
       tun_cli(&args);
-   } else if (args.mode == SERV_MODE) {
+   else if (args.mode == SERV_MODE) 
       tun_serv(&args);
-   }
  
    return 0;
 }
+

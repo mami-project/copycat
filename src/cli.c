@@ -1,53 +1,68 @@
-/*
- * cli.c: client
- * 
- *
- * @author k.edeline
+/**
+ * \file cli.c
+ * \brief The client implementation.
+ * \author k.edeline
+ * \version 0.1
  */
 
 #include "cli.h"
 
+/**
+ * \var static volatile int loop
+ * \brief The client loop guardian.
+ */
 static volatile int loop;
 
+/**
+ * \fn static void int_handler(int sig)
+ * \brief Callback function for SIGINT catcher.
+ *
+ * \param sig Ignored
+ */ 
 static void int_handler(int sig);
-static void tun_cli_in(int fd_udp, int fd_raw, struct sockaddr_in *udp_addr, char *buf);
-static void tun_cli_out(int fd_udp, int fd_raw, char *buf);
+
+/**
+ * \fn static void tun_cli_in(int fd_udp, int fd_tun, struct sockaddr_in *udp_addr, char *buf)
+ * \brief Forward a packet in the tunnel.
+ *
+ * \param fd_udp The udp socket fd.
+ * \param fd_tun The tun interface fd.
+ * \param udp_addr The address of the udp target.
+ * \param buf The buffer.
+ */ 
+static void tun_cli_in(int fd_udp, int fd_tun, struct sockaddr_in *udp_addr, char *buf);
+
+/**
+ * \fn static void tun_cli_out(int fd_udp, int fd_tun, char *buf)
+ * \brief Forward a packet out of the tunnel.
+ *
+ * \param fd_udp The udp socket fd.
+ * \param fd_tun The tun interface fd.
+ * \param buf The buffer. 
+ */ 
+static void tun_cli_out(int fd_udp, int fd_tun, char *buf);
 
 void int_handler(int sig) { loop = 0; }
 
 void tun_cli_in(int fd_udp, int fd_tun, struct sockaddr_in *udp_addr, char *buf) {
 
       int recvd=xread(fd_tun, buf, __BUFFSIZE);
-#ifdef __DEBUG
-      //todo change dport to args->ndport
-      fprintf (stderr,"cli: recvd %db from tun\n", recvd);
-#endif
+      debug_print("cli: recvd %db from tun\n", recvd);
 
       if (recvd > 0) { 
          int sent = xsendto(fd_udp, (struct sockaddr *)udp_addr, buf, recvd);
-#ifdef __DEBUG
-         fprintf(stderr,"cli: wrote %db to udp\n",sent);
-#endif
+         debug_print("cli: wrote %db to udp\n",sent);
       }
 }
 
 void tun_cli_out(int fd_udp, int fd_tun, char *buf) {
 
       int recvd=xrecv(fd_udp, buf, __BUFFSIZE);
-#ifdef __DEBUG
-      //todo change dport to args->ndport
-       fprintf (stderr,"cli: recvd %db from udp\n", recvd);
-      if (recvd > 32) {
-         fprintf(stderr,"ports %d %d\n",ntohs( *((uint16_t *)buf+24) ),
-                                        ntohs( *((uint16_t *)buf+26) ));
-      }
-#endif
+      debug_print("cli: recvd %db from udp\n", recvd);
 
       if (recvd > 0) { 
          int sent = xwrite(fd_tun, buf, recvd);
-#ifdef __DEBUG
-         fprintf(stderr,"cli: wrote %db to tun\n",sent);
-#endif
+         debug_print("cli: wrote %db to tun\n",sent);
       }
 }
 
@@ -77,7 +92,7 @@ void tun_cli(struct arguments *args) {
    char buf[__BUFFSIZE];
 
    while (loop) {
-      //select list
+      //build select list
       FD_ZERO(&input_set);
       FD_SET(fd_udp, &input_set);FD_SET(tun_fd, &input_set);
 
@@ -96,6 +111,5 @@ void tun_cli(struct arguments *args) {
 
    close(fd_udp);
    free(if_name);free((struct bpf_program *)bpf);
-
-   return;
 }
+
