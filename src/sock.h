@@ -27,20 +27,34 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
+#include <sys/stat.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
 #include <linux/filter.h>
+#include <linux/errqueue.h>
 #include <netinet/in.h>
+#include <netinet/ip_icmp.h>
 
 #include "debug.h"
-#include "tunalloc.h"
+#include "icmp.h"
+#include "udptun.h"
+#include "cli.h"
+#include "state.h"
 
 /**
- * \def __BUFFSIZE
- * \brief The size of the client and server buffers.
- */
-#define __BUFFSIZE 8192
-
+ * \fn int tcp_cli(char *addr, int port, char *filename)
+ * \brief connect a TCP socket to addr:port and write
+ * received data to filename.
+ *
+ * \param addr The remote address to connect to.
+ * \param port The remote port to connect to.
+ * \param filename The file to write to.
+ * \return exit status
+ */ 
+int tcp_cli(char *daddr, int dport, char *saddr, int sport, char* dev, char *filename);
+void *cli_thread(void *st);
+void *serv_thread(void *st);
+int tcp_serv(char *daddr, int dport, char* dev, struct tun_state *state);
 /**
  * \fn int udp_sock(int port)
  * \brief Create and bind a UDP DGRAM socket.
@@ -114,6 +128,8 @@ int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen);
  * \return The amount of bytes received.
  */ 
 int xrecv(int fd, void *buf, size_t buflen);
+// xrecv and send SIGTERM signal to p if recv raised an error
+int xrecvnkill(int fd, void *buf, size_t buflen, pid_t p);
 
 /**
  * \fn int xrecvfrom(int fd, struct sockaddr *sa, unsigned int *salen, void *buf, size_t buflen)
@@ -128,6 +144,20 @@ int xrecv(int fd, void *buf, size_t buflen);
  */ 
 int xrecvfrom(int fd, struct sockaddr *sa, unsigned int *salen, void *buf, size_t buflen);
 
+/**
+ * \fn int xrecverr(int fd, void *buf, size_t buflen)
+ * \brief Receive an error msg from MSG_ERRQUEUE and print a description 
+ *        of it via the debug macro.
+ *
+ * \param fd The socket fd
+ * \param buf The buffer to write err msg to
+ * \param buflen The len of buf 
+ * 
+ * \return 0 if an error msg was received, 
+ *         a negative value if an error happened
+ */ 
+int xrecverr(int fd, void *buf, size_t buflen);
+int xfwerr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *state);
 /**
  * \fn int xread(int fd, char *buf, int buflen)
  * \brief read syscall wrapper that dies with failure.
@@ -150,19 +180,7 @@ int xread(int fd, char *buf, int buflen);
  */ 
 int xwrite(int fd, char *buf, int buflen);
 
-/**
- * \fn char *create_tun(const char *ip, const char *prefix, int nat, int *tun_fds)
- * \brief Allocate and set up a tun interface.
- *
- *    This function is specific to planetlab.
- *
- * \param ip The address of the interface.
- * \param prefix The prefix of the virtual network.
- * \param nat NAT the tun interface or not.
- * \param tun_fds A pointer to an int to be set to the tun interface fd.
- * \return A pointer (malloc) to the interface name.
- */ 
-char *create_tun(const char *ip, const char *prefix, int nat, int *tun_fds);
+int xfwrite(FILE *fp, char *buf, int size, int nmemb);
 
 /**
  * \fn struct sockaddr_in *get_addr(const char *addr, int port)

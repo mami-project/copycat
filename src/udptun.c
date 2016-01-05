@@ -5,6 +5,7 @@
  * \version 0.1
  */
 
+#include <pthread.h>
 #include "udptun.h"
 
 /* argp variables and structs */
@@ -12,15 +13,24 @@
 const char *argp_program_version     = "udptun 0.1";
 const char *argp_program_bug_address = "korian.edeline@ulg.ac.be";
 static char doc[]      = "forward tcp packets to/from a udp tunnel";
-static char args_doc[] = "\nSERVER mode usage: -s --udp-lport PORT --tcp-daddr ADDR -tcp-dport PORT\n"
-                         "CLIENT mode usage: -c --udp-daddr ADDR --udp-dport PORT --udp-sport PORT"
-                         " --tcp-saddr ADDR --tcp-sport PORT --tcp-dport PORT (--tcp-ndport PORT)";
+static char args_doc[] = "\nSERVER mode usage: -s (-p) (-f) --udp-lport PORT --tcp-daddr ADDR -tcp-dport PORT\n"
+                         "CLIENT mode usage: -c (-p) (-f) --udp-daddr ADDR --udp-dport PORT --udp-sport PORT"
+                         " --tcp-saddr ADDR --tcp-sport PORT --tcp-dport PORT";
 
 static struct argp_option options[] = { 
-  {"verbose",    'v', 0,        0,  "produce verbose output" },
-  {"quiet",      'q', 0,        0,  "don't produce any output" },
-  {"client",     'c', 0,        0,  "client mode" },
-  {"server",     's', 0,        0,  "server mode" },
+  {"verbose",    'v', 0,        0,  "Produce verbose output" },
+  {"quiet",      'q', 0,        0,  "Don't produce any output" },
+
+  {"client",     'c', 0,        0,  "Client mode" },
+  {"server",     's', 0,        0,  "Server mode" },
+  {"fullmesh",   'f', 0,        0,  "Fullmesh mode (both client and server)" },
+
+  {"planetlab",  'p', 0,        0,  "PlanetLab mode" },
+  {"freebsd",    'b', 0,        0,  "FREEBSD mode" },
+  {"timeout",    't', "TIME",   0,  "Inactivity timeout" },
+  {"dest-file",  'd',  "FILE",   0,  "Destination file"},
+  {"config",     'o',  "FILE",   0,  "Configuration file"},
+
   {"udp-daddr",  '1', "STRING", 0, "udp dst addr"},
   {"tcp-daddr",  '2', "STRING", 0, "tcp dst addr"},
   {"tcp-saddr",  '3', "STRING", 0, "tcp src addr"}, //
@@ -29,8 +39,7 @@ static struct argp_option options[] = {
   {"udp-lport",  '6', "PORT",   0, "udp listen port"},
   {"tcp-dport",  '7', "PORT",   0, "tcp dst port"},
   {"tcp-sport",  '8', "PORT",   0, "tcp src port"}, //
-  {"tcp-ndport", 'n', "PORT",   0, "tcp new dst port, use this if you are going to run both cli and serv on the same host"},
-    { 0 } 
+    { 0, 0, 0, 0, 0 } 
 };
 
 /**
@@ -70,6 +79,19 @@ error_t parse_args(int key, char *arg, struct argp_state *state) {
          arguments->mode = CLI_MODE;break;
       case 's': 
          arguments->mode = SERV_MODE;break;
+      case 'f':
+         arguments->mode = FULLMESH_MODE; break;
+      case 'p':
+         arguments->planetlab = 1; break;
+      case 'b':
+         arguments->freebsd = 1; break;
+      case 't':
+         arguments->inactivity_timeout = strtol(arg, NULL, 10);
+         break;
+      case 'd':
+         arguments->dest_file = arg;break;
+      case 'o':
+         arguments->config_file = arg;break;
       case '1':
          arguments->udp_daddr = arg;break;
       case '2':
@@ -77,22 +99,19 @@ error_t parse_args(int key, char *arg, struct argp_state *state) {
       case '3':
          arguments->tcp_saddr = arg;break;
       case '4':
-         arguments->udp_dport=strtol(arg, NULL, 10);
+         arguments->udp_dport = strtol(arg, NULL, 10);
          break;
       case '5':
-         arguments->udp_sport=strtol(arg, NULL, 10);
+         arguments->udp_sport = strtol(arg, NULL, 10);
          break;
       case '6':
-         arguments->udp_lport=strtol(arg, NULL, 10);
+         arguments->udp_lport = strtol(arg, NULL, 10);
          break;
       case '7':
-         arguments->tcp_dport=strtol(arg, NULL, 10);
+         arguments->tcp_dport = strtol(arg, NULL, 10);
          break;
       case '8':
-         arguments->tcp_sport=strtol(arg, NULL, 10);
-         break;
-      case 'n':
-         arguments->tcp_ndport=strtol(arg, NULL, 10);
+         arguments->tcp_sport = strtol(arg, NULL, 10);
          break;
       case ARGP_KEY_ARG: 
          return 0;
@@ -103,18 +122,22 @@ error_t parse_args(int key, char *arg, struct argp_state *state) {
 }
 
 void init_args(struct arguments *args) {
-   args->mode       = NONE_MODE;
-   args->verbose    = 0;
-   args->silent     = 0;
-   args->udp_daddr  = NULL;
-   args->tcp_daddr  = NULL;
-   args->tcp_saddr  = NULL;
-   args->udp_dport  = 0;
-   args->udp_sport  = 0;
-   args->udp_lport  = 0;
-   args->tcp_dport  = 0;
-   args->tcp_sport  = 0;
-   args->tcp_ndport = 0;
+   args->mode        = NONE_MODE;
+   args->verbose     = 0;
+   args->silent      = 0;
+   args->planetlab   = 0;
+   args->freebsd     = 0;
+   args->config_file = NULL;
+   args->dest_file   = NULL;
+   args->udp_daddr   = NULL;
+   args->tcp_daddr   = NULL;
+   args->tcp_saddr   = NULL;
+   args->udp_dport   = 0;
+   args->udp_sport   = 0;
+   args->udp_lport   = 0;
+   args->tcp_dport   = 0;
+   args->tcp_sport   = 0;
+   args->inactivity_timeout = 0;
 }
 
 void print_args(struct arguments *args) {
@@ -128,10 +151,21 @@ void print_args(struct arguments *args) {
          fprintf(stderr,"\ttcp src addr:%s\n",args->tcp_saddr);
          fprintf(stderr,"\ttcp src port:%d\n",args->tcp_sport);
          fprintf(stderr,"\ttcp dst port:%d\n",args->tcp_dport);
-         fprintf(stderr,"\ttcp new dst port:%d\n",args->tcp_ndport);
          break;
       case SERV_MODE:
          fprintf(stderr, "server mode:\n");
+         fprintf(stderr,"\tudp listen port:%d\n",args->udp_lport);
+         fprintf(stderr,"\ttcp dst addr:%s\n",args->tcp_daddr);
+         fprintf(stderr,"\ttcp dst port:%d\n",args->tcp_dport);
+         break;
+      case FULLMESH_MODE:
+         fprintf(stderr, "fullmesh mode:\n");
+         fprintf(stderr,"\tudp dst addr:%s\n",args->udp_daddr);
+         fprintf(stderr,"\tudp dst port:%d\n",args->udp_dport);
+         fprintf(stderr,"\tudp src port:%d\n",args->udp_sport);
+         fprintf(stderr,"\ttcp src addr:%s\n",args->tcp_saddr);
+         fprintf(stderr,"\ttcp src port:%d\n",args->tcp_sport);
+         fprintf(stderr,"\ttcp dst port:%d\n",args->tcp_dport);
          fprintf(stderr,"\tudp listen port:%d\n",args->udp_lport);
          fprintf(stderr,"\ttcp dst addr:%s\n",args->tcp_daddr);
          fprintf(stderr,"\ttcp dst port:%d\n",args->tcp_dport);
@@ -144,19 +178,28 @@ void print_args(struct arguments *args) {
 
 int validate_args(struct arguments *args) {
    switch (args->mode) {
-      case CLI_MODE:
+      case CLI_MODE://TODO
+         break;
          if (!args->udp_daddr || !args->udp_dport || !args->udp_sport ||
-             !args->tcp_saddr || !args->tcp_sport || !args->tcp_dport ||
-             !args->tcp_ndport) {
+             !args->tcp_saddr || !args->tcp_sport || !args->tcp_dport) {
             errno=EINVAL;
             die("client args missing");
          } 
          break;
-      case SERV_MODE:
+      case SERV_MODE://TODO
+         break;
          if (!args->udp_lport || !args->tcp_daddr || !args->tcp_dport) {
             errno=EINVAL;
             die("server args missing");
          }
+         break;
+      case FULLMESH_MODE:
+         break;
+         if (!args->udp_daddr || !args->udp_dport || !args->udp_sport ||
+             !args->tcp_saddr || !args->tcp_sport || !args->tcp_dport) {
+            errno=EINVAL;
+            die("fullmesh args missing");
+         } 
          break;
       default:
          errno=EINVAL;
@@ -177,6 +220,8 @@ int main(int argc, char *argv[]) {
       tun_cli(&args);
    else if (args.mode == SERV_MODE) 
       tun_serv(&args);
+   else if (args.mode == FULLMESH_MODE) 
+      tun_peer(&args);
  
    return 0;
 }

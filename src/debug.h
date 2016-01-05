@@ -28,8 +28,16 @@
 #define debug_print(fmt, ...) fprintf(stderr, "%s:%d:%s(): " fmt, __FILE__, \
                                 __LINE__, __func__, ##__VA_ARGS__)
 
+/**
+ * \def debug_perror()
+ * \brief Debugging stderr errno printing macro
+ *    Will only print if DEBUG is defined. Otherwise, will be removed.
+ */
+#define debug_perror() perror(NULL)
+
 #else
 #define debug_print(fmt, ...) 
+#define debug_perror()
 #endif /* DEBUG */
 
 #endif  /* DEBUG_H */

@@ -14,10 +14,6 @@
 
 @SET_MAKE@
 
-# Copyright (C) 2006-2013 Free Software Foundation, Inc.
-# This Makefile.am is free software; the Free Software Foundation
-# gives unlimited permission to copy, distribute and modify it.
-
 VPATH = @srcdir@
 am__is_gnu_make = test -n '$(MAKEFILE_LIST)' && test -n '$(MAKELEVEL)'
 am__make_running_with_option = \
@@ -84,7 +80,8 @@ subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
 	$(srcdir)/config.h.in $(top_srcdir)/doc/Doxyfile.in \
-	$(dist_doc_DATA) README compile depcomp install-sh missing
+	$(dist_doc_DATA) ChangeLog NEWS README compile depcomp \
+	install-sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \

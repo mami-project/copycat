@@ -14,10 +14,6 @@
 
 @SET_MAKE@
 
-# Copyright (C) 2006-2013 Free Software Foundation, Inc.
-# This Makefile.am is free software; the Free Software Foundation
-# gives unlimited permission to copy, distribute and modify it.
-
 VPATH = @srcdir@
 am__is_gnu_make = test -n '$(MAKEFILE_LIST)' && test -n '$(MAKELEVEL)'
 am__make_running_with_option = \
@@ -96,7 +92,9 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_udptun_OBJECTS = udptun-udptun.$(OBJEXT) udptun-sock.$(OBJEXT) \
 	udptun-cli.$(OBJEXT) udptun-serv.$(OBJEXT) \
-	udptun-tunalloc.$(OBJEXT)
+	udptun-tunalloc.$(OBJEXT) udptun-icmp.$(OBJEXT) \
+	udptun-peer.$(OBJEXT) udptun-state.$(OBJEXT) \
+	udptun-destruct.$(OBJEXT)
 udptun_OBJECTS = $(am_udptun_OBJECTS)
 udptun_LDADD = $(LDADD)
 udptun_LINK = $(CCLD) $(udptun_CFLAGS) $(CFLAGS) $(udptun_LDFLAGS) \
@@ -255,7 +253,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-udptun_SOURCES = udptun.c sock.c cli.c serv.c tunalloc.c debug.h udptun.h sock.h cli.h serv.h tunalloc.h
+udptun_SOURCES = udptun.c sock.c cli.c serv.c tunalloc.c icmp.c peer.c state.c destruct.c debug.h udptun.h sock.h cli.h serv.h tunalloc.h icmp.h peer.h state.h destruct.h
 udptun_CFLAGS = ${GLIB_CFLAGS} \
                 ${GLIB2_CFLAGS}
 
@@ -350,8 +348,12 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-cli.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-destruct.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-icmp.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-peer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-serv.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-sock.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-state.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-tunalloc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-udptun.Po@am__quote@
 
@@ -438,6 +440,62 @@ udptun-tunalloc.obj: tunalloc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tunalloc.c' object='udptun-tunalloc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-tunalloc.obj `if test -f 'tunalloc.c'; then $(CYGPATH_W) 'tunalloc.c'; else $(CYGPATH_W) '$(srcdir)/tunalloc.c'; fi`
+
+udptun-icmp.o: icmp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-icmp.o -MD -MP -MF $(DEPDIR)/udptun-icmp.Tpo -c -o udptun-icmp.o `test -f 'icmp.c' || echo '$(srcdir)/'`icmp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-icmp.Tpo $(DEPDIR)/udptun-icmp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='icmp.c' object='udptun-icmp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-icmp.o `test -f 'icmp.c' || echo '$(srcdir)/'`icmp.c
+
+udptun-icmp.obj: icmp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-icmp.obj -MD -MP -MF $(DEPDIR)/udptun-icmp.Tpo -c -o udptun-icmp.obj `if test -f 'icmp.c'; then $(CYGPATH_W) 'icmp.c'; else $(CYGPATH_W) '$(srcdir)/icmp.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-icmp.Tpo $(DEPDIR)/udptun-icmp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='icmp.c' object='udptun-icmp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-icmp.obj `if test -f 'icmp.c'; then $(CYGPATH_W) 'icmp.c'; else $(CYGPATH_W) '$(srcdir)/icmp.c'; fi`
+
+udptun-peer.o: peer.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-peer.o -MD -MP -MF $(DEPDIR)/udptun-peer.Tpo -c -o udptun-peer.o `test -f 'peer.c' || echo '$(srcdir)/'`peer.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-peer.Tpo $(DEPDIR)/udptun-peer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='peer.c' object='udptun-peer.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-peer.o `test -f 'peer.c' || echo '$(srcdir)/'`peer.c
+
+udptun-peer.obj: peer.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-peer.obj -MD -MP -MF $(DEPDIR)/udptun-peer.Tpo -c -o udptun-peer.obj `if test -f 'peer.c'; then $(CYGPATH_W) 'peer.c'; else $(CYGPATH_W) '$(srcdir)/peer.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-peer.Tpo $(DEPDIR)/udptun-peer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='peer.c' object='udptun-peer.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-peer.obj `if test -f 'peer.c'; then $(CYGPATH_W) 'peer.c'; else $(CYGPATH_W) '$(srcdir)/peer.c'; fi`
+
+udptun-state.o: state.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-state.o -MD -MP -MF $(DEPDIR)/udptun-state.Tpo -c -o udptun-state.o `test -f 'state.c' || echo '$(srcdir)/'`state.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-state.Tpo $(DEPDIR)/udptun-state.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='state.c' object='udptun-state.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-state.o `test -f 'state.c' || echo '$(srcdir)/'`state.c
+
+udptun-state.obj: state.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-state.obj -MD -MP -MF $(DEPDIR)/udptun-state.Tpo -c -o udptun-state.obj `if test -f 'state.c'; then $(CYGPATH_W) 'state.c'; else $(CYGPATH_W) '$(srcdir)/state.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-state.Tpo $(DEPDIR)/udptun-state.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='state.c' object='udptun-state.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-state.obj `if test -f 'state.c'; then $(CYGPATH_W) 'state.c'; else $(CYGPATH_W) '$(srcdir)/state.c'; fi`
+
+udptun-destruct.o: destruct.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-destruct.o -MD -MP -MF $(DEPDIR)/udptun-destruct.Tpo -c -o udptun-destruct.o `test -f 'destruct.c' || echo '$(srcdir)/'`destruct.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-destruct.Tpo $(DEPDIR)/udptun-destruct.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='destruct.c' object='udptun-destruct.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-destruct.o `test -f 'destruct.c' || echo '$(srcdir)/'`destruct.c
+
+udptun-destruct.obj: destruct.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-destruct.obj -MD -MP -MF $(DEPDIR)/udptun-destruct.Tpo -c -o udptun-destruct.obj `if test -f 'destruct.c'; then $(CYGPATH_W) 'destruct.c'; else $(CYGPATH_W) '$(srcdir)/destruct.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-destruct.Tpo $(DEPDIR)/udptun-destruct.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='destruct.c' object='udptun-destruct.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-destruct.obj `if test -f 'destruct.c'; then $(CYGPATH_W) 'destruct.c'; else $(CYGPATH_W) '$(srcdir)/destruct.c'; fi`
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -643,7 +701,6 @@ uninstall-am: uninstall-binPROGRAMS
 	ps ps-am tags tags-am uninstall uninstall-am \
 	uninstall-binPROGRAMS
 
-#`pkg-config --cflags glib-2.0` && `pkg-config --libs glib-2.0`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
