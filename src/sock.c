@@ -296,7 +296,8 @@ void *cli_thread(void *st) {
       tcp_connect(state, state->cli_private[i]->sa, UDPTUN_CLI_FILE);
    }
 
-   cli_shutdown(0); //TODO per-mode shutdown
+   /* Shutdown client, not peer */
+   cli_shutdown(0);
    return 0;
 }
 

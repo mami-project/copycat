@@ -19,7 +19,7 @@
 #include <sys/types.h>
 #include <signal.h>
 
-/** TODO: config file
+/** 
  * \def __BUFFSIZE
  * \brief The size of the client and server buffers.
  */

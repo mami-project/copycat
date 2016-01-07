@@ -178,7 +178,7 @@ void print_args(struct arguments *args) {
 
 int validate_args(struct arguments *args) {
    switch (args->mode) {
-      case CLI_MODE://TODO
+      case CLI_MODE://TODO all args or cfg file
          break;
          if (!args->udp_daddr || !args->udp_dport || !args->udp_sport ||
              !args->tcp_saddr || !args->tcp_sport || !args->tcp_dport) {

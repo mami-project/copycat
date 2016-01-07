@@ -24,7 +24,7 @@ int tun_set_queue(int fd, int enable);
 int tun_alloc_pl(int iftype, char *if_name);
 
 /**
- * \fn int tun_allocl(int iftype, char *if_name)
+ * \fn int tun_alloc(int iftype, char *if_name)
  * \brief Allocate a tun interface.
  *
  * \param iftype The interface type (IFFTUN or IFFTAP)
