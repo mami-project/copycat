@@ -4,12 +4,20 @@
  * \author k.edeline
  * \version 0.1
  */
-
-#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <signal.h>
 
 #include "cli.h"
+#include "debug.h"
 #include "state.h"
 #include "destruct.h"
+#include "thread.h"
+#include "sock.h"
+#include "tunalloc.h"
 
 /**
  * \var static volatile int loop
@@ -115,10 +123,8 @@ void tun_cli_aux(struct arguments *args) {
    sleep(state->initial_sleep);
 
    /* run client */
-   pthread_t thread_id;
-   if (pthread_create(&thread_id, NULL, cli_thread, (void*) state) < 0) 
-      die("pthread_create");
-   set_pthread(thread_id);
+   debug_print("running cli ...\n");    
+   xthread_create(cli_thread, (void*) state);
 
    /* init select loop */
    fd_set input_set;
@@ -133,15 +139,9 @@ void tun_cli_aux(struct arguments *args) {
       FD_SET(fd_udp, &input_set);
       FD_SET(fd_tun, &input_set);
 
-      if (state->inactivity_timeout != -1) {
-         tv.tv_sec  = state->inactivity_timeout;
-         tv.tv_usec = 0;
-         sel = select(fd_max+1, &input_set, NULL, NULL, &tv);
-      } else 
-         sel = select(fd_max+1, &input_set, NULL, NULL, NULL);
+      sel = xselect(&input_set, fd_max, &tv, state->inactivity_timeout);
 
-      if (sel < 0) die("select");
-      else if (sel == 0) {
+      if (sel == 0) {
          debug_print("timeout\n"); 
          break;
       } else if (sel > 0) {
@@ -194,10 +194,8 @@ void tun_cli_pl(struct arguments *args) {
       FD_ZERO(&input_set);
       FD_SET(fd_udp, &input_set);FD_SET(tun_fd, &input_set);
 
-      tv.tv_sec  = state->inactivity_timeout; 
-      tv.tv_usec = 0;
+      sel = xselect(&input_set, fd_max, &tv, state->inactivity_timeout);
 
-      sel = select(fd_max+1, &input_set, NULL, NULL, &tv);
       if (sel < 0) die("select");
       else if (sel > 0) {
          if (FD_ISSET(fd_tun, &input_set))      

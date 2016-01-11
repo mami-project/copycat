@@ -310,7 +310,7 @@ void *cli_thread(void *st) {
    cli_shutdown(0);
    return 0;
 }
-
+//TODO:net.c
 int udp_sock(int port) {
    int s;
    struct sockaddr_in sin;
@@ -392,6 +392,19 @@ struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dpo
       die("Couldn't parse filter %s: %s\n");
 
    return (struct sock_fprog *)fp;
+}
+
+int xselect(fd_set *input_set, int fd_max, struct timeval *tv, int timeout) {
+   int sel;
+   if (timeout != -1) {
+      tv->tv_sec  = timeout;
+      tv->tv_usec = 0;
+      sel = select(fd_max+1, input_set, NULL, NULL, tv);
+   } else {
+      sel = select(fd_max+1, input_set, NULL, NULL, NULL);
+   }
+   if (sel < 0) die("select");
+   return sel;
 }
 
 int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen) {
@@ -556,7 +569,6 @@ int xfwrite(FILE *fp, char *buf, int size, int nmemb) {
       die("fwrite");
    return wsize;
 }
-
 
 /* calcsum - used to calculate IP and ICMP header checksums using
  * one's compliment of the one's compliment sum of 16 bit words of the header

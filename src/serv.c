@@ -5,9 +5,20 @@
  * \version 0.1
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <signal.h>
+
 #include "serv.h"
+#include "debug.h"
 #include "state.h"
 #include "destruct.h"
+#include "sock.h"
+#include "tunalloc.h"
+
 
 /**
  * \var static volatile int loop
@@ -145,10 +156,7 @@ void tun_serv_aux(struct arguments *args) {
 
    /* run server */
    debug_print("running serv ...\n");  
-   pthread_t thread_id;
-   if (pthread_create(&thread_id, NULL, serv_thread, (void*) state) < 0) 
-      die("pthread_create serv_thread");
-   set_pthread(thread_id);
+   xthread_create(serv_thread, (void*) state);
 
    /* init select loop */
    fd_set input_set;
@@ -163,16 +171,10 @@ void tun_serv_aux(struct arguments *args) {
       FD_ZERO(&input_set);
       FD_SET(fd_udp, &input_set);
       FD_SET(fd_tun, &input_set);
-      //TODO wrap up xselect  
-      if (state->inactivity_timeout != -1) {
-         tv.tv_sec  = state->inactivity_timeout;
-         tv.tv_usec = 0;
-         sel = select(fd_max+1, &input_set, NULL, NULL, &tv);
-      } else 
-         sel = select(fd_max+1, &input_set, NULL, NULL, NULL);
+  
+      sel = xselect(&input_set, fd_max, &tv, state->inactivity_timeout);
 
-      if (sel < 0) die("select");
-      else if (sel == 0) {
+      if (sel == 0) {
          debug_print("timeout\n"); 
          break;
       } else if (sel > 0) {
@@ -208,21 +210,18 @@ void tun_serv_pl(struct arguments *args) {
    fd_set input_set;
    struct timeval tv;
    char buf[__BUFFSIZE];
-
    loop=1;
    signal(SIGINT, serv_shutdown);
    fd_max=max(fd_tun,fd_udp);
+
    while (loop) {
       //build select args
       FD_ZERO(&input_set);
       FD_SET(fd_udp, &input_set);FD_SET(fd_tun, &input_set);
 
-      tv.tv_sec  = 0; 
-      tv.tv_usec = 0;
+      sel = xselect(&input_set, fd_max, &tv, 0);
 
-      sel = select(fd_max+1, &input_set, NULL, NULL, &tv);
-      if (sel < 0) die("select");
-      else if (sel > 0) {
+      if (sel > 0) {
          if (FD_ISSET(fd_udp, &input_set)) {
             tun_serv_out(fd_udp, fd_tun, args, state, buf);
          }
@@ -239,7 +238,7 @@ void tun_serv_pl(struct arguments *args) {
 
 void build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw) {
    int i = 0, max_fd = 0, fd = 0;
-   FD_ZERO(input_set); //TODO move thus to sock
+   FD_ZERO(input_set); //TODO move this to sock
    for (;i<len;i++) {
       fd = fds_raw[i];
       if (fd) {

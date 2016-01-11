@@ -130,6 +130,8 @@ int xrecv(int fd, void *buf, size_t buflen);
 // xrecv and send SIGTERM signal to p if recv raised an error
 int xrecvnkill(int fd, void *buf, size_t buflen, pid_t p);
 
+int xselect(fd_set *input_set, int fd_max, struct timeval *tv, int timeout);
+
 /**
  * \fn int xrecvfrom(int fd, struct sockaddr *sa, unsigned int *salen, void *buf, size_t buflen)
  * \brief recvfrom syscall wrapper that dies with failure.

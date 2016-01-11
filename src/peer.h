@@ -8,19 +8,7 @@
 #ifndef _UDPTUN_PEER_H
 #define _UDPTUN_PEER_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <signal.h>
-#include <glib.h>
-
-#include "debug.h"
 #include "udptun.h"
-#include "sock.h"
-#include "serv.h"
-#include "tunalloc.h"
 
 /**
  * \fn void tun_peer(struct arguments *args)
