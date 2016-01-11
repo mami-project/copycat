@@ -5,7 +5,7 @@ TCP tunneling over UDP
 
 - src/udptun: binary executable
 - udptun.cfg: configuration file
-- destination.txt: destination file
+- dest.txt: destination file
 
 # Standard & Libs
 - c99 or gnu99
