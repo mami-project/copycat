@@ -29,7 +29,7 @@ struct tun_rec {
  */
 struct tun_state {
    /* From command-line arguments  */
-   struct arguments *args;
+   struct arguments *args;       /*!< The arguments */
 
    /* From destination file */
    GHashTable      *serv;        /*!<  Source port to public address lookup table. */
@@ -40,9 +40,9 @@ struct tun_state {
    //char            *if_name;  /*!<  The tun interface name. TODO: wished if in arg and final if in state*/
 
    /* Fields defined in cfg file */
-   char    *private_addr;
-   char    *public_addr;
-   uint16_t port; /*!< The UNIQUE per-peer port number */
+   char    *private_addr; /*!< The private ip address */
+   char    *public_addr;  /*!< The public ip address */
+   uint16_t port;         /*!< The UNIQUE per-peer port number */
 
    uint16_t udp_port; /*!<  The udp listen port */
    uint16_t tcp_port; /*!<  The tcp listen port */

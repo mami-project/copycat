@@ -43,15 +43,6 @@ struct arguments {
    uint8_t planetlab;    /*!<  PlanetLab mode */
    uint8_t freebsd;      /*!<  FREEBSD mode */
 
-   char *udp_daddr;  /*!<  The UDP destination address. */
-   char *tcp_daddr;  /*!< The TCP destination address. */
-   char *tcp_saddr;  /*!<  The TCP source address. */
-   uint16_t udp_dport;  /*!<  The UDP destination port. */
-   uint16_t udp_sport;  /*!<   The UDP source port. */
-   uint16_t udp_lport;  /*!<  The UDP listen port. */
-   uint16_t tcp_dport;  /*!<  The TCP destination port. */
-   uint16_t tcp_sport;  /*!<  The TCP source port. */
-
    char *config_file;   /*!< The destination file  */
    char *dest_file;  /*!< The destination file  */
    char *if_name;    /*!< The tun interface name */

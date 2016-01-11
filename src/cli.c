@@ -160,7 +160,6 @@ void tun_cli_aux(struct arguments *args) {
 void tun_cli_fbsd(struct arguments *args) {
    // init tun itf
    int fd_tun     = 0;
-   //char *if_name = create_tun(args->tcp_saddr,NULL, &fd_tun);
 
 }
 
@@ -174,11 +173,11 @@ void tun_cli_pl(struct arguments *args) {
    const char *prefix = "24";
    int tun_fd = 0;
    struct tun_state *state = init_tun_state(args);
-   if_name  = create_tun_pl(args->tcp_saddr, prefix, 0, &tun_fd);
+   if_name  = create_tun_pl(state->private_addr, prefix, 0, &tun_fd);
    //udp sock & dst sockaddr
 
-   fd_udp   = udp_sock(args->udp_sport);
-   udp_addr = get_addr(args->udp_daddr, args->udp_dport);
+   fd_udp   = udp_sock(state->port);
+   udp_addr = get_addr(state->public_addr, state->udp_port);
 
 
    loop = 1;
