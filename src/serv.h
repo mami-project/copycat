@@ -29,13 +29,5 @@
  */ 
 void tun_serv(struct arguments *args);
 
-/**
- * \fn static void serv_shutdown(int sig)
- * \brief Callback function for SIGINT catcher.
- *
- * \param sig Ignored
- */ 
-void serv_shutdown(int sig);
-
 #endif
 

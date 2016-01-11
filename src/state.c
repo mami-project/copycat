@@ -50,7 +50,7 @@ int parse_cfg_file(struct tun_state *state) {
             state->port = strtol(val, NULL, 10);
          else if (!strcmp(key, "private-address")) 
             state->private_addr = strdup(val);
-         else if (!strcmp(key, "inactivity_timeout")) 
+         else if (!strcmp(key, "inactivity-timeout")) 
             state->inactivity_timeout = strtol(val, NULL, 10);
          else if (!strcmp(key, "tcp-send-timeout")) 
             state->tcp_snd_timeout = strtol(val, NULL, 10);
@@ -66,7 +66,12 @@ int parse_cfg_file(struct tun_state *state) {
             state->backlog_size = strtol(val, NULL, 10);
          else if (!strcmp(key, "fd-lim")) 
             state->fd_lim = strtol(val, NULL, 10);
-         
+         else if (!strcmp(key, "tcp-max-segment-size")) 
+            state->max_segment_size = strtol(val, NULL, 10);
+         else if (!strcmp(key, "initial-sleep")) 
+            state->initial_sleep = strtol(val, NULL, 10);
+      
+         /* NOTE: add cfg parameters here */
       } 
       /* dump rest of line */ 
       do {
@@ -98,10 +103,8 @@ int parse_dest_file(struct arguments *args, struct tun_state *state) {
       nrec->sa    = (struct sockaddr *)get_addr(public, state->udp_port);
       nrec->sport = sport;  
       nrec->priv_addr = inet_addr(private);
-      if (!g_hash_table_insert(state->cli, &nrec->priv_addr, nrec)) {
-         errno=EINVAL;//keys are not unique
-         return -1;  
-      }
+
+      g_hash_table_insert(state->cli, &nrec->priv_addr, nrec);
       debug_print("%s:%d\n", public, sport);
       count++;
    }   
@@ -123,36 +126,33 @@ int parse_dest_file(struct arguments *args, struct tun_state *state) {
 }
 
 struct tun_state *init_tun_state(struct arguments *args) {
-   struct tun_state *state = malloc(sizeof(struct tun_state));
-   memset(state, 0, sizeof(struct tun_state));
+   struct tun_state *state = calloc(1, sizeof(struct tun_state));
+
    state->args = args;   
    if (parse_cfg_file(state) < 0)
       die("configuration file");
 
-   switch (args->mode) {
-      case FULLMESH_MODE:
-         state->cli  = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, (GDestroyNotify) free_tun_rec);
-         if (parse_dest_file(args, state) < 0)
-            die("destination file");
-      case SERV_MODE:
-         state->serv = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, (GDestroyNotify) free_tun_rec);
-      case CLI_MODE:
-      default:
-         break;
+   /* create htables */
+   if (args->mode == SERV_MODE || args->mode == FULLMESH_MODE) {
+      state->serv = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, 
+                                          (GDestroyNotify) free_tun_rec);
+   }
+   if (args->mode == CLI_MODE || args->mode == FULLMESH_MODE) {
+      state->cli  = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, 
+                                          (GDestroyNotify) free_tun_rec);
+      if (parse_dest_file(args, state) < 0)
+         die("destination file");
    }
 
-   /* Replace cfg value with args */
+   /* Replace cfg value with args TODO*/
    if (args->inactivity_timeout)
       state->inactivity_timeout = args->inactivity_timeout;
 
    init_destructors(state);
-   
    return state;
 }
 
 void free_tun_state(struct tun_state *state) {
-   free(state->private_addr);
-   //free(state->public_addr);
    if (state->serv)
       g_hash_table_destroy(state->serv); 
    if (state->cli)
@@ -163,19 +163,19 @@ void free_tun_state(struct tun_state *state) {
       free(state->cli_file);
    if (state->serv_file)
       free(state->serv_file);
-   int i;
-   for (i=0; i<state->sa_len; i++) 
-      free_tun_rec(state->cli_private[i]);
-   free(state->cli_private);
+   if (state->cli_private) {
+      int i;
+      for (i=0; i<state->sa_len; i++) 
+         free_tun_rec(state->cli_private[i]);
+      free(state->cli_private);
+   }
    free(state);
 }
 
 struct tun_rec *init_tun_rec() {
-   struct tun_rec *ret = malloc(sizeof(struct tun_rec));
+   struct tun_rec *ret = calloc(1, sizeof(struct tun_rec));
    ret->sa        = malloc(sizeof(struct sockaddr_in));
    ret->slen      = sizeof(struct sockaddr_in);
-   ret->sport     = 0;
-   ret->priv_addr = 0;
 
    return ret;
 }

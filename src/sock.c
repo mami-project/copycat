@@ -13,6 +13,9 @@
  */
 
 #include <pthread.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/tcp.h>
+
 #include "sock.h"
 #include "destruct.h"
 
@@ -32,7 +35,7 @@ static unsigned short calcsum(unsigned short *buffer, int length);
  * \return 0 if an error msg was received, 
  *         a negative value if an error happened
  */ 
-static int tcp_connect(struct tun_state *st, struct sockaddr *sa, char *filename);
+static int tcp_connect(struct tun_state *st, struct sockaddr *sa);
 
 /**
  * \fn void *serv_worker_thread(void *socket_desc)
@@ -66,7 +69,7 @@ void *serv_thread(void *st) {
 
 int tcp_serv(char *daddr, int dport, char* dev, struct tun_state *state) {
 
-   int s, sin_size;
+   int s, sin_size, tmp;
    struct sockaddr_in sin, sout;
 
    /* create a TCP socket */
@@ -75,6 +78,9 @@ int tcp_serv(char *daddr, int dport, char* dev, struct tun_state *state) {
    set_fd(s);
    if (dev && setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev))) 
       die("bind to device");
+   tmp = state->max_segment_size;
+   if (setsockopt (s, IPPROTO_TCP, TCP_MAXSEG, &tmp, sizeof(tmp)) < 0)
+      die("setsockopt maxseg");
    
    /* bind to sport */
    memset(&sout, 0, sizeof(sout));
@@ -122,7 +128,7 @@ void *serv_worker_thread(void *socket_desc) {
    /* Send loop */
    debug_print("sending data ...\n");
    while((bsize = fread(buf, sizeof(char), __BUFFSIZE, fp)) > 0) {
-      if((wsize = send(s, buf, bsize, 0)) < 0) {
+      if((wsize = send(s, buf, bsize, 0)) < 0) { // Can change buffer size for mss in old kernels
          debug_print("ERROR: send");
          break;
       }
@@ -153,7 +159,7 @@ int tcp_cli(char *daddr, int dport, char *saddr, int sport, char* dev, char *fil
 
    if (dev && setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev))) 
       die("bind to device");
-   
+    
    // bind to sport
     memset(&sout, 0, sizeof(sout));
     sout.sin_family = AF_INET;
@@ -202,13 +208,13 @@ int tcp_cli(char *daddr, int dport, char *saddr, int sport, char* dev, char *fil
    return 0;
 }
 
-int tcp_connect(struct tun_state *st, struct sockaddr *sa, char *filename) {
+int tcp_connect(struct tun_state *st, struct sockaddr *sa) {
 
    struct tun_state *state = st;
    struct arguments *args = state->args;
    struct sockaddr_in sout;
    char *dev = args->if_name;
-   int s, i, err = 0; 
+   int s, i, err = 0, tmp; 
 
    /* TCP socket */
    if ((s=socket(AF_INET, SOCK_STREAM, 0)) == -1) //IPPROTO_TCP
@@ -216,17 +222,21 @@ int tcp_connect(struct tun_state *st, struct sockaddr *sa, char *filename) {
    set_fd(s);
 
    /* Socket opts */
-   int tmp = 1;
    struct timeval snd_timeout = {state->tcp_snd_timeout, 0}; 
    struct timeval rcv_timeout = {state->tcp_rcv_timeout, 0}; 
    if (dev && setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev))) 
       die("bind to device");
-   if (setsockopt (s, SOL_SOCKET, SO_RCVTIMEO, (char *)&rcv_timeout,
+   if (setsockopt (s, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout,
                 sizeof(rcv_timeout)) < 0)
-      die("setsockopt failed");
-   if (setsockopt (s, SOL_SOCKET, SO_SNDTIMEO, (char *)&snd_timeout,
+      die("setsockopt rcvtimeo");
+   if (setsockopt (s, SOL_SOCKET, SO_SNDTIMEO, &snd_timeout,
                 sizeof(snd_timeout)) < 0)
-      die("setsockopt failed");
+      die("setsockopt sndtimeo");
+
+   tmp = state->max_segment_size;
+   if (setsockopt (s, IPPROTO_TCP, TCP_MAXSEG, &tmp, sizeof(tmp)) < 0)
+      die("setsockopt maxseg");
+   
     /*if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, (char *)&tmp,
                 sizeof(tmp)) < 0) //TODO maybe useless
         die("setsockopt failed");*/
@@ -274,7 +284,7 @@ int tcp_connect(struct tun_state *st, struct sockaddr *sa, char *filename) {
 
    /* set file permission */
    mode_t m = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
-   if (chmod(filename, m) < 0)
+   if (chmod(state->cli_file, m) < 0)
       die("chmod");
 
 succ:
@@ -293,7 +303,7 @@ void *cli_thread(void *st) {
    /* Client loop */
    int i; 
    for (i=0; i<state->sa_len; i++) {
-      tcp_connect(state, state->cli_private[i]->sa, UDPTUN_CLI_FILE);
+      tcp_connect(state, state->cli_private[i]->sa);
    }
 
    /* Shutdown client, not peer */
@@ -506,8 +516,8 @@ int xfwerr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *state
 int xrecv(int fd, void *buf, size_t buflen) {
    int recvd = 0;
    if ((recvd = recvfrom(fd, buf, buflen, 0, NULL, 0)) < 0) {
-      xrecverr(fd, buf, buflen);
-      die("recvd");
+      debug_print("%s\n",strerror(errno));
+      return -1;
    }
    return recvd;
 }

@@ -15,6 +15,14 @@
  */
 static volatile int loop;
 
+/**
+ * \fn static void serv_shutdown(int sig)
+ * \brief Callback function for SIGINT catcher.
+ *
+ * \param sig Ignored
+ */ 
+static void serv_shutdown(int sig);
+
 static void tun_serv_aux(struct arguments *args);
 static void tun_serv_pl(struct arguments *args);
 static void tun_serv_fbsd(struct arguments *args);
@@ -69,7 +77,7 @@ void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
 
       struct tun_rec *rec = NULL; 
       //read sport for clients mapping
-      int sport = (int) ntohs( *((uint16_t *)(buf+22)) ); // 26 with PI
+      int sport = (int) ntohs( *((uint16_t *)(buf+22)) ); 
       if (sport == state->tcp_port) {
          // lookup initial server database from file 
       } else if ( (rec = g_hash_table_lookup(state->serv, &sport)) ) {   
@@ -91,7 +99,7 @@ void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_sta
 
    debug_print("serv: recvd %db from udp\n", recvd);
 
-   if (recvd > 4) {
+   if (recvd > 32) {
       struct tun_rec *rec = NULL;
       int sport           = ntohs(((struct sockaddr_in *)nrec->sa)->sin_port);
       int sent            = 0;
@@ -124,28 +132,25 @@ void tun_serv(struct arguments *args) {
       tun_serv_aux(args);
 }
 
-/* e.g.
- * ./udptun -s --udp-lport=5001 --tcp-daddr=192.168.2.1 --tcp-dport=9876
- *  192.168.2.0/24
- */
 void tun_serv_aux(struct arguments *args) {
-   int fd_max = 0, fd_udp = 0, sel = 0, i = 0, fd_tun = 0;
 
-   //init tun itf
-   args->if_name  = create_tun(args->tcp_daddr, NULL, &fd_tun);
+   int fd_max = 0, fd_udp = 0, sel = 0, i = 0, fd_tun = 0;
 
    /* init server state */
    struct tun_state *state = init_tun_state(args);
 
-   //udp sock
-   fd_udp   = udp_sock(args->udp_lport);
+   /* create tun if and sockets */
+   args->if_name  = create_tun(state->private_addr, NULL, &fd_tun); 
+   fd_udp         = udp_sock(state->udp_port);
 
+   /* run server */
+   debug_print("running serv ...\n");  
    pthread_t thread_id;
-   if (pthread_create(&thread_id, NULL, serv_thread, (void*) args) < 0) 
-      die("pthread_create");
-
+   if (pthread_create(&thread_id, NULL, serv_thread, (void*) state) < 0) 
+      die("pthread_create serv_thread");
    set_pthread(thread_id);
 
+   /* init select loop */
    fd_set input_set;
    struct timeval tv;
    char buf[__BUFFSIZE];
@@ -155,26 +160,31 @@ void tun_serv_aux(struct arguments *args) {
    signal(SIGINT, serv_shutdown);
 
    while (loop) {
-      //build select args
       FD_ZERO(&input_set);
-      FD_SET(fd_udp, &input_set);FD_SET(fd_tun, &input_set);
+      FD_SET(fd_udp, &input_set);
+      FD_SET(fd_tun, &input_set);
+      //TODO wrap up xselect  
+      if (state->inactivity_timeout != -1) {
+         tv.tv_sec  = state->inactivity_timeout;
+         tv.tv_usec = 0;
+         sel = select(fd_max+1, &input_set, NULL, NULL, &tv);
+      } else 
+         sel = select(fd_max+1, &input_set, NULL, NULL, NULL);
 
-      tv.tv_sec  = 0;
-      tv.tv_usec = 0;
-
-      sel = select(fd_max+1, &input_set, NULL, NULL, &tv);
       if (sel < 0) die("select");
-      else if (sel > 0) {
-         if (FD_ISSET(fd_udp, &input_set)) {
+      else if (sel == 0) {
+         debug_print("timeout\n"); 
+         break;
+      } else if (sel > 0) {
+         if (FD_ISSET(fd_udp, &input_set)) 
             tun_serv_out(fd_udp, fd_tun, args, state, buf);
-         }
-         if (FD_ISSET(fd_tun, &input_set)) {
+         if (FD_ISSET(fd_tun, &input_set)) 
             tun_serv_in(fd_udp, fd_tun, state, buf);
-         }
       }
    }
 
-   close(fd_udp);
+   /* Close, free, ... */
+   close(fd_udp);close(fd_tun);
    free_tun_state(state);
    free(args->if_name);
 }
@@ -189,11 +199,11 @@ void tun_serv_pl(struct arguments *args) {
 
    //init tun itf
    const char *prefix = "24";
-   char *if_name  = create_tun_pl(args->tcp_daddr, prefix, 0, &fd_tun);
    struct tun_state *state = init_tun_state(args);
+   char *if_name  = create_tun_pl(state->private_addr, prefix, 0, &fd_tun);
 
    //udp sock & dst sockaddr
-   fd_udp   = udp_sock(args->udp_lport);
+   fd_udp   = udp_sock(state->udp_port);
 
    fd_set input_set;
    struct timeval tv;
@@ -229,7 +239,7 @@ void tun_serv_pl(struct arguments *args) {
 
 void build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw) {
    int i = 0, max_fd = 0, fd = 0;
-   FD_ZERO(input_set);
+   FD_ZERO(input_set); //TODO move thus to sock
    for (;i<len;i++) {
       fd = fds_raw[i];
       if (fd) {

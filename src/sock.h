@@ -33,7 +33,6 @@
 #include <linux/filter.h>
 #include <linux/errqueue.h>
 #include <netinet/in.h>
-#include <netinet/ip_icmp.h>
 
 #include "debug.h"
 #include "icmp.h"

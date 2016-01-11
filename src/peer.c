@@ -16,7 +16,7 @@
 static volatile int loop;
 
 /**
- * \fn static void int_handler(int sig)
+ * \fn static void peer_shutdown(int sig)
  * \brief Callback function for SIGINT catcher.
  *
  * \param sig Ignored
@@ -44,11 +44,10 @@ static void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *s
  *
  * \param fd_udp The udp socket fd.
  * \param fd_tun The tun interface fd.
- * \param args The arguments of the server.
  * \param state The state of the server.
  * \param buf The buffer.
  */ 
-static void tun_peer_out_cli(int fd_udp, int fd_tun, struct arguments *args, struct tun_state *state, char *buf);
+static void tun_peer_out_cli(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
 
 /**
  * \fn static void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_state *state, char *buf)
@@ -56,11 +55,10 @@ static void tun_peer_out_cli(int fd_udp, int fd_tun, struct arguments *args, str
  *
  * \param fd_udp The udp socket fd.
  * \param fd_tun The tun interface fd.
- * \param args The arguments of the server.
  * \param state The state of the server.
  * \param buf The buffer.
  */ 
-static void tun_peer_out_serv(int fd_udp, int fd_tun, struct arguments *args, struct tun_state *state, char *buf);
+static void tun_peer_out_serv(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
 
 void peer_shutdown(int sig) { loop = 0; }
 
@@ -113,11 +111,9 @@ void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *state, c
    } 
 }
 
-void tun_peer_out_cli(int fd_udp, int fd_tun, struct arguments *args, 
-                      struct tun_state *state, char *buf) {
-   struct tun_rec *nrec = init_tun_rec();
+void tun_peer_out_cli(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    int recvd = 0;
-   if ( (recvd=xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, &nrec->slen, buf, __BUFFSIZE)) < 0) {
+   if ( (recvd=xrecv(fd_udp, buf, __BUFFSIZE)) < 0) {
       /* recvd ICMP msg */
       //xfwerr(fd_udp, buf,  __BUFFSIZE, fd_tun, state);
       xrecverr(fd_udp, buf,  __BUFFSIZE);
@@ -130,11 +126,9 @@ void tun_peer_out_cli(int fd_udp, int fd_tun, struct arguments *args,
          debug_print("wrote %d to tun\n", sent);     
       } else debug_print("recvd empty pkt\n");
    }
-   free_tun_rec(nrec);
 }
 
-void tun_peer_out_serv(int fd_udp, int fd_tun, struct arguments *args, 
-                       struct tun_state *state, char *buf) {
+void tun_peer_out_serv(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    struct tun_rec *nrec = init_tun_rec();
    int recvd = 0;
    recvd=xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, &nrec->slen, buf, __BUFFSIZE);
@@ -161,15 +155,14 @@ void tun_peer_out_serv(int fd_udp, int fd_tun, struct arguments *args,
          die("socket()");
       }
       debug_print("serv: wrote %d to tun\n", sent);     
-   } else debug_print("recvd empty pkt\n");
+   } else {
+      debug_print("recvd empty pkt\n");
+      free_tun_rec(nrec);
+   }
 
 }
 
 void tun_peer_aux(struct arguments *args) {
-   /*
-sudo  ./src/udptun -f -v -t 1 --udp-daddr=139.165.223.57 --udp-sport=34501 --udp-dport=5001 --tcp-saddr=192.168.2.2 --tcp-sport=34501 --tcp-dport=9876 --tcp-daddr=192.168.2.1
-   */
-
    int fd_tun = 0, fd_serv = 0, fd_cli = 0;
    int fd_max = 0, sel = 0;
    struct sockaddr_in *udp_addr = NULL, *tcp_addr = NULL;
@@ -179,15 +172,18 @@ sudo  ./src/udptun -f -v -t 1 --udp-daddr=139.165.223.57 --udp-sport=34501 --udp
 
    /* create tun if and sockets */
    args->if_name  = create_tun(state->private_addr, NULL, &fd_tun);   
-   fd_serv  = udp_sock(state->udp_port);
-   fd_cli   = udp_sock(state->port);
+   fd_serv        = udp_sock(state->udp_port);
+   fd_cli         = udp_sock(state->port);
 
    /* run server */
    debug_print("running serv ...\n");  
-   pthread_t thread_id;
+   pthread_t thread_id; //TODO wrap up
    if (pthread_create(&thread_id, NULL, serv_thread, (void*) state) < 0) 
       die("pthread_create");
    set_pthread(thread_id);
+
+   /* initial sleep */
+   sleep(state->initial_sleep);
 
    /* run client */
    debug_print("running cli ...\n");  
@@ -201,33 +197,36 @@ sudo  ./src/udptun -f -v -t 1 --udp-daddr=139.165.223.57 --udp-sport=34501 --udp
    char buf[__BUFFSIZE];
    fd_max = max(max(fd_cli, fd_tun),fd_serv);
    loop   = 1;
-   signal(SIGINT, serv_shutdown);
+   signal(SIGINT, peer_shutdown);
 
    while (loop) {
-      //build select list
       FD_ZERO(&input_set);
       FD_SET(fd_cli,  &input_set);
       FD_SET(fd_serv, &input_set);
       FD_SET(fd_tun,  &input_set);
 
-      tv.tv_sec  = state->inactivity_timeout; 
-      tv.tv_usec = 0;
+      if (state->inactivity_timeout != -1) {
+         tv.tv_sec  = state->inactivity_timeout;
+         tv.tv_usec = 0;
+         sel = select(fd_max+1, &input_set, NULL, NULL, &tv);
+      } else 
+         sel = select(fd_max+1, &input_set, NULL, NULL, NULL);
 
-      sel = select(fd_max+1, &input_set, NULL, NULL, &tv);  
       if (sel < 0) die("select");
       else if (sel == 0) {
          debug_print("timeout\n"); 
          break;
       } else if (sel > 0) {
          if (FD_ISSET(fd_tun, &input_set))      
-            tun_peer_in(fd_tun, fd_cli, fd_serv, state, buf);
+            tun_peer_in(fd_tun, fd_cli, fd_serv, state, buf); 
          if (FD_ISSET(fd_cli, &input_set)) 
-            tun_peer_out_cli(fd_cli, fd_tun, args, state, buf);
+            tun_peer_out_cli(fd_cli, fd_tun, state, buf);
          if (FD_ISSET(fd_serv, &input_set)) 
-            tun_peer_out_serv(fd_serv, fd_tun, args, state, buf);
+            tun_peer_out_serv(fd_serv, fd_tun, state, buf);
       }
    }
 
+   /* Close, free, ... */
    close(fd_cli);close(fd_serv);
    close(fd_tun);free_tun_state(state);
    free(args->if_name);

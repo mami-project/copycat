@@ -49,14 +49,17 @@ struct tun_state {
 
    uint16_t tcp_snd_timeout; //TODO as arg too
    uint16_t tcp_rcv_timeout;
-   uint16_t inactivity_timeout;
-
+   int16_t inactivity_timeout;
+   uint16_t initial_sleep;
+   
    char *cli_file;
    char *serv_file;
 
    uint32_t buf_length;
    uint32_t backlog_size;
    uint32_t fd_lim;
+   
+   uint32_t max_segment_size; /*!< The value passed as TCP_MAXSEG optval (max mss) */
 };
 
 /**

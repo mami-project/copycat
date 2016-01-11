@@ -26,7 +26,7 @@ static volatile int loop;
  * \param udp_addr The address of the udp target.
  * \param buf The buffer.
  */ 
-static void tun_cli_in(int fd_udp, int fd_tun, struct sockaddr_in *udp_addr, char *buf);
+static void tun_cli_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
 
 /**
  * \fn static void tun_cli_out(int fd_udp, int fd_tun, char *buf)
@@ -36,7 +36,7 @@ static void tun_cli_in(int fd_udp, int fd_tun, struct sockaddr_in *udp_addr, cha
  * \param fd_tun The tun interface fd.
  * \param buf The buffer. 
  */ 
-static void tun_cli_out(int fd_udp, int fd_tun, char *buf);
+static void tun_cli_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
 
 static void tun_cli_aux(struct arguments *args);
 static void tun_cli_pl(struct arguments *args);
@@ -51,25 +51,44 @@ void cli_shutdown(int sig) {
    loop = 0; 
 }
 
-void tun_cli_in(int fd_udp, int fd_tun, struct sockaddr_in *udp_addr, char *buf) {
+void tun_cli_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
 
       int recvd=xread(fd_tun, buf, __BUFFSIZE);
       debug_print("cli: recvd %db from tun\n", recvd);
 
-      if (recvd > 0) { 
-         int sent = xsendto(fd_udp, (struct sockaddr *)udp_addr, buf, recvd);
+      // lookup initial server database from file 
+      struct tun_rec *rec = NULL; 
+      in_addr_t priv_addr = (int) *((uint32_t *)(buf+16));
+      debug_print("%s\n", inet_ntoa((struct in_addr){priv_addr}));
+
+      /* lookup private addr */
+      if ( (rec = g_hash_table_lookup(state->cli, &priv_addr)) ) {
+         debug_print("priv addr lookup: OK\n");
+
+         int sent = xsendto(fd_udp, rec->sa, buf, recvd);
          debug_print("cli: wrote %db to udp\n",sent);
+
+      } else {
+         errno=EFAULT;
+         die("cli lookup");
       }
 }
 
-void tun_cli_out(int fd_udp, int fd_tun, char *buf) {
-      int recvd=xrecv(fd_udp, buf, __BUFFSIZE);
+void tun_cli_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
+   int recvd = 0;
+   if ( (recvd=xrecv(fd_udp, buf, __BUFFSIZE)) < 0) {
+      /* recvd ICMP msg */
+      //xfwerr(fd_udp, buf,  __BUFFSIZE, fd_tun, state);
+      xrecverr(fd_udp, buf,  __BUFFSIZE);
+   } else {
       debug_print("cli: recvd %db from udp\n", recvd);
 
-      if (recvd > 0) { 
+      if (recvd > 32) {
          int sent = xwrite(fd_tun, buf, recvd);
-         debug_print("cli: wrote %db to tun\n",sent);
-      }
+
+         debug_print("cli: wrote %db to tun\n",sent);    
+      } else debug_print("recvd empty pkt\n");
+   }
 }
 
 void tun_cli(struct arguments *args) {
@@ -82,61 +101,59 @@ void tun_cli(struct arguments *args) {
 }
 
 void tun_cli_aux(struct arguments *args) {
-   /* e.g.
-    * udptun -c --udp-daddr=132.227.62.120 --udp-sport=34501 --udp-dport=5001 --tcp-saddr=192.168.2.1 --tcp-sport=34500 --tcp-dport=9877 --tcp-daddr=132.227.62.121
-
-    ./src/udptun -c --udp-daddr=139.165.223.57 --udp-sport=34501 --udp-dport=5001 --tcp-saddr=192.168.2.2 --tcp-sport=34501 --tcp-dport=9876 --tcp-daddr=192.168.2.1
-    */
    int fd_tun = 0, fd_udp = 0, fd_tcp = 0;
    int fd_max = 0, sel = 0;
-   struct sockaddr_in *udp_addr = NULL, *tcp_addr = NULL;
    
-   // init tun0 interface
+   /* init state */
    struct tun_state *state = init_tun_state(args);
-   args->if_name  = create_tun(args->tcp_saddr, NULL, &fd_tun);   
-   fd_udp   = udp_sock(args->udp_sport);
-   udp_addr = get_addr(args->udp_daddr, args->udp_dport);
 
-   //run cli worker thread
+   /* create tun if and sockets */   
+   args->if_name  = create_tun(state->private_addr, NULL, &fd_tun);   
+   fd_udp   = udp_sock(state->port);
+
+   /* initial sleep */
+   sleep(state->initial_sleep);
+
+   /* run client */
    pthread_t thread_id;
-   if (pthread_create(&thread_id, NULL, cli_thread, (void*) args) < 0) 
+   if (pthread_create(&thread_id, NULL, cli_thread, (void*) state) < 0) 
       die("pthread_create");
-
-   // set atexit
    set_pthread(thread_id);
 
+   /* init select loop */
    fd_set input_set;
    struct timeval tv;
    char buf[__BUFFSIZE];
    fd_max = max(fd_udp, fd_tun);
-
    loop = 1;
    signal(SIGINT, cli_shutdown);
 
    while (loop) {
-      //build select list
       FD_ZERO(&input_set);
       FD_SET(fd_udp, &input_set);
       FD_SET(fd_tun, &input_set);
 
-      tv.tv_sec  = state->inactivity_timeout; 
-      tv.tv_usec = 0;
+      if (state->inactivity_timeout != -1) {
+         tv.tv_sec  = state->inactivity_timeout;
+         tv.tv_usec = 0;
+         sel = select(fd_max+1, &input_set, NULL, NULL, &tv);
+      } else 
+         sel = select(fd_max+1, &input_set, NULL, NULL, NULL);
 
-      sel = select(fd_max+1, &input_set, NULL, NULL, &tv);
       if (sel < 0) die("select");
       else if (sel == 0) {
          debug_print("timeout\n"); 
          break;
       } else if (sel > 0) {
          if (FD_ISSET(fd_tun, &input_set))      
-            tun_cli_in(fd_udp, fd_tun, udp_addr, buf);
+            tun_cli_in(fd_udp, fd_tun, state, buf);
          if (FD_ISSET(fd_udp, &input_set)) 
-            tun_cli_out(fd_udp, fd_tun, buf);
+            tun_cli_out(fd_udp, fd_tun, state, buf);
       }
    }
 
-   close(fd_udp);
-   free(args->if_name);free(udp_addr);
+   close(fd_udp);close(fd_tun);
+   free(args->if_name);
    
 }
 
@@ -148,7 +165,7 @@ void tun_cli_fbsd(struct arguments *args) {
 }
 
 void tun_cli_pl(struct arguments *args) {
-   int fd_max = 0, fd_udp = 0, fd_raw = 0, sel = 0;
+   int fd_max = 0, fd_udp = 0, fd_tun = 0, sel = 0;
    char *if_name = NULL;
    struct sockaddr_in *udp_addr = NULL, *tcp_addr = NULL;
    struct sock_fprog *bpf = NULL;
@@ -163,15 +180,6 @@ void tun_cli_pl(struct arguments *args) {
    fd_udp   = udp_sock(args->udp_sport);
    udp_addr = get_addr(args->udp_daddr, args->udp_dport);
 
-   //run TCP cli
-   /*
-   pid_t child = fork();
-   if (!child) {
-      tcp_cli(args->tcp_daddr, args->tcp_dport, args->tcp_saddr, args->tcp_sport, if_name, "test.dat");
-      return;
-   } else if (child < 0) {
-      die("fork");
-   }*/
 
    loop = 1;
    signal(SIGINT, cli_shutdown);
@@ -193,10 +201,10 @@ void tun_cli_pl(struct arguments *args) {
       sel = select(fd_max+1, &input_set, NULL, NULL, &tv);
       if (sel < 0) die("select");
       else if (sel > 0) {
-         if (FD_ISSET(tun_fd, &input_set))      
-            tun_cli_in(fd_udp, tun_fd, udp_addr, buf);
+         if (FD_ISSET(fd_tun, &input_set))      
+            tun_cli_in(fd_udp, fd_tun, state, buf);
          if (FD_ISSET(fd_udp, &input_set)) 
-            tun_cli_out(fd_udp, tun_fd, buf);
+            tun_cli_out(fd_udp, fd_tun, state, buf);
       }
    }
 
