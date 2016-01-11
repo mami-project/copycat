@@ -23,20 +23,6 @@
 #include "state.h"
 
 /**
- * \fn int tcp_serv(char *addr, int port, char *filename)
- * \brief connect a TCP socket to addr:port and write
- * received data to filename.
- *
- * \param addr The remote address to connect to.
- * \param port The remote port to connect to.
- * \param filename The file to write to.
- * \return exit status
- */ 
-
-void *cli_thread(void *st);
-void *serv_thread(void *st);
-int tcp_serv(char *daddr, int dport, char* dev, struct tun_state *state);
-/**
  * \fn int udp_sock(int port)
  * \brief Create and bind a UDP DGRAM socket.
  *
@@ -164,16 +150,6 @@ int xread(int fd, char *buf, int buflen);
 int xwrite(int fd, char *buf, int buflen);
 
 int xfwrite(FILE *fp, char *buf, int size, int nmemb);
-
-/**
- * \fn struct sockaddr_in *get_addr(const char *addr, int port)
- * \brief Allocate an AF_INET socket address structure.
- *
- * \param addr The sockaddr address.
- * \param port The sockaddr port.
- * \return A pointer (malloc) to the created struct sockaddr_in
- */ 
-struct sockaddr_in *get_addr(const char *addr, int port);
 
 /**
  * \fn void die(char *s)

@@ -11,9 +11,11 @@
 #include <arpa/inet.h>
 
 #include "state.h"
+#include "debug.h"
 #include "udptun.h"
 #include "destruct.h"
-#include "debug.h"
+#include "net.h"
+
 
 /**
  * \fn static int parse_dest_file(struct arguments *args, struct tun_state *state)

@@ -23,6 +23,7 @@
 #include "sock.h"
 #include "tunalloc.h"
 #include "thread.h"
+#include "net.h"
 
 /**
  * \var static volatile int loop

@@ -94,7 +94,8 @@ am_udptun_OBJECTS = udptun-udptun.$(OBJEXT) udptun-sock.$(OBJEXT) \
 	udptun-cli.$(OBJEXT) udptun-serv.$(OBJEXT) \
 	udptun-tunalloc.$(OBJEXT) udptun-icmp.$(OBJEXT) \
 	udptun-peer.$(OBJEXT) udptun-state.$(OBJEXT) \
-	udptun-destruct.$(OBJEXT) udptun-thread.$(OBJEXT)
+	udptun-destruct.$(OBJEXT) udptun-thread.$(OBJEXT) \
+	udptun-net.$(OBJEXT)
 udptun_OBJECTS = $(am_udptun_OBJECTS)
 udptun_LDADD = $(LDADD)
 udptun_LINK = $(CCLD) $(udptun_CFLAGS) $(CFLAGS) $(udptun_LDFLAGS) \
@@ -253,7 +254,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-udptun_SOURCES = udptun.c sock.c cli.c serv.c tunalloc.c icmp.c peer.c state.c destruct.c thread.c debug.h udptun.h sock.h cli.h serv.h tunalloc.h icmp.h peer.h state.h destruct.h thread.h
+udptun_SOURCES = udptun.c sock.c cli.c serv.c tunalloc.c icmp.c peer.c state.c destruct.c thread.c net.c debug.h udptun.h sock.h cli.h serv.h tunalloc.h icmp.h peer.h state.h destruct.h thread.h net.h
 udptun_CFLAGS = ${GLIB_CFLAGS} \
                 ${GLIB2_CFLAGS}
 
@@ -350,6 +351,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-cli.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-destruct.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-icmp.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-net.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-peer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-serv.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-sock.Po@am__quote@
@@ -511,6 +513,20 @@ udptun-thread.obj: thread.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='thread.c' object='udptun-thread.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-thread.obj `if test -f 'thread.c'; then $(CYGPATH_W) 'thread.c'; else $(CYGPATH_W) '$(srcdir)/thread.c'; fi`
+
+udptun-net.o: net.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-net.o -MD -MP -MF $(DEPDIR)/udptun-net.Tpo -c -o udptun-net.o `test -f 'net.c' || echo '$(srcdir)/'`net.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-net.Tpo $(DEPDIR)/udptun-net.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='net.c' object='udptun-net.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-net.o `test -f 'net.c' || echo '$(srcdir)/'`net.c
+
+udptun-net.obj: net.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-net.obj -MD -MP -MF $(DEPDIR)/udptun-net.Tpo -c -o udptun-net.obj `if test -f 'net.c'; then $(CYGPATH_W) 'net.c'; else $(CYGPATH_W) '$(srcdir)/net.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-net.Tpo $(DEPDIR)/udptun-net.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='net.c' object='udptun-net.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-net.obj `if test -f 'net.c'; then $(CYGPATH_W) 'net.c'; else $(CYGPATH_W) '$(srcdir)/net.c'; fi`
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
