@@ -12,14 +12,32 @@
  * \version 0.1
  */
 
-#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <pcap.h>
+
 #include <netinet/ip_icmp.h>
 #include <netinet/tcp.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <sys/stat.h>
+#include <linux/if.h>
+#include <linux/if_tun.h>
+#include <linux/errqueue.h>
+#include <sys/socket.h>
 
 #include "sock.h"
+#include "debug.h"
 #include "destruct.h"
+#include "icmp.h"
+#include "cli.h"
+#include "thread.h"
 
-#define UDPTUN_CLI_FILE "data.dat"
 static char *serv_file;
 
 static unsigned short calcsum(unsigned short *buffer, int length);
@@ -104,9 +122,8 @@ int tcp_serv(char *daddr, int dport, char* dev, struct tun_state *state) {
       debug_print("accepted connection from %s on socket %d.\n", inet_ntoa(sin.sin_addr), ws);
 
       /* Fork worker thread */
-      if (pthread_create(&thread_id, NULL, serv_worker_thread, (void*) &ws) < 0) 
-            die("pthread_create");
-      set_pthread(thread_id);
+      xthread_create(serv_worker_thread, (void*) &ws);
+   
    }
 
    close (s);
@@ -143,67 +160,6 @@ void *serv_worker_thread(void *socket_desc) {
 
    fclose(fp);close(s);
    debug_print("socket %d successfuly closed.\n", s);
-
-   return 0;
-}
-
-int tcp_cli(char *daddr, int dport, char *saddr, int sport, char* dev, char *filename) {
-   int s;//TODO remove file argument
-   // TODO remove this func
-   struct sockaddr_in sin, sout;
-   char buf[__BUFFSIZE];
-   //create a TCP socket
-   if ((s=socket(AF_INET, SOCK_STREAM, 0)) == -1) //IPPROTO_TCP
-      die("socket");
-   set_fd(s);
-
-   if (dev && setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev))) 
-      die("bind to device");
-    
-   // bind to sport
-    memset(&sout, 0, sizeof(sout));
-    sout.sin_family = AF_INET;
-    sout.sin_port   = htons(sport);
-    inet_pton(AF_INET, saddr, &sout.sin_addr);
-
-    if (bind(s, (struct sockaddr *)&sout, sizeof(sout)) < 0) 
-        die("bind");
-    
-   // zero out the structure
-   memset(&sin, 0, sizeof(sin));
-   sin.sin_family = AF_INET;
-   sin.sin_port   = htons(dport);
-   inet_pton(AF_INET, daddr, &sin.sin_addr); 
-
-   debug_print("connecting socket %d\n", s);
-   if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) == -1) 
-        die("connect\n");
-   
-   /* transfer file */
-   FILE *fp = fopen(filename, "w");
-   if(fp == NULL) die("fopen");
-
-   bzero(buf, __BUFFSIZE);
-   int bsize = 0;
-   while(bsize = xrecv(s, buf, __BUFFSIZE)) {
-       xfwrite(fp, buf, sizeof(char), bsize);
-       bzero(buf, __BUFFSIZE);
-   }
-
-   /* shutdown connection */
-   if (shutdown(s, SHUT_RDWR) < 0)
-      die("shutdown");
-
-   /* wait for fin and send ack */
-   if (xrecv(s, buf, __BUFFSIZE) != 0) 
-      die("server shutdown");
-   fclose(fp);close (s);
-   debug_print("socket %d successfuly closed.\n", s);
-
-   /* set file permission */
-   mode_t m = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
-   if (chmod(filename, m) < 0)
-      die("chmod");
 
    return 0;
 }

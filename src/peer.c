@@ -11,11 +11,13 @@
 #include <errno.h>
 #include <signal.h>
 #include <glib.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/time.h>
 
 #include "peer.h"
 #include "debug.h"
 #include "state.h"
-#include "destruct.h"
 #include "thread.h"
 #include "sock.h"
 #include "serv.h"
@@ -177,7 +179,6 @@ void tun_peer_out_serv(int fd_udp, int fd_tun, struct tun_state *state, char *bu
 void tun_peer_aux(struct arguments *args) {
    int fd_tun = 0, fd_serv = 0, fd_cli = 0;
    int fd_max = 0, sel = 0;
-   struct sockaddr_in *udp_addr = NULL, *tcp_addr = NULL;
    
    /* init state */
    struct tun_state *state = init_tun_state(args);

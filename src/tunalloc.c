@@ -7,6 +7,8 @@
  * new tuntap interface. Interface name can be acquired via TUNGETIFF ioctl.
  */
 
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <sys/un.h>
 #include <sys/types.h>
 #include <sys/stat.h>

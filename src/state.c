@@ -6,6 +6,10 @@
  * \version 0.1
  */
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #include "state.h"
 #include "udptun.h"
 #include "destruct.h"
@@ -29,7 +33,7 @@ int parse_cfg_file(struct tun_state *state) {
       errno=ENOENT;
       return -1;
    }
-   //TODO: fixed cfg location
+
    int sport, count=0;
    char key[256], val[256], c;
    /* build port to public addr lookup table */

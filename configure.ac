@@ -34,7 +34,7 @@ PKG_CHECK_MODULES(GLIB2, [glib-2.0 >= 2.0], [],
 # Checks for header files.
 AC_HEADER_STDC
 #AC_CHECK_HEADER(glib.h)
-AC_CHECK_HEADERS([pthread.h arpa/inet.h netinet/in.h pcap.h stdlib.h string.h sys/socket.h unistd.h fcntl.h sys/ioctl.h])
+AC_CHECK_HEADERS([pthread.h arpa/inet.h netinet/in.h pcap.h stdlib.h string.h sys/socket.h unistd.h fcntl.h sys/ioctl.h sys/time.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_MODE_T

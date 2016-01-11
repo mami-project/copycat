@@ -15,33 +15,15 @@
 #ifndef _UDPTUN_SOCK_H
 #define _UDPTUN_SOCK_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <pcap.h>
-
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/uio.h>
-#include <sys/stat.h>
-#include <linux/if.h>
-#include <linux/if_tun.h>
-#include <linux/filter.h>
-#include <linux/errqueue.h>
 #include <netinet/in.h>
+#include <linux/filter.h>
+#include <sys/time.h>
 
-#include "debug.h"
-#include "icmp.h"
 #include "udptun.h"
-#include "cli.h"
 #include "state.h"
 
 /**
- * \fn int tcp_cli(char *addr, int port, char *filename)
+ * \fn int tcp_serv(char *addr, int port, char *filename)
  * \brief connect a TCP socket to addr:port and write
  * received data to filename.
  *
@@ -50,7 +32,7 @@
  * \param filename The file to write to.
  * \return exit status
  */ 
-int tcp_cli(char *daddr, int dport, char *saddr, int sport, char* dev, char *filename);
+
 void *cli_thread(void *st);
 void *serv_thread(void *st);
 int tcp_serv(char *daddr, int dport, char* dev, struct tun_state *state);

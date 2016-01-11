@@ -11,10 +11,14 @@
 #include <errno.h>
 #include <signal.h>
 
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #include "cli.h"
 #include "debug.h"
 #include "state.h"
-#include "destruct.h"
 #include "thread.h"
 #include "sock.h"
 #include "tunalloc.h"
@@ -109,8 +113,7 @@ void tun_cli(struct arguments *args) {
 }
 
 void tun_cli_aux(struct arguments *args) {
-   int fd_tun = 0, fd_udp = 0, fd_tcp = 0;
-   int fd_max = 0, sel = 0;
+   int fd_tun = 0, fd_udp = 0, fd_max = 0, sel = 0;
    
    /* init state */
    struct tun_state *state = init_tun_state(args);
@@ -178,7 +181,6 @@ void tun_cli_pl(struct arguments *args) {
 
    fd_udp   = udp_sock(state->port);
    udp_addr = get_addr(state->public_addr, state->udp_port);
-
 
    loop = 1;
    signal(SIGINT, cli_shutdown);

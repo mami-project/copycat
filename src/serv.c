@@ -12,13 +12,17 @@
 #include <errno.h>
 #include <signal.h>
 
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #include "serv.h"
 #include "debug.h"
 #include "state.h"
-#include "destruct.h"
 #include "sock.h"
 #include "tunalloc.h"
-
+#include "thread.h"
 
 /**
  * \var static volatile int loop
@@ -144,8 +148,7 @@ void tun_serv(struct arguments *args) {
 }
 
 void tun_serv_aux(struct arguments *args) {
-
-   int fd_max = 0, fd_udp = 0, sel = 0, i = 0, fd_tun = 0;
+   int fd_max = 0, fd_udp = 0, sel = 0, fd_tun = 0;
 
    /* init server state */
    struct tun_state *state = init_tun_state(args);
