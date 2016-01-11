@@ -5,7 +5,9 @@ TCP tunneling over UDP
 
 - src/udptun: binary executable
 - udptun.cfg: configuration file
-- dest.txt: destination file
+- dest.txt: destination file 
+   each line should describe one destination with as followed
+   <unique-source-port> <public-address> <private-address>
 
 # Standard & Libs
 - c99 or gnu99
