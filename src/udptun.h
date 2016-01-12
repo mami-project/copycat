@@ -43,6 +43,9 @@ struct arguments {
    uint8_t planetlab;    /*!<  PlanetLab mode */
    uint8_t freebsd;      /*!<  FREEBSD mode */
 
+   uint8_t ipv6;
+   uint8_t dual_stack;
+
    char *config_file;   /*!< The destination file  */
    char *dest_file;  /*!< The destination file  */
    char *if_name;    /*!< The tun interface name */

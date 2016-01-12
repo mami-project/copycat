@@ -140,12 +140,12 @@ void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_sta
 }
 
 void tun_serv(struct arguments *args) {
-   if (args->planetlab)
+   /*if (args->planetlab)
       tun_serv_pl(args);
    else if (args->freebsd)
       tun_serv_fbsd(args);
-   else
-      tun_serv_aux(args);
+   else*/
+   tun_serv_aux(args);
 }
 
 void tun_serv_aux(struct arguments *args) {
@@ -155,7 +155,12 @@ void tun_serv_aux(struct arguments *args) {
    struct tun_state *state = init_tun_state(args);
 
    /* create tun if and sockets */
-   args->if_name  = create_tun(state->private_addr, NULL, &fd_tun); 
+   if (args->planetlab)
+      args->if_name  = create_tun_pl(state->private_addr, state->private_mask, &fd_tun);
+   else if (args->freebsd)
+      args->if_name  = create_tun_pl(state->private_addr, state->private_mask, &fd_tun);
+   else
+      args->if_name  = create_tun(state->private_addr, state->private_mask, NULL, &fd_tun); 
    fd_udp         = udp_sock(state->udp_port);
 
    /* run server */
@@ -206,7 +211,7 @@ void tun_serv_pl(struct arguments *args) {
    //init tun itf
    const char *prefix = "24";
    struct tun_state *state = init_tun_state(args);
-   char *if_name  = create_tun_pl(state->private_addr, prefix, 0, &fd_tun);
+   char *if_name  = create_tun_pl(state->private_addr, state->private_mask, &fd_tun);
 
    //udp sock & dst sockaddr
    fd_udp   = udp_sock(state->udp_port);

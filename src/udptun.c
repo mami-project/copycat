@@ -26,6 +26,9 @@ static struct argp_option options[] = {
   {"server",     's', 0,        0,  "Server mode" },
   {"fullmesh",   'f', 0,        0,  "Fullmesh mode (both client and server)" },
 
+  {"ipv6",     '6', 0,        0,  "IPv6 mode" },
+  {"ipv4-ipv6",'2', 0,        0,  "IPv4-IPv6 mode" },
+
   {"planetlab",  'p', 0,        0,  "PlanetLab mode" },
   {"freebsd",    'b', 0,        0,  "FREEBSD mode" },
   {"timeout",    't', "TIME",   0,  "Inactivity timeout" },
@@ -77,6 +80,10 @@ error_t parse_args(int key, char *arg, struct argp_state *state) {
          arguments->planetlab = 1; break;
       case 'b':
          arguments->freebsd = 1; break;
+      case '6':
+         arguments->ipv6 = 1; break;
+      case '2':
+         arguments->dual_stack = 1; break;
       case 't':
          arguments->inactivity_timeout = strtol(arg, NULL, 10);
          break;
@@ -99,6 +106,8 @@ void init_args(struct arguments *args) {
    args->silent      = 0;
    args->planetlab   = 0;
    args->freebsd     = 0;
+   args->ipv6        = 0;
+   args->dual_stack  = 0;
    args->config_file = NULL;
    args->dest_file   = NULL;
    args->inactivity_timeout = 0;
@@ -108,6 +117,8 @@ void print_args(struct arguments *args) {
    debug_print("verbose:%d\nsilent:%d\n",args->verbose,args->silent);
    if (args->planetlab) debug_print("PlanetLab mode\n");
    if (args->freebsd) debug_print("FREEBSD mode\n");
+   if (args->ipv6) debug_print("IPv6 mode\n");
+   if (args->dual_stack) debug_print("Dual Stack mode\n");
    debug_print("cfg file:%s\n", args->config_file);
 
    switch (args->mode) {
@@ -160,13 +171,20 @@ int main(int argc, char *argv[]) {
    validate_args(&args);
    if (args.verbose) print_args(&args);
 
-   if (args.mode == CLI_MODE) 
-      tun_cli(&args);
-   else if (args.mode == SERV_MODE) 
-      tun_serv(&args);
-   else if (args.mode == FULLMESH_MODE) 
-      tun_peer(&args);
- 
+   switch (args.mode) {
+      case CLI_MODE:
+         tun_cli(&args);
+         break;
+      case SERV_MODE:
+         tun_serv(&args);
+         break;
+      case FULLMESH_MODE:
+         tun_peer(&args);
+         break;
+      default:
+         break;
+   }
+
    return 0;
 }
 

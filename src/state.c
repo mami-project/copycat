@@ -16,7 +16,6 @@
 #include "destruct.h"
 #include "net.h"
 
-
 /**
  * \fn static int parse_dest_file(struct arguments *args, struct tun_state *state)
  * \brief Parse destination file and file hash table with sockaddr's.
@@ -28,6 +27,65 @@
 static int parse_dest_file(struct arguments *args, struct tun_state *state);
 
 static int parse_cfg_file(struct tun_state *state);
+
+struct tun_state *init_tun_state(struct arguments *args) {
+   struct tun_state *state = calloc(1, sizeof(struct tun_state));
+
+   state->args = args;   
+   if (parse_cfg_file(state) < 0)
+      die("configuration file");
+
+   /* create htables */
+   if (args->mode == SERV_MODE || args->mode == FULLMESH_MODE) {
+      state->serv = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, 
+                                          (GDestroyNotify) free_tun_rec);
+   }
+   if (args->mode == CLI_MODE || args->mode == FULLMESH_MODE) {
+      state->cli  = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, 
+                                          (GDestroyNotify) free_tun_rec);
+      if (parse_dest_file(args, state) < 0)
+         die("destination file");
+   }
+
+   /* Replace cfg value with args TODO*/
+   if (args->inactivity_timeout)
+      state->inactivity_timeout = args->inactivity_timeout;
+
+   init_destructors(state);
+   return state;
+}
+
+void free_tun_state(struct tun_state *state) {
+   if (state->serv)
+      g_hash_table_destroy(state->serv); 
+   if (state->cli)
+      g_hash_table_destroy(state->cli); 
+   if (state->private_addr)
+      free(state->private_addr);
+   if (state->cli_file)
+      free(state->cli_file);
+   if (state->serv_file)
+      free(state->serv_file);
+   if (state->cli_private) {
+      int i;
+      for (i=0; i<state->sa_len; i++) 
+         free_tun_rec(state->cli_private[i]);
+      free(state->cli_private);
+   }
+   free(state);
+}
+
+struct tun_rec *init_tun_rec() {
+   struct tun_rec *ret = calloc(1, sizeof(struct tun_rec));
+   ret->sa        = malloc(sizeof(struct sockaddr_in));
+   ret->slen      = sizeof(struct sockaddr_in);
+
+   return ret;
+}
+
+void free_tun_rec(struct tun_rec *rec) { 
+   free(rec->sa);free(rec); 
+}
 
 int parse_cfg_file(struct tun_state *state) {
    FILE *fp = fopen(state->args->config_file, "r");
@@ -56,6 +114,12 @@ int parse_cfg_file(struct tun_state *state) {
             state->port = strtol(val, NULL, 10);
          else if (!strcmp(key, "private-address")) 
             state->private_addr = strdup(val);
+         else if (!strcmp(key, "private-mask")) 
+            state->private_mask = strdup(val);
+         else if (!strcmp(key, "private-address6")) 
+            state->private_addr6 = strdup(val);
+         else if (!strcmp(key, "private-mask6")) 
+            state->private_mask6 = strdup(val);
          else if (!strcmp(key, "inactivity-timeout")) 
             state->inactivity_timeout = strtol(val, NULL, 10);
          else if (!strcmp(key, "tcp-send-timeout")) 
@@ -130,64 +194,4 @@ int parse_dest_file(struct arguments *args, struct tun_state *state) {
 
    return 0;
 }
-
-struct tun_state *init_tun_state(struct arguments *args) {
-   struct tun_state *state = calloc(1, sizeof(struct tun_state));
-
-   state->args = args;   
-   if (parse_cfg_file(state) < 0)
-      die("configuration file");
-
-   /* create htables */
-   if (args->mode == SERV_MODE || args->mode == FULLMESH_MODE) {
-      state->serv = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, 
-                                          (GDestroyNotify) free_tun_rec);
-   }
-   if (args->mode == CLI_MODE || args->mode == FULLMESH_MODE) {
-      state->cli  = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, 
-                                          (GDestroyNotify) free_tun_rec);
-      if (parse_dest_file(args, state) < 0)
-         die("destination file");
-   }
-
-   /* Replace cfg value with args TODO*/
-   if (args->inactivity_timeout)
-      state->inactivity_timeout = args->inactivity_timeout;
-
-   init_destructors(state);
-   return state;
-}
-
-void free_tun_state(struct tun_state *state) {
-   if (state->serv)
-      g_hash_table_destroy(state->serv); 
-   if (state->cli)
-      g_hash_table_destroy(state->cli); 
-   if (state->private_addr)
-      free(state->private_addr);
-   if (state->cli_file)
-      free(state->cli_file);
-   if (state->serv_file)
-      free(state->serv_file);
-   if (state->cli_private) {
-      int i;
-      for (i=0; i<state->sa_len; i++) 
-         free_tun_rec(state->cli_private[i]);
-      free(state->cli_private);
-   }
-   free(state);
-}
-
-struct tun_rec *init_tun_rec() {
-   struct tun_rec *ret = calloc(1, sizeof(struct tun_rec));
-   ret->sa        = malloc(sizeof(struct sockaddr_in));
-   ret->slen      = sizeof(struct sockaddr_in);
-
-   return ret;
-}
-
-void free_tun_rec(struct tun_rec *rec) { 
-   free(rec->sa);free(rec); 
-}
-
 

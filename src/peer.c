@@ -185,7 +185,7 @@ void tun_peer_aux(struct arguments *args) {
    struct tun_state *state = init_tun_state(args);
 
    /* create tun if and sockets */
-   args->if_name  = create_tun(state->private_addr, NULL, &fd_tun);   
+   args->if_name  = create_tun(state->private_addr, state->private_mask, NULL, &fd_tun);   
    fd_serv        = udp_sock(state->udp_port);
    fd_cli         = udp_sock(state->port);
 

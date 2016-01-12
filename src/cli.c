@@ -120,7 +120,7 @@ void tun_cli_aux(struct arguments *args) {
    struct tun_state *state = init_tun_state(args);
 
    /* create tun if and sockets */   
-   args->if_name  = create_tun(state->private_addr, NULL, &fd_tun);   
+   args->if_name  = create_tun(state->private_addr, state->private_mask, NULL, &fd_tun);   
    fd_udp   = udp_sock(state->port);
 
    /* initial sleep */
@@ -174,10 +174,9 @@ void tun_cli_pl(struct arguments *args) {
    struct sock_fprog *bpf = NULL;
 
    //init tun itf
-   const char *prefix = "24";
    int tun_fd = 0;
    struct tun_state *state = init_tun_state(args);
-   if_name  = create_tun_pl(state->private_addr, prefix, 0, &tun_fd);
+   if_name  = create_tun_pl(state->private_addr, state->private_mask, &tun_fd);
    //udp sock & dst sockaddr
 
    fd_udp   = udp_sock(state->port);

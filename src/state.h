@@ -17,10 +17,10 @@
  *	\brief A record represents a client.
  */
 struct tun_rec {
-   struct sockaddr *sa;    /*!<  The address of the client. */
-   unsigned int     slen;  /*!<  The size of the sockaddr. */
-   int              sport; /*!<  The udp source port. */
-   in_addr_t        priv_addr;   /*!<  The private address in network byte order to be used as a key */
+   struct sockaddr *sa;        /*!<  The address of the client. */
+   unsigned int     slen;      /*!<  The size of the sockaddr. */
+   int              sport;     /*!<  The udp source port. */
+   in_addr_t        priv_addr; /*!<  The private address in network byte order to be used as a key */
 };
 
 /** 
@@ -37,15 +37,20 @@ struct tun_state {
    struct tun_rec **cli_private; /*!<  Destination list. */
    uint8_t sa_len;               /*!<  Number of destinations. */
 
-   //char            *if_name;  /*!<  The tun interface name. TODO: wished if in arg and final if in state*/
+   //char            *if_name;   /*!<  The tun interface name. TODO: wished if in arg and final if in state*/
 
    /* Fields defined in cfg file */
-   char    *private_addr; /*!< The private ip address */
-   char    *public_addr;  /*!< The public ip address */
-   uint16_t port;         /*!< The UNIQUE per-peer port number */
+   char    *private_addr;   /*!< The private ip address */
+   char    *private_mask;   /*!< The private ip mask */
+   char    *private_addr6;  /*!< The private ipv6 address */
+   char    *private_mask6;  /*!< The private ipv6 mask */
 
-   uint16_t udp_port; /*!<  The udp listen port */
-   uint16_t tcp_port; /*!<  The tcp listen port */
+   char    *public_addr;    /*!< The public ip address */
+   char    *public_addr6;   /*!< The public ipv6 address */
+   uint16_t port;           /*!< The UNIQUE per-peer port number */
+
+   uint16_t udp_port;       /*!<  The udp listen port */
+   uint16_t tcp_port;       /*!<  The tcp listen port */
 
    uint16_t tcp_snd_timeout; //TODO as arg too
    uint16_t tcp_rcv_timeout;
