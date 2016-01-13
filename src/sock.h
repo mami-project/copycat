@@ -87,7 +87,7 @@ int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen);
 
 /**
  * \fn int xrecv(int fd, void *buf, size_t buflen)
- * \brief recv syscall wrapper that dies with failure.
+ * \brief recv syscall wrapper that does not dies with failure.
  *
  * \param fd The file descriptor of the receiving socket. 
  * \param buf A pointer to the buffer.
@@ -95,9 +95,28 @@ int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen);
  * \return The amount of bytes received.
  */ 
 int xrecv(int fd, void *buf, size_t buflen);
-// xrecv and send SIGTERM signal to p if recv raised an error
-int xrecvnkill(int fd, void *buf, size_t buflen, pid_t p);
 
+/**
+ * \fn int xrecvnkill(int fd, void *buf, size_t buflen)
+ * \brief recv syscall wrapper that dies with failure.
+ *end SIGTERM signal to p if recv raised an error
+ * \param fd The file descriptor of the receiving socket. 
+ * \param buf A pointer to the buffer.
+ * \param buflen The size of the buffer.
+ * \return The amount of bytes received.
+ */ 
+//int xrecvnkill(int fd, void *buf, size_t buflen, pid_t p);
+
+/**
+ * \fn int xselect(fd_set *input_set, int fd_max, struct timeval *tv, int timeout)
+ * \brief select wrapper
+ *
+ * \param input_set fd set
+ * \param fd_max max fd value
+ * \param tv a pointer to a struct timeval
+ * \param timeout The timeout value, -1 for infinite
+ * \return The amount of bytes received.
+ */ 
 int xselect(fd_set *input_set, int fd_max, struct timeval *tv, int timeout);
 
 /**
@@ -126,7 +145,23 @@ int xrecvfrom(int fd, struct sockaddr *sa, unsigned int *salen, void *buf, size_
  *         a negative value if an error happened
  */ 
 int xrecverr(int fd, void *buf, size_t buflen);
+
+/**
+ * \fn int xfwerr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *state)
+ * \brief forward an icmp msg received from fd to fd_out by rebuilding it 
+ *        from struct sock_extended_err
+ *
+ * \param fd The socket fd
+ * \param buf The buffer to write err msg to
+ * \param buflen The len of buf 
+ * \param fd_out the fd to write icmp msg to
+ * \param state udptun state
+ * 
+ * \return 0 if an error msg was received, 
+ *         a negative value if an error happened
+ */ 
 int xfwerr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *state);
+
 /**
  * \fn int xread(int fd, char *buf, int buflen)
  * \brief read syscall wrapper that dies with failure.
@@ -149,6 +184,16 @@ int xread(int fd, char *buf, int buflen);
  */ 
 int xwrite(int fd, char *buf, int buflen);
 
+/**
+ * \fn int xfwrite(FILE *fp, char *buf, int size, int nmemb)
+ * \brief fwrite syscall wrapper that dies with failure.
+ *
+ * \param fp The file pointer
+ * \param buf A pointer to the buffer.
+ * \param size The size of data elements to write
+ * \param nmemb The number of data elements to write
+ * \return The amount of bytes written.
+ */ 
 int xfwrite(FILE *fp, char *buf, int size, int nmemb);
 
 /**

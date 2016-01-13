@@ -9,6 +9,7 @@
 #define _UDPTUN_DESTRUCT_H
 
 #include <pthread.h>
+#include <sys/types.h>
 #include "state.h"
 
 /**

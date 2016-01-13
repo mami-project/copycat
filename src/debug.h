@@ -20,6 +20,8 @@
 
 #ifdef DEBUG
 
+#include <stdio.h>
+
 /**
  * \def debug_print(fmt, ...)
  * \brief Debugging stderr printing macro

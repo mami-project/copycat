@@ -1,6 +1,9 @@
 /*
- * tunalloc.h
- *
+ * \file tunalloc.h
+ * \brief tunnaloc header
+ * 
+ * \author k.edeline
+ * \version 0.1
  */
 #ifndef _TUNALLOC_H
 #define _TUNALLOC_H
@@ -30,7 +33,8 @@ char *create_tun_pl(const char *ip, const char *prefix, int *tun_fds);
  *
  * \param ip The address of the interface.
  * \param prefix The prefix of the virtual network.
- * \param nat NAT the tun interface or not.
+ * \param dev The wished device name, or NULL
+ * \deprecated nat NAT the tun interface or not.
  * \param tun_fds A pointer to an int to be set to the tun interface fd.
  * \return A pointer (malloc) to the interface name.
  */ 

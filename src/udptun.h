@@ -8,16 +8,7 @@
 #ifndef _UDPTUN_MAIN_H
 #define _UDPTUN_MAIN_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
-#include <unistd.h>
-#include <argp.h>
-#include <errno.h>
 #include <sys/types.h>
-#include <signal.h>
 
 /** 
  * \def __BUFFSIZE
@@ -38,17 +29,16 @@
  */
 struct arguments {
    enum { CLI_MODE, SERV_MODE, FULLMESH_MODE, NONE_MODE } mode; /*!<  The tunnelling mode. */
-   uint8_t verbose;      /*!<  verbose mode */
-   uint8_t silent;       /*!<  silent mode */
-   uint8_t planetlab;    /*!<  PlanetLab mode */
-   uint8_t freebsd;      /*!<  FREEBSD mode */
+   uint8_t verbose;            /*!<  verbose mode */
+   uint8_t silent;             /*!<  silent mode */
+   uint8_t planetlab;          /*!<  PlanetLab mode */
+   uint8_t freebsd;            /*!<  FREEBSD mode */
 
-   uint8_t ipv6;         /*!< IPv6 mode */
-   uint8_t dual_stack;   /*!< Dual stack mode */
+   uint8_t ipv6;               /*!< IPv6 mode */
+   uint8_t dual_stack;         /*!< Dual stack mode */
 
-   char *config_file;    /*!< The destination file  */
-   char *dest_file;      /*!< The destination file  */
-   char *if_name;        /*!< The tun interface name */
+   char *config_file;          /*!< The destination file  */
+   char *dest_file;            /*!< The destination file  */
    uint8_t inactivity_timeout; /*!< The inactivity timeout */
 };
 

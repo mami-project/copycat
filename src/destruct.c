@@ -5,24 +5,59 @@
  * \version 0.1
  */
 
-/**
- * \fn static void destruct()
- * \brief Kill processes, threads, close fds and free memory.
- */
-
+#include <stdlib.h>
+#include <unistd.h>
 #include "destruct.h"
 #include "sock.h"
 #include "debug.h"
 
+/**
+ * \fn static void destruct()
+ * \brief Kill processes, threads, close fds and free memory.
+ */
 static void destruct();
 
+/**
+ * \var pthread_t *ctid
+ * \brief thread id list
+ */
 static volatile pthread_t *ctid;
+
+/**
+ * \var pid_t *cpid
+ * \brief process id list
+ */
 static volatile pid_t *cpid;
+
+/**
+ * \var int *fd
+ * \brief open fd list
+ */
 static volatile int *fd;
+
+/**
+ * \var unsigned int ctid_index
+ * \brief length of thread id list
+ */
 static volatile unsigned int ctid_index;
+
+/**
+ * \var unsigned int cpid_index
+ * \brief length of thread id list
+ */
 static volatile unsigned int cpid_index;
+
+/**
+ * \var unsigned int fd_inde
+ * \brief length of fd list
+ */
 static volatile unsigned int fd_index;
-pthread_mutex_t lock;
+
+/**
+ * \var pthread_mutex_t lock
+ * \brief Semaphore for destructor/garbage collector
+ */
+static pthread_mutex_t lock;
 
 void set_pthread(pthread_t t) {
    if (pthread_mutex_lock(&lock) != 0)
@@ -69,7 +104,8 @@ void destruct() {
       kill(cpid[i], SIGTERM);
    }
    /* file descriptors */
-   for (int i=0; i<fd_index; i++) close(fd[i]);
+   for (int i=0; i<fd_index; i++) 
+      close(fd[i]);
 
    /* mallocs */
    free((void*)ctid);free((void*)cpid);
@@ -101,3 +137,4 @@ void init_destructors(struct tun_state *state) {
    if (pthread_mutex_unlock(&lock) != 0)
       die("mutex unlock");
 }
+

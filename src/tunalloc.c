@@ -18,6 +18,7 @@
 #include <linux/if_tun.h>
 #include <netpacket/packet.h>
 #include <net/ethernet.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -200,13 +201,6 @@ char *create_tun_pl(const char *ip, const char *prefix, int *tun_fds) {
    return if_name;
 }
 
-/*
- * \fn char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds)
- *
- * \param dev choose tun itf name
- * \param tun_fds empty int pointer to point to tun itf fd
- * \return if_name   
- */
 char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds) {
    int   fd;
    char *if_name = malloc(IFNAMSIZ);

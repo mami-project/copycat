@@ -104,7 +104,7 @@ int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, const ch
    if (dev && setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev))) 
       die("bind to device");
 
-   //set bpf
+   /* set bpf */
    if (bpf && setsockopt(s, SOL_SOCKET, SO_ATTACH_FILTER, 
                          bpf, sizeof(struct sock_fprog)) < 0 ) 
        die("attach filter");
@@ -113,7 +113,7 @@ int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, const ch
    sin.sin_family = AF_INET;
    sin.sin_port = htons(port);
 
-   //bind socket to port (PL-specific)
+   /* bind socket to port (PL-specific) */
    if(port && bind(s, (struct sockaddr*)&sin, sizeof(sin) ) == -1) 
      die("bind");
 
@@ -172,7 +172,7 @@ int xrecverr(int fd, void *buf, size_t buflen) {
    struct icmphdr icmph;  
    struct sockaddr_in remote;
 
-   // init structs
+   /* init structs */
    iov.iov_base       = &icmph;
    iov.iov_len        = sizeof(icmph);
    msg.msg_name       = (void*)&remote;
@@ -183,17 +183,17 @@ int xrecverr(int fd, void *buf, size_t buflen) {
    msg.msg_control    = buf;
    msg.msg_controllen = buflen;
 
-   // recv msg
+   /* recv msg */
    int return_status  = recvmsg(fd, &msg, MSG_ERRQUEUE);
    if (return_status < 0)
       return return_status;
 
-   // parse msg 
+   /* parse msg */
    for (cmsg = CMSG_FIRSTHDR(&msg);cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
-      // ip level and error 
+      /* ip level and error */
       if (cmsg->cmsg_level == SOL_IP && cmsg->cmsg_type == IP_RECVERR) {
          sock_err = (struct sock_extended_err*)CMSG_DATA(cmsg); 
-         // icmp msgs
+         /* icmp msgs */
          if (sock_err && sock_err->ee_origin == SO_EE_ORIGIN_ICMP) 
             print_icmp_type(sock_err->ee_type, sock_err->ee_code);
          else debug_print("non-icmp err msg\n");
@@ -210,7 +210,7 @@ int xfwerr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *state
    struct icmphdr icmph;  
    struct sockaddr_in remote;
 
-   // init structs
+   /* init structs */
    iov.iov_base       = &icmph;
    iov.iov_len        = sizeof(icmph);
    msg.msg_name       = (void*)&remote;
@@ -221,17 +221,17 @@ int xfwerr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *state
    msg.msg_control    = buf;
    msg.msg_controllen = buflen;
 
-   // recv msg
+   /* recv msg */
    int return_status  = recvmsg(fd, &msg, MSG_ERRQUEUE), i;
    if (return_status < 0)
       return return_status;
 
-   // parse msg 
+   /* parse msg */
    for (cmsg = CMSG_FIRSTHDR(&msg);cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
-      // ip level and error 
+      /* ip level and error */
       if (cmsg->cmsg_level == SOL_IP && cmsg->cmsg_type == IP_RECVERR) {
-         sock_err = (struct sock_extended_err*)CMSG_DATA(cmsg);
           /* print err type */
+         sock_err = (struct sock_extended_err*)CMSG_DATA(cmsg);
          if (sock_err && sock_err->ee_origin == SO_EE_ORIGIN_ICMP) 
             print_icmp_type(sock_err->ee_type, sock_err->ee_code);
          else debug_print("non-icmp err msg\n");
@@ -250,7 +250,7 @@ int xfwerr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *state
 	      icmp = (struct icmp_msg*)(pkt+sizeof(struct ip_header));
 
          /* fill packet */
-	      ipheader->ver 		= 4; 	
+	      ipheader->ver 		= 4; //TODO wrap it to icmp.c
 	      ipheader->hl		= 5; 	
 	      ipheader->tos		= 0;
 	      ipheader->totl		= pkt_len;
@@ -266,8 +266,10 @@ int xfwerr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *state
 		   icmp->checksum    = 0;
          for (i=0; i<8; i++)          
             icmp->data[i]  = ((unsigned char *) iov.iov_base)[i];
-		   icmp->checksum    = calcsum((unsigned short*)icmp, sizeof(struct icmp_msg));
-	      ipheader->csum		= calcsum((unsigned short*)ipheader, sizeof(struct ip_header));
+		   icmp->checksum    = calcsum((unsigned short*)icmp, 
+                                     sizeof(struct icmp_msg));
+	      ipheader->csum		= calcsum((unsigned short*)ipheader, 
+                                     sizeof(struct ip_header));
 
          int sent = xwrite(fd_out, pkt, pkt_len);
          free(pkt);
@@ -285,18 +287,15 @@ int xrecv(int fd, void *buf, size_t buflen) {
    return recvd;
 }
 
-int xrecvfrom(int fd, struct sockaddr *sa, unsigned int *salen, void *buf, size_t buflen) {
+int xrecvfrom(int fd, struct sockaddr *sa, 
+              unsigned int *salen, 
+              void *buf, size_t buflen) {
    int recvd = 0;
    if ((recvd = recvfrom(fd, buf, buflen, 0, sa, salen)) < 0) {
       debug_print("%s\n",strerror(errno));
       return -1;
    }
    return recvd;
-}
-
-void die(char *s) {
-    perror(s);
-    exit(1);
 }
 
 int xread(int fd, char *buf, int buflen) {
@@ -318,6 +317,11 @@ int xfwrite(FILE *fp, char *buf, int size, int nmemb) {
    if(wsize < nmemb) 
       die("fwrite");
    return wsize;
+}
+
+void die(char *s) {
+    perror(s);
+    exit(1);
 }
 
 unsigned short calcsum(unsigned short *buffer, int length) {

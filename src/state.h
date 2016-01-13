@@ -14,7 +14,7 @@
 
 /** 
  * \struct tun_rec
- *	\brief A record represents a client.
+ *	\brief A record represents a peer.
  */
 struct tun_rec {
    struct sockaddr *sa;        /*!<  The address of the client. */
@@ -25,7 +25,7 @@ struct tun_rec {
 
 /** 
  * \struct tun_state 
- *	\brief The state of the server.
+ *	\brief The state of the node.
  */
 struct tun_state {
    /* From command-line arguments  */
@@ -37,35 +37,33 @@ struct tun_state {
    struct tun_rec **cli_private; /*!<  Destination list. */
    uint8_t sa_len;               /*!<  Number of destinations. */
 
-
-
    /* Fields defined in cfg file */
-   char    *if_name;        /*!< The tun interface name. */
-   char    *private_addr;   /*!< The private ip address */
-   char    *private_mask;   /*!< The private ip mask */
-   char    *private_addr6;  /*!< The private ipv6 address */
-   char    *private_mask6;  /*!< The private ipv6 mask */
+   char    *if_name;            /*!< The tun interface name. */
+   char    *private_addr;       /*!< The private ip address */
+   char    *private_mask;       /*!< The private ip mask */
+   char    *private_addr6;      /*!< The private ipv6 address */
+   char    *private_mask6;      /*!< The private ipv6 mask */
 
-   char    *public_addr;    /*!< The public ip address */
-   char    *public_addr6;   /*!< The public ipv6 address */
-   uint16_t port;           /*!< The UNIQUE per-peer port number */
+   char    *public_addr;        /*!< The public ip address */
+   char    *public_addr6;       /*!< The public ipv6 address */
+   uint16_t port;               /*!< The UNIQUE per-peer port number */
 
-   uint16_t udp_port;       /*!<  The udp listen port */
-   uint16_t tcp_port;       /*!<  The tcp listen port */
+   uint16_t udp_port;           /*!<  The udp listen port */
+   uint16_t tcp_port;           /*!<  The tcp listen port */
 
-   uint16_t tcp_snd_timeout;
-   uint16_t tcp_rcv_timeout;
-   int16_t  inactivity_timeout;
-   uint16_t initial_sleep;
+   uint16_t tcp_snd_timeout;    /*!< TCP client send timeout */
+   uint16_t tcp_rcv_timeout;    /*!< TCP client receive timeout */
+   int16_t  inactivity_timeout; /*!< Inactivity timeout */
+   uint16_t initial_sleep;      /*!< Initial sleep time (client & peer) */
    
-   char    *cli_file;
-   char    *serv_file;
+   char    *cli_file;           /*!< The client file location */
+   char    *serv_file;          /*!< The server file location */
 
-   uint32_t buf_length;
-   uint32_t backlog_size;
-   uint32_t fd_lim;
+   uint32_t buf_length;         /*!< buffer length */
+   uint32_t backlog_size;       /*!< backlog size  */
+   uint32_t fd_lim;             /*!< max simultaneously open fd */
    
-   uint32_t max_segment_size; /*!< The value passed as TCP_MAXSEG optval (max mss) */
+   uint32_t max_segment_size;   /*!< The value passed as TCP_MAXSEG optval (max mss) */
 };
 
 /**

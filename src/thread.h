@@ -7,6 +7,13 @@
 #ifndef _UDPTUN_THREAD_H
 #define _UDPTUN_THREAD_H
 
+/**
+ * \fn void xthread_create(void *(*start_routine) (void *), void *args)
+ * \brief run a thread (pthread.h)
+ *
+ * \param start_routine A pointer to the thread function
+ * \param args Arguments to be passed to the thread function
+ */ 
 void xthread_create(void *(*start_routine) (void *), void *args);
 
 #endif
