@@ -28,21 +28,25 @@ static char args_doc[] = "\nSERVER mode usage: -s (-p) (-f) --udp-lport PORT --t
                          " --tcp-saddr ADDR --tcp-sport PORT --tcp-dport PORT";
 
 static struct argp_option options[] = { 
-  {"verbose",    'v', 0,        0,  "Produce verbose output" },
-  {"quiet",      'q', 0,        0,  "Don't produce any output" },
+  {"verbose",    'v', 0,      0,  "Produce verbose output" },
+  {"quiet",      'q', 0,      0,  "Don't produce any output" },
 
-  {"client",     'c', 0,        0,  "Client mode" },
-  {"server",     's', 0,        0,  "Server mode" },
-  {"fullmesh",   'f', 0,        0,  "Fullmesh mode (both client and server)" },
+  {"client",     'c', 0,      0,  "Client mode" },
+  {"server",     's', 0,      0,  "Server mode" },
+  {"fullmesh",   'f', 0,      0,  "Fullmesh mode (both client and server)" },
 
-  {"ipv6",     '6', 0,        0,  "IPv6 mode" },
-  {"ipv4-ipv6",'2', 0,        0,  "IPv4-IPv6 mode" },
+  {"parallel",   'a', 0,      0,  "Client parallel flows scheduling mode (default)" },
+  {"tun-first",  'u', 0,      0,  "Client tunnel first flows scheduling mode" },
+  {"notun-first",'n', 0,      0,  "Client notunnel first flows scheduling mode" },
 
-  {"planetlab",  'p', 0,        0,  "PlanetLab mode" },
-  {"freebsd",    'b', 0,        0,  "FREEBSD mode" },
-  {"timeout",    't', "TIME",   0,  "Inactivity timeout" },
-  {"dest-file",  'd',  "FILE",   0,  "Destination file"},
-  {"config",     'o',  "FILE",   0,  "Configuration file"},
+  {"ipv6",        '6', 0,      0,  "IPv6 mode" },
+  {"dual-stack",  '2', 0,      0,  "IPv4-IPv6 mode" },
+
+  {"planetlab",  'p', 0,      0,  "PlanetLab mode" },
+  {"freebsd",    'b', 0,      0,  "FREEBSD mode" },
+  {"timeout",    't', "TIME", 0,  "Inactivity timeout" },
+  {"dest-file",  'd', "FILE", 0,  "Destination file"},
+  {"config",     'o', "FILE", 0,  "Configuration file"},
     { 0, 0, 0, 0, 0 } 
 };
 
@@ -91,6 +95,12 @@ error_t parse_args(int key, char *arg, struct argp_state *state) {
          arguments->freebsd = 1; break;
       case '6':
          arguments->ipv6 = 1; break;
+      case 'a':
+         arguments->cli_mode = PARALLEL_MODE; break;
+      case 'u':
+         arguments->cli_mode = TUN_FIRST_MODE; break;
+      case 'n':
+         arguments->cli_mode = NOTUN_FIRST_MODE; break;
       case '2':
          arguments->dual_stack = 1; break;
       case 't':
@@ -111,6 +121,7 @@ error_t parse_args(int key, char *arg, struct argp_state *state) {
 
 void init_args(struct arguments *args) {
    args->mode        = NONE_MODE;
+   args->cli_mode    = PARALLEL_MODE; 
    args->verbose     = 0;
    args->silent      = 0;
    args->planetlab   = 0;
@@ -145,6 +156,22 @@ void print_args(struct arguments *args) {
       default:
          debug_print("unknown mode\n");
          break;
+   }
+   if (args->mode == CLI_MODE || args->mode == FULLMESH_MODE) {
+      switch (args->cli_mode) {
+         case PARALLEL_MODE:
+            debug_print("parallel flow scheduling mode\n");
+            break;
+         case TUN_FIRST_MODE:
+            debug_print("tunnel-first flow scheduling mode\n");
+            break;
+         case NOTUN_FIRST_MODE:
+            debug_print("notunnel-first flow scheduling mode\n");
+            break;
+         default:
+            debug_print("unknown scheduling mode\n");
+            break;
+      }
    }
 }
 

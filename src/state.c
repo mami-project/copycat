@@ -104,6 +104,12 @@ void free_tun_state(struct tun_state *state) {
          free_tun_rec(state->cli_private[i]);
       free(state->cli_private);
    }
+   if (state->cli_public) {
+      int i;
+      for (i=0; i<state->sa_len; i++) 
+         free_tun_rec(state->cli_public[i]);
+      free(state->cli_public);
+   }
    free(state);
 }
 
@@ -158,6 +164,10 @@ int parse_cfg_file(struct tun_state *state) {
             state->private_addr6 = strdup(val);
          else if (!strcmp(key, "private-mask6")) 
             state->private_mask6 = strdup(val);
+         else if (!strcmp(key, "public-address")) 
+            state->public_addr  = strdup(val);
+         else if (!strcmp(key, "public-address6")) 
+            state->public_addr6 = strdup(val);
          else if (!strcmp(key, "inactivity-timeout")) 
             state->inactivity_timeout = strtol(val, NULL, 10);
          else if (!strcmp(key, "tcp-send-timeout")) 
@@ -223,14 +233,20 @@ int parse_dest_file(struct arguments *args, struct tun_state *state) {
 
    /* build destination list */
    state->cli_private = malloc(count * sizeof(struct tun_rec *));
+   state->cli_public  = malloc(count * sizeof(struct tun_rec *));
    state->sa_len      = count;
    int i = 0;
    while (fscanf(fp, "%d %s %s", &sport, public, private) == 3) {
-      struct tun_rec *nrec = init_tun_rec();
-      nrec->sa    = (struct sockaddr *)get_addr(private, state->tcp_port);
-      nrec->sport = sport;  
+      struct tun_rec *nrec_priv = init_tun_rec();
+      struct tun_rec *nrec_pub  = init_tun_rec();
 
-      state->cli_private[i++] = nrec;
+      nrec_priv->sa    = (struct sockaddr *)get_addr(private, state->tcp_port);
+      nrec_priv->sport = sport;  
+      state->cli_private[i] = nrec_priv;
+
+      nrec_pub->sa    = (struct sockaddr *)get_addr(public, state->udp_port);
+      nrec_pub->sport = sport;  
+      state->cli_public[i++] = nrec_pub;
    }
 
    return 0;

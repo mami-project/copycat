@@ -30,6 +30,17 @@
 #include "destruct.h"
 #include "thread.h"
 #include "tunalloc.h"
+#include "udptun.h"
+
+struct cli_thread_parallel_args {
+   struct tun_state *state;
+   struct sockaddr *sa;
+   char *dev;
+   char *addr;
+   int port;
+   int set_maxseg;
+   char *filename;
+};
 
 /**
  * \var char *serv_file
@@ -49,7 +60,9 @@ static char *serv_file;
  * \return 0 if an error msg was received, 
  *         a negative value if an error happened
  */ 
-static int tcp_cli(struct tun_state *st, struct sockaddr *sa);
+//static int tcp_cli(struct tun_state *st, struct sockaddr *sa);
+static int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
+            char *addr, int port, int tun, char* filename);
 
 /**
  * \fn static int tcp_serv(char *addr, int port, char* dev, struct tun_state *state)
@@ -59,12 +72,13 @@ static int tcp_cli(struct tun_state *st, struct sockaddr *sa);
  * \param addr The server address
  * \param port The server port
  * \param dev  The device to bind to
+ * \param set_maxseg Set TCP_MAXSEG option to cfg file value
  * \param state The program state
  * 
  * \return 0 if an error msg was received, 
  *         a negative value if an error happened
  */ 
-static int tcp_serv(char *addr, int port, char* dev, struct tun_state *state);
+static int tcp_serv(char *addr, int port, char* dev, struct tun_state *state, int set_maxseg);
 
 /**
  * \fn void *serv_worker_thread(void *socket_desc)
@@ -78,6 +92,18 @@ static int tcp_serv(char *addr, int port, char* dev, struct tun_state *state);
  */ 
 static void *serv_worker_thread(void *socket_desc);
 
+static void *serv_thread_private(void *socket_desc);
+static void *serv_thread_public(void *socket_desc);
+
+static void cli_thread_parallel(struct tun_state *state, struct arguments *args, int i);
+static void cli_thread_notun(struct tun_state *state, struct arguments *args, int i);
+static void cli_thread_tun(struct tun_state *state, struct arguments *args, int i);
+
+/**
+ * stub for tcp_cli used in parallel scheduling mode
+ */
+static void *forked_cli(void *a);
+
 struct sockaddr_in *get_addr(const char *addr, int port) {
    struct sockaddr_in *ret = calloc(1, sizeof(struct sockaddr));
    ret->sin_family         = AF_INET;
@@ -90,7 +116,7 @@ struct sockaddr_in *get_addr(const char *addr, int port) {
 void tun(struct tun_state *state, int *fd_tun) {
    struct arguments *args = state->args;
 #if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
-   //TODO: OSx ??
+   //TODO: OSx ?? BSD is defined with OSX
    state->if_name  = create_tun_bsd(state->private_addr, state->private_mask, fd_tun);
 #else
    if (args->planetlab)
@@ -100,14 +126,73 @@ void tun(struct tun_state *state, int *fd_tun) {
 #endif
 }
 
+void *forked_cli(void *a) {
+   struct cli_thread_parallel_args *args = (struct cli_thread_parallel_args*) a;
+   tcp_cli(args->state, args->sa, args->dev,
+           args->addr, args->port, args->set_maxseg,
+           args->filename);
+   return 0;
+}
+
+//TODO move thread functions to cli.c/serv.c
+void cli_thread_parallel(struct tun_state *state, struct arguments *args, int i) {
+      /* set thread arguments */
+      struct cli_thread_parallel_args args_tun = {state, 
+                         state->cli_private[i]->sa, state->if_name, 
+                         state->private_addr, state->port, 1, __CLI_TUN_FILE};
+      struct cli_thread_parallel_args args_notun = {state, 
+                         state->cli_public[i]->sa, NULL, 
+                         state->public_addr, state->port, 0, __CLI_NOTUN_FILE};
+
+      /* launch threads */
+      pthread_t tid_tun   = xthread_create(forked_cli, (void*)&args_tun);
+      pthread_t tid_notun = xthread_create(forked_cli, (void*)&args_notun);
+      
+      /* join threads */
+      pthread_join(tid_tun, NULL);
+      pthread_join(tid_notun, NULL);
+}
+
+void cli_thread_tun(struct tun_state *state, struct arguments *args, int i) {
+      /* run tunneled flow */
+      tcp_cli(state, state->cli_private[i]->sa, state->if_name, 
+              state->private_addr, state->port, 1, __CLI_TUN_FILE);
+      /* run notun flow */
+      tcp_cli(state, state->cli_public[i]->sa, NULL, 
+              NULL, state->port, 0, __CLI_NOTUN_FILE);
+}
+
+void cli_thread_notun(struct tun_state *state, struct arguments *args, int i) {
+      /* run notun flow */
+      tcp_cli(state, state->cli_public[i]->sa, NULL, 
+              NULL, state->port, 0, __CLI_NOTUN_FILE);
+      /* run tunneled flow */
+      tcp_cli(state, state->cli_private[i]->sa, state->if_name, 
+              state->private_addr, state->port, 1, __CLI_TUN_FILE);
+}
+
 void *cli_thread(void *st) {
    int i; 
    struct tun_state *state = st;
    struct arguments *args = state->args;
 
    /* Client loop */
-   for (i=0; i<state->sa_len; i++) 
-      tcp_cli(state, state->cli_private[i]->sa);
+   for (i=0; i<state->sa_len; i++) {
+      switch (args->cli_mode) {
+         case PARALLEL_MODE:
+            cli_thread_parallel(state, args, i);
+            break;
+         case TUN_FIRST_MODE:
+            cli_thread_tun(state, args, i);
+            break;
+         case NOTUN_FIRST_MODE:
+            cli_thread_notun(state, args, i);
+            break;
+         default:
+            errno=EINVAL;
+            die("cli_mode");
+      }
+   }
 
    /* Shutdown client, not peer */
    cli_shutdown(0);
@@ -116,15 +201,27 @@ void *cli_thread(void *st) {
 
 void *serv_thread(void *st) {
    struct tun_state *state = st;
-   struct arguments *args = state->args;
    serv_file = state->serv_file;
-   tcp_serv(state->private_addr, state->tcp_port, state->if_name, state);
+   xthread_create(serv_thread_private, st);
+   xthread_create(serv_thread_public, st);
+
    return 0;
 }
 
-int tcp_serv(char *daddr, int dport, char* dev, struct tun_state *state) {
+void *serv_thread_private(void *st) {
+   struct tun_state *state = st;
+   tcp_serv(state->private_addr, state->tcp_port, state->if_name, state, 1);
+   return 0;
+}
 
-   int s, sin_size, tmp;
+void *serv_thread_public(void *st) {
+   struct tun_state *state = st;
+   tcp_serv(state->public_addr, state->udp_port, NULL, state, 0);
+   return 0;
+}
+
+int tcp_serv(char *addr, int port, char* dev, struct tun_state *state, int set_maxseg) {
+   int s, sin_size;
    struct sockaddr_in sin, sout;
 
    /* TCP socket */
@@ -133,15 +230,20 @@ int tcp_serv(char *daddr, int dport, char* dev, struct tun_state *state) {
    set_fd(s);
    if (dev && setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev))) 
       die("bind to device");
-   tmp = state->max_segment_size;
-   if (setsockopt (s, IPPROTO_TCP, TCP_MAXSEG, &tmp, sizeof(tmp)) < 0)
-      die("setsockopt maxseg");
-   
+   if (set_maxseg) {
+      int tmp = state->max_segment_size;
+      if (setsockopt (s, IPPROTO_TCP, TCP_MAXSEG, &tmp, sizeof(tmp)) < 0)
+         die("setsockopt maxseg");
+   }
+
    /* bind to sport */
    memset(&sout, 0, sizeof(sout));
    sout.sin_family = AF_INET;
-   inet_pton(AF_INET, daddr, &sout.sin_addr);
-   sout.sin_port = htons(dport);
+   if (addr)
+      inet_pton(AF_INET, addr, &sout.sin_addr);
+   else
+      sout.sin_addr.s_addr = htonl(INADDR_ANY);
+   sout.sin_port = htons(port);
 
    if (bind(s, (struct sockaddr *)&sout, sizeof(sout)) < 0) 
       die("bind");
@@ -149,7 +251,7 @@ int tcp_serv(char *daddr, int dport, char* dev, struct tun_state *state) {
       die("listen");
 
    /* listen loop */
-   debug_print("server ready ...\n");
+   debug_print("TCP server listenning on %s:%d ...\n", addr ? addr : "*", port);
    int success = 0, ws;
    pthread_t thread_id;
    while(!success) {
@@ -168,7 +270,6 @@ int tcp_serv(char *daddr, int dport, char* dev, struct tun_state *state) {
 }
 
 void *serv_worker_thread(void *socket_desc) {
-
    char buf[__BUFFSIZE];
    int s = *(int*)socket_desc;
 
@@ -201,23 +302,23 @@ void *serv_worker_thread(void *socket_desc) {
    return 0;
 }
 
-int tcp_cli(struct tun_state *st, struct sockaddr *sa) {
+int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
+            char *addr, int port, int tun, char* filename) {
    struct tun_state *state = st;
-   struct arguments *args = state->args;
    struct sockaddr_in sout;
-   int s, i, err = 0, tmp; 
+   int s, i, err = 0; 
 
    /* TCP socket */
-   if ((s=socket(AF_INET, SOCK_STREAM, 0)) == -1) 
+   if ((s=socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) 
       die("socket");
    set_fd(s);
 
    /* Socket opts */
    struct timeval snd_timeout = {state->tcp_snd_timeout, 0}; 
    struct timeval rcv_timeout = {state->tcp_rcv_timeout, 0}; 
-   char *dev = state->if_name;
-   if (dev && setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev))) 
+   if (dev && (setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev)) < 0)) 
       die("bind to device");
+
    if (setsockopt (s, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout,
                 sizeof(rcv_timeout)) < 0)
       die("setsockopt rcvtimeo");
@@ -225,19 +326,27 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa) {
                 sizeof(snd_timeout)) < 0)
       die("setsockopt sndtimeo");
 
-   tmp = state->max_segment_size;
-   if (setsockopt (s, IPPROTO_TCP, TCP_MAXSEG, &tmp, sizeof(tmp)) < 0)
-      die("setsockopt maxseg");
-   
-    /*if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, (char *)&tmp,
-                sizeof(tmp)) < 0) //TODO maybe useless
-        die("setsockopt failed");*/
+   /* set tunnel/notunnel specific features */
+   if (tun) {
+      int tmp = state->max_segment_size;
+      if (setsockopt (s, IPPROTO_TCP, TCP_MAXSEG, &tmp, sizeof(tmp)) < 0)
+         die("setsockopt maxseg");
+   } else {
+      /*int tmp = 1;
+      if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, (char *)&tmp,
+             sizeof(tmp)) < 0)
+         die("setsockopt failed"); TODO: is it ever useful ?*/
+
+   }
    
    /* bind socket to local addr */
    memset(&sout, 0, sizeof(sout));
    sout.sin_family = AF_INET;
-   sout.sin_port   = htons(state->port);
-   inet_pton(AF_INET, state->private_addr, &sout.sin_addr);
+   sout.sin_port   = htons(port);
+   if (addr)
+      inet_pton(AF_INET, addr, &sout.sin_addr);
+   else
+      sout.sin_addr.s_addr = htonl(INADDR_ANY);
    if (bind(s, (struct sockaddr *)&sout, sizeof(sout)) < 0) 
       die("bind");
 
@@ -249,7 +358,7 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa) {
       goto err;
    }
    /* transfer file */
-   FILE *fp = fopen(state->cli_file, "w");
+   FILE *fp = fopen(state->cli_file, "w");//TODO cat with filename
    if(fp == NULL) die("fopen");
 
    char buf[__BUFFSIZE];
@@ -283,8 +392,8 @@ succ:
    debug_print("socket %d successfuly closed.\n", s);
    return 0;
 err:
-   debug_print("socket %d closed on error: %s\n", s, strerror(err));
    close(s);
+   debug_print("socket %d closed on error: %s\n", s, strerror(err));
    return -1;
 }
 

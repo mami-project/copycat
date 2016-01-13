@@ -23,12 +23,24 @@
  */
 #define __CLOSE_TIMEOUT 1
 
+/**
+ * \def __CLI_TUN_FILE
+ * \brief 
+ */
+#define __CLI_TUN_FILE "cli_tun.dat"
+
+/**
+ * \def __CLI_NOTUN_FILE
+ */
+#define __CLI_NOTUN_FILE "cli_notun.dat"
+
 /** 
  * \struct arguments
  *	\brief The programs arguments.
  */
 struct arguments {
    enum { CLI_MODE, SERV_MODE, FULLMESH_MODE, NONE_MODE } mode; /*!<  The tunnelling mode. */
+   enum { PARALLEL_MODE, TUN_FIRST_MODE, NOTUN_FIRST_MODE } cli_mode; /*!<  The client scheduling mode. */
    uint8_t verbose;            /*!<  verbose mode */
    uint8_t silent;             /*!<  silent mode */
    uint8_t planetlab;          /*!<  PlanetLab mode */

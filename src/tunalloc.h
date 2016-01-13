@@ -7,9 +7,6 @@
  */
 #ifndef _TUNALLOC_H
 #define _TUNALLOC_H
-
-//TODO macro for OS identification
-//#define _PL_NODE_
  
 /**
  * \fn char *create_tun_pl(const char *ip, const char *prefix, int nat, int *tun_fds)

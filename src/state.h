@@ -35,6 +35,7 @@ struct tun_state {
    GHashTable      *serv;        /*!<  Source port to public address lookup table. */
    GHashTable      *cli;         /*!<  Private address to public address lookup table. */
    struct tun_rec **cli_private; /*!<  Destination list. */
+   struct tun_rec **cli_public;  /*!<  Destination list. */ //TODO v6 equivalent
    uint8_t sa_len;               /*!<  Number of destinations. */
 
    /* Fields defined in cfg file */
@@ -43,11 +44,11 @@ struct tun_state {
    char    *private_mask;       /*!< The private ip mask */
    char    *private_addr6;      /*!< The private ipv6 address */
    char    *private_mask6;      /*!< The private ipv6 mask */
-
+   //TODO fill public addrs
    char    *public_addr;        /*!< The public ip address */
    char    *public_addr6;       /*!< The public ipv6 address */
    uint16_t port;               /*!< The UNIQUE per-peer port number */
-
+   //TODO to public & private_port
    uint16_t udp_port;           /*!<  The udp listen port */
    uint16_t tcp_port;           /*!<  The tcp listen port */
 
@@ -55,7 +56,7 @@ struct tun_state {
    uint16_t tcp_rcv_timeout;    /*!< TCP client receive timeout */
    int16_t  inactivity_timeout; /*!< Inactivity timeout */
    uint16_t initial_sleep;      /*!< Initial sleep time (client & peer) */
-   
+   //TODO cli dir
    char    *cli_file;           /*!< The client file location */
    char    *serv_file;          /*!< The server file location */
 

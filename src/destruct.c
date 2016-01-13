@@ -92,7 +92,7 @@ void destruct() {
    /* thread ids */
    for (int i=0; i<ctid_index; i++) {
       if (!pthread_cancel(ctid[i])) {
-         debug_print("thread %d canceled\n", (int)ctid[i]);
+         debug_print("thread %u canceled\n", (unsigned int)ctid[i]);
          continue;
       }
       pthread_kill(ctid[i], SIGKILL);

@@ -99,13 +99,13 @@ void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_sta
       int sport           = ntohs(((struct sockaddr_in *)nrec->sa)->sin_port);
       int sent            = 0;
       if ( (rec = g_hash_table_lookup(state->serv, &sport)) ) {
-         //forward
+         /* forward */
          sent = xwrite(fd_tun, buf, recvd);
          free_tun_rec(nrec);
       } else if (g_hash_table_size(state->serv) <= state->fd_lim) { 
          sent = xwrite(fd_tun, buf, recvd);
 
-         //add new record to lookup tables  
+         /* add new record to lookup tables */
          nrec->sport = sport;
          g_hash_table_insert(state->serv, &nrec->sport, nrec);
          debug_print("serv: added new entry: %d\n", sport);
