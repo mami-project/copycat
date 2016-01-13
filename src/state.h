@@ -37,7 +37,7 @@ struct tun_state {
    struct tun_rec **cli_private; /*!<  Destination list. */
    uint8_t sa_len;               /*!<  Number of destinations. */
 
-   //char            *if_name;   /*!<  The tun interface name. TODO: wished if in arg and final if in state*/
+   //char            *if_name;   /*!<  The tun interface name. TODO:*/
 
    /* Fields defined in cfg file */
    char    *private_addr;   /*!< The private ip address */
@@ -52,7 +52,7 @@ struct tun_state {
    uint16_t udp_port;       /*!<  The udp listen port */
    uint16_t tcp_port;       /*!<  The tcp listen port */
 
-   uint16_t tcp_snd_timeout; //TODO as arg too
+   uint16_t tcp_snd_timeout;
    uint16_t tcp_rcv_timeout;
    int16_t inactivity_timeout;
    uint16_t initial_sleep;

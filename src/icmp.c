@@ -6,13 +6,14 @@
  */
 
 #include "icmp.h"
+#include "debug.h"
 
 void print_icmp_type(uint8_t type, uint8_t code) {
 
-   // icmp msg types
+   /* icmp msg types */
    switch (type) {
       case ICMP_DEST_UNREACH:
-         // icmp type 3 codes
+         /* icmp type 3 codes */
          switch (code) {
             case ICMP_NET_UNREACH:
                debug_print("icmp network unreachable\n");

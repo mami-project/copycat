@@ -43,12 +43,12 @@ struct arguments {
    uint8_t planetlab;    /*!<  PlanetLab mode */
    uint8_t freebsd;      /*!<  FREEBSD mode */
 
-   uint8_t ipv6;
-   uint8_t dual_stack;
+   uint8_t ipv6;         /*!< IPv6 mode */
+   uint8_t dual_stack;   /*!< Dual stack mode */
 
-   char *config_file;   /*!< The destination file  */
-   char *dest_file;  /*!< The destination file  */
-   char *if_name;    /*!< The tun interface name */
+   char *config_file;    /*!< The destination file  */
+   char *dest_file;      /*!< The destination file  */
+   char *if_name;        /*!< The tun interface name */
    uint8_t inactivity_timeout; /*!< The inactivity timeout */
 };
 

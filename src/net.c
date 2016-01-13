@@ -26,11 +26,12 @@
 #include "cli.h"
 #include "destruct.h"
 #include "thread.h"
+#include "tunalloc.h"
 
 static char *serv_file;
 
 /**
- * \fn int tcp_connect(struct tun_state *st, struct sockaddr *sa, char *filename)
+ * \fn static int tcp_cli(struct tun_state *st, struct sockaddr *sa, char *filename)
  * \brief Receive an error msg from MSG_ERRQUEUE and print a description 
  *        of it via the debug macro.
  *
@@ -41,7 +42,22 @@ static char *serv_file;
  * \return 0 if an error msg was received, 
  *         a negative value if an error happened
  */ 
-static int tcp_connect(struct tun_state *st, struct sockaddr *sa);
+static int tcp_cli(struct tun_state *st, struct sockaddr *sa);
+
+/**
+ * \fn static int tcp_serv(char *addr, int port, char* dev, struct tun_state *state)
+ * \brief Receive an error msg from MSG_ERRQUEUE and print a description 
+ *        of it via the debug macro.
+ *
+ * \param addr The server address
+ * \param port The server port
+ * \param dev  The device to bind to
+ * \param state The program state
+ * 
+ * \return 0 if an error msg was received, 
+ *         a negative value if an error happened
+ */ 
+static int tcp_serv(char *addr, int port, char* dev, struct tun_state *state);
 
 /**
  * \fn void *serv_worker_thread(void *socket_desc)
@@ -57,12 +73,36 @@ static void *serv_worker_thread(void *socket_desc);
 
 struct sockaddr_in *get_addr(const char *addr, int port) {
    struct sockaddr_in *ret = malloc(sizeof(struct sockaddr));
-   memset(ret, 0, sizeof(struct sockaddr_in));
+   memset(ret, 0, sizeof(struct sockaddr_in));//TODO calloc
    ret->sin_family      = AF_INET;
    ret->sin_addr.s_addr = inet_addr(addr);
    ret->sin_port        = htons(port);
    
    return ret;
+}
+
+void tun(struct tun_state *state, int *fd_tun) {
+   struct arguments *args = state->args;
+   if (args->planetlab)
+      args->if_name  = create_tun_pl(state->private_addr, state->private_mask, fd_tun);
+   else if (args->freebsd)
+      args->if_name  = create_tun_pl(state->private_addr, state->private_mask, fd_tun);
+   else
+      args->if_name  = create_tun(state->private_addr, state->private_mask, NULL, fd_tun); 
+}
+
+void *cli_thread(void *st) {
+   int i; 
+   struct tun_state *state = st;
+   struct arguments *args = state->args;
+
+   /* Client loop */
+   for (i=0; i<state->sa_len; i++) 
+      tcp_cli(state, state->cli_private[i]->sa);
+
+   /* Shutdown client, not peer */
+   cli_shutdown(0);
+   return 0;
 }
 
 void *serv_thread(void *st) {
@@ -78,7 +118,7 @@ int tcp_serv(char *daddr, int dport, char* dev, struct tun_state *state) {
    int s, sin_size, tmp;
    struct sockaddr_in sin, sout;
 
-   /* create a TCP socket */
+   /* TCP socket */
    if ((s=socket(AF_INET, SOCK_STREAM, 0)) < 0) 
      die("socket");
    set_fd(s);
@@ -99,8 +139,9 @@ int tcp_serv(char *daddr, int dport, char* dev, struct tun_state *state) {
    if (listen(s, state->backlog_size) < 0) 
       die("listen");
 
+   /* listen loop */
    debug_print("server ready ...\n");
-   int success = 0, ws; // TODO:signal(SIGINT, int_handler) break loop and kill childs
+   int success = 0, ws;
    pthread_t thread_id;
    while(!success) {
 
@@ -111,10 +152,9 @@ int tcp_serv(char *daddr, int dport, char* dev, struct tun_state *state) {
 
       /* Fork worker thread */
       xthread_create(serv_worker_thread, (void*) &ws);
-   
    }
 
-   close (s);
+   close(s);
    return 0;
 }
 
@@ -127,19 +167,19 @@ void *serv_worker_thread(void *socket_desc) {
    if(fp == NULL) 
       die("file note found");
 
-   bzero(buf, __BUFFSIZE);
+   memset(buf, 0, __BUFFSIZE);
    int bsize = 0, wsize = 0;
 
    /* Send loop */
    debug_print("sending data ...\n");
    while((bsize = fread(buf, sizeof(char), __BUFFSIZE, fp)) > 0) {
-      if((wsize = send(s, buf, bsize, 0)) < 0) { // Can change buffer size for mss in old kernels
+      if((wsize = send(s, buf, bsize, 0)) < 0) { // TODO change buffer size for mss in old kernels without maxseg
          debug_print("ERROR: send");
          break;
       }
       if (wsize < bsize) 
          die("file write\n");
-      bzero(buf, __BUFFSIZE);
+      memset(buf, 0, __BUFFSIZE);
    }
 
    /* shutdown connection */
@@ -152,7 +192,7 @@ void *serv_worker_thread(void *socket_desc) {
    return 0;
 }
 
-int tcp_connect(struct tun_state *st, struct sockaddr *sa) {
+int tcp_cli(struct tun_state *st, struct sockaddr *sa) {
 
    struct tun_state *state = st;
    struct arguments *args = state->args;
@@ -161,7 +201,7 @@ int tcp_connect(struct tun_state *st, struct sockaddr *sa) {
    int s, i, err = 0, tmp; 
 
    /* TCP socket */
-   if ((s=socket(AF_INET, SOCK_STREAM, 0)) == -1) //IPPROTO_TCP
+   if ((s=socket(AF_INET, SOCK_STREAM, 0)) == -1) 
       die("socket");
    set_fd(s);
 
@@ -205,11 +245,11 @@ int tcp_connect(struct tun_state *st, struct sockaddr *sa) {
    if(fp == NULL) die("fopen");
 
    char buf[__BUFFSIZE];
-   bzero(buf, __BUFFSIZE);
+   memset(buf, 0, __BUFFSIZE);
    int bsize = 0;
    while(bsize = xrecv(s, buf, __BUFFSIZE)) {
        xfwrite(fp, buf, sizeof(char), bsize);
-       bzero(buf, __BUFFSIZE);
+       memset(buf, 0, __BUFFSIZE);
    }
 
    /* shutdown connection */
@@ -240,17 +280,3 @@ err:
    return -1;
 }
 
-void *cli_thread(void *st) {
-   struct tun_state *state = st;
-   struct arguments *args = state->args;
-
-   /* Client loop */
-   int i; 
-   for (i=0; i<state->sa_len; i++) {
-      tcp_connect(state, state->cli_private[i]->sa);
-   }
-
-   /* Shutdown client, not peer */
-   cli_shutdown(0);
-   return 0;
-}

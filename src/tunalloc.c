@@ -25,6 +25,7 @@
 #include <fcntl.h>
 
 #include "sock.h"
+#include "debug.h"
 
 /**
  * \def VSYS_TUNTAP
@@ -44,15 +45,53 @@
  */
 #define VSYS_VIFUP_OUT "/vsys/vif_up.out"
 
+/** 
+ * \struct in6_ifreq
+ *	\brief struct ifreq IPv6 equivalent
+ */
 struct in6_ifreq {
     struct in6_addr ifr6_addr;
     __u32 ifr6_prefixlen;
     unsigned int ifr6_ifindex;
 };
 
+/**
+ * \fn int tun_alloc(int iftype, char *if_name)
+ * \brief Allocate a tun interface with ipv4 address.
+ *
+ * \param iftype The interface type (IFFTUN or IFFTAP)
+ * \param if_name buffer to be filled with newly created if name.
+ * \return fd
+ */ 
 static int tun_alloc(const char *ip, const char *prefix, char *dev, int common);
+
+/**
+ * \fn int tun_alloc6(int iftype, char *if_name)
+ * \brief Allocate a tun interface with ipv6 address.
+ *
+ * \param iftype The interface type (IFFTUN or IFFTAP)
+ * \param if_name buffer to be filled with newly created if name.
+ * \return fd
+ */ 
 static int tun_alloc6(const char *ip, const char *prefix, char *dev, int common);
+
+/**
+ * \fn int tun_alloc46(int iftype, char *if_name)
+ * \brief Allocate a tun interface with ipv4 and ipv6 address.
+ *
+ * \param iftype The interface type (IFFTUN or IFFTAP)
+ * \param if_name buffer to be filled with newly created if name.
+ * \return fd
+ */ 
 static int tun_alloc46(const char *ip, const char *prefix, char *dev, int common);
+
+/**
+ * \fn int tun_alloc_old(char *dev);
+ * \brief Allocate a tun interface.
+ *
+ * \param dev The device name
+ * \return fd
+ */ 
 static int tun_alloc_old(char *dev);
 
 /**
@@ -68,8 +107,7 @@ static int tun_alloc_pl(int iftype, char *if_name);
 
 /* Reads vif FD from "fd", writes interface name to vif_name, and returns vif FD.
  * vif_name should be IFNAMSIZ chars long. */
-int receive_vif_fd(int fd, char *vif_name)
-{
+int receive_vif_fd(int fd, char *vif_name) {
 	struct msghdr msg;
 	struct iovec iov;
 	int rv;
@@ -90,18 +128,12 @@ int receive_vif_fd(int fd, char *vif_name)
 	msg.msg_controllen = sizeof(ccmsg);
 
 	while(((rv = recvmsg(fd, &msg, 0)) == -1) && errno == EINTR);
-	if (rv == -1) {
-		perror("recvmsg");
-		return -1;
-	}
-	if(!rv) {
-		/* EOF */
-		return -1;
-	}
+	if (rv == -1) die("recvmsg");
+	if(!rv) return -1;
 
 	cmsg = CMSG_FIRSTHDR(&msg);
 	if (!cmsg->cmsg_type == SCM_RIGHTS) {
-		fprintf(stderr, "got control message of unknown type %d\n",
+		debug_print("got control message of unknown type %d\n",
 			cmsg->cmsg_type);
 		return -1;
 	}
@@ -147,50 +179,42 @@ char *create_tun_pl(const char *ip, const char *prefix, int *tun_fds) {
    if (tun_fds) *tun_fds = tun_fd;
 
    debug_print("allocated tun device: %s fd=%d\n", if_name, tun_fd);
-
-   in = fopen (VSYS_VIFUP_IN, "a");
-   if (!in) 
+   if (!(in = fopen (VSYS_VIFUP_IN, "a"))) 
      die("fopen VSYS_VIFUP_IN");
-
-   out = fopen (VSYS_VIFUP_OUT, "r");
-   if (!out) 
+   if (!(out = fopen (VSYS_VIFUP_OUT, "r"))) 
       die("fopen VSYS_VIFUP_OUT");
    
    // send input to process
    //if (nat)
    //   fprintf (in, "%s\n%s\n%s\nsnat=1\n", if_name, ip, prefix);
    // else
-   fprintf (in, "%s\n%s\n%s\n\n", if_name, ip, prefix);
+   fprintf(in, "%s\n%s\n%s\n\n", if_name, ip, prefix);
 
    // close pipe to indicate end parameter passing and flush the fifo
-   fclose (in);
+   fclose(in);
 
    if (fread((void*)errbuff, 4096, 1, out) && strcmp(errbuff, ""))
       debug_print("%s\n",errbuff);
 
-   fclose (out);
+   fclose(out);
    return if_name;
 }
 
 /*
+ * \fn char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds)
  *
- *
- * @param dev choose tun itf name
- * @param tun_fds empty int pointer to point to tun itf fd
- * @return if_name    --tcp-saddr=192.168.2.1
+ * \param dev choose tun itf name
+ * \param tun_fds empty int pointer to point to tun itf fd
+ * \return if_name   
  */
 char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds) {
-
    int   fd;
    char *if_name = malloc(IFNAMSIZ);
    
-   if (dev) {
-      if ((fd = tun_alloc(ip, prefix, dev, 0)) >= 0) {
-         strcpy(if_name, dev);
-         goto succ;
-      } else goto err;
-      
-   }
+   if (dev && ((fd = tun_alloc(ip, prefix, dev, 0)) >= 0)) {
+      strcpy(if_name, dev);
+      goto succ;
+   } else goto err;
 
    for (int i=0; i<99; i++) {
       sprintf(if_name, "tun%d", i);
@@ -208,15 +232,8 @@ err:
    return 0;
 }
 
-// ip tuntap add mode tun dev tun1
-// ifconfig tun1 up OR ip link set tun0 up
-// ip addr add 192.168.1.2/24 dev tun1 
-// ip route add 192.168.1.2 dev tun1 (useless ?)
-//2001:412:abcd::/48 - Local IPv6 network
-// 192.168.2.0/24 - Tunnel IPv4 network
-//2001:412:abcd:2::/64 - Tunnel IPv6 network
 int tun_alloc46(const char *ip, const char *prefix, char *dev, int common) {
-   struct ifreq ifr;
+   struct ifreq ifr; //TODO:compact
    struct in6_ifreq ifr6;
    int fd, err;
    
@@ -241,23 +258,23 @@ int tun_alloc46(const char *ip, const char *prefix, char *dev, int common) {
       die("ioctl\n");
    strcpy(dev, ifr.ifr_name);
 
-   // Create a socket
+   /* Create  sockets */
    int s4, s6;
    if ( (s4 = socket(AF_INET, SOCK_DGRAM, 0)) < 0) 
       die("socket");
    if ( (s6 = socket(AF_INET6, SOCK_DGRAM, 0)) < 0) 
       die("socket");
 
-   // Get interface flags
+   /* Get interface flags */
    if (ioctl(s4, SIOCGIFFLAGS, &ifr) < 0) 
       die("cannot get interface flags");
 
-   // Turn on interface
+   /* Turn on interface */
    ifr.ifr_flags |= IFF_UP;
    if (ioctl(s4, SIOCSIFFLAGS, &ifr) < 0) 
       die("ioctl ifup");
 
-   // Set interface address
+   /* Set interface address */
    struct sockaddr_in  tun_addr4;
    memset((char *) &tun_addr4, 0, sizeof(tun_addr4));
    tun_addr4.sin_family = AF_INET;
@@ -270,14 +287,14 @@ int tun_alloc46(const char *ip, const char *prefix, char *dev, int common) {
    //if (ioctl(s6, SIOCGIFFLAGS, &ifr) < 0) 
    //   die("cannot get interface flags");
 
-   char net_prefix_cmd[128]; // TODO:sanitize args or set mask differently, or remove if useless
+   char net_prefix_cmd[128];
    sprintf(net_prefix_cmd, "ip addr add %s/%s dev %s", ip, prefix, dev);
    if (system(net_prefix_cmd) < 0) 
       die("tun prefix");
 
 
    ip = "2001:412:abcd:2::";
-   // Set interface address
+   /* Set interface address */
    struct sockaddr_in6  tun_addr6;
    memset(&tun_addr6, 0, sizeof(tun_addr6));
    tun_addr6.sin6_family = AF_INET6;
@@ -292,7 +309,6 @@ int tun_alloc46(const char *ip, const char *prefix, char *dev, int common) {
     ifr6.ifr6_prefixlen = strtol(prefix, NULL, 10);
     if (ioctl(s6, SIOCSIFADDR, &ifr6) < 0) 
         die("SIOCSIFADDR");
-
 
     /*ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
     if (ioctl(s, SIOCSIFFLAGS, &ifr) < 0)
@@ -326,11 +342,11 @@ int tun_alloc6(const char *ip, const char *prefix, char *dev, int common) {
       die("ioctl\n");
    strcpy(dev, ifr.ifr_name);
 
-   // Create a socket
+   /* Create socket */
    int s;
    if ( (s = socket(AF_INET6, SOCK_DGRAM, 0)) < 0) 
       die("socket");
-   // Get interface flags
+   /* Get interface flags */
    if (ioctl(s, SIOCGIFFLAGS, &ifr) < 0) 
       die("cannot get interface flags");
 
@@ -344,7 +360,6 @@ int tun_alloc6(const char *ip, const char *prefix, char *dev, int common) {
    struct sockaddr_in6  tun_addr;
    memset(&tun_addr, 0, sizeof(tun_addr));
    tun_addr.sin6_family = AF_INET6;
-   //tun_addr.sin6_addr.s6_addr = htonl(inet_network(ip));
    if(inet_pton(AF_INET6, ip, (void *)&tun_addr.sin6_addr) <= 0) 
         die("Bad address\n");
    memcpy((char *) &ifr6.ifr6_addr, (char *) &tun_addr.sin6_addr,
@@ -362,7 +377,6 @@ int tun_alloc6(const char *ip, const char *prefix, char *dev, int common) {
     if (ioctl(s, SIOCSIFFLAGS, &ifr) < 0)
       die("SIOCSIFFLAGS");
 
-   
    /*char net_prefix_cmd[148]; 
    sprintf(net_prefix_cmd, "sudo ip -6 addr add %s/64 dev %s", ip, dev);
    if (system(net_prefix_cmd) < 0) 
@@ -374,7 +388,7 @@ int tun_alloc6(const char *ip, const char *prefix, char *dev, int common) {
 
 
 int tun_alloc(const char *ip, const char *prefix, char *dev, int common) {
-   struct ifreq ifr;
+   struct ifreq ifr; 
    int fd, err;
    
    if (common) {
@@ -398,23 +412,23 @@ int tun_alloc(const char *ip, const char *prefix, char *dev, int common) {
       die("ioctl\n");
    strcpy(dev, ifr.ifr_name);
 
-   // Create a socket
+   /* Create socket */
    int s;
    if ( (s = socket(AF_INET, SOCK_DGRAM, 0)) < 0) 
       die("socket");
 
-   // Get interface flags
+   /* Get interface flags */
    if (ioctl(s, SIOCGIFFLAGS, &ifr) < 0) 
       die("cannot get interface flags");
 
-   // Turn on interface
+   /* Turn on interface */
    ifr.ifr_flags |= IFF_UP;
    if (ioctl(s, SIOCSIFFLAGS, &ifr) < 0) 
       die("ioctl ifup");
 
-   // Set interface address
+   /* Set interface address */
    struct sockaddr_in  tun_addr;
-   bzero((char *) &tun_addr, sizeof(tun_addr));
+   memset((char *) &tun_addr, 0, sizeof(tun_addr));
    tun_addr.sin_family = AF_INET;
    tun_addr.sin_addr.s_addr = htonl(inet_network(ip));
    memcpy(&ifr.ifr_addr, &tun_addr, sizeof(struct sockaddr));
@@ -422,7 +436,7 @@ int tun_alloc(const char *ip, const char *prefix, char *dev, int common) {
    if (ioctl(s, SIOCSIFADDR, &ifr) < 0) 
       die("cannot set IP address. ");
 
-   char net_prefix_cmd[128]; // TODO:sanitize args or set mask differently, or remove if useless
+   char net_prefix_cmd[128];
    sprintf(net_prefix_cmd, "ip addr add %s/%s dev %s", ip, prefix, dev);
    if (system(net_prefix_cmd) < 0) 
       die("tun prefix");
@@ -430,6 +444,8 @@ int tun_alloc(const char *ip, const char *prefix, char *dev, int common) {
    close(s);
    return fd;
 }              
+
+#ifdef IFF_MULTI_QUEUE
 
 int tun_alloc_mq(char *dev, int queues, int *fds) {
    struct ifreq ifr;
@@ -478,4 +494,8 @@ int tun_set_queue(int fd, int enable) {
 
    return ioctl(fd, TUNSETQUEUE, (void *)&ifr);
 }
+
+#endif
+
+
 

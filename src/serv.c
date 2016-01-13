@@ -21,7 +21,6 @@
 #include "debug.h"
 #include "state.h"
 #include "sock.h"
-#include "tunalloc.h"
 #include "thread.h"
 #include "net.h"
 
@@ -38,14 +37,6 @@ static volatile int loop;
  * \param sig Ignored
  */ 
 static void serv_shutdown(int sig);
-
-static void tun_serv_aux(struct arguments *args);
-static void tun_serv_pl(struct arguments *args);
-static void tun_serv_fbsd(struct arguments *args);
-
-static void tun_peer_aux(struct arguments *args);
-static void tun_peer_pl(struct arguments *args);
-static void tun_peer_fbsd(struct arguments *args);
 
 /**
  * \fn static void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf)
@@ -69,18 +60,6 @@ static void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *b
  * \param buf The buffer.
  */ 
 static void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_state *state, char *buf);
-
-/**
- * \fn static build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw)
- * \brief build a fd_set structure to be used with select() or similar.
- *
- * \param input_set modified on return to the fd_set.
- * \param fds_raw The fd to set.
- * \param len The number of fd.
- * \param max_fd_raw modified on return to indicate the max fd value.
- * \return 
- */ 
-static void build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw);
 
 void serv_shutdown(int sig) { loop = 0; }
 
@@ -109,7 +88,6 @@ void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
 }
 
 void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_state *state, char *buf) {
-   //TODO don't die on reception error
    struct tun_rec *nrec = init_tun_rec();
    int recvd=xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, &nrec->slen, buf, __BUFFSIZE);
 
@@ -140,27 +118,13 @@ void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_sta
 }
 
 void tun_serv(struct arguments *args) {
-   /*if (args->planetlab)
-      tun_serv_pl(args);
-   else if (args->freebsd)
-      tun_serv_fbsd(args);
-   else*/
-   tun_serv_aux(args);
-}
-
-void tun_serv_aux(struct arguments *args) {
    int fd_max = 0, fd_udp = 0, sel = 0, fd_tun = 0;
 
    /* init server state */
    struct tun_state *state = init_tun_state(args);
 
    /* create tun if and sockets */
-   if (args->planetlab)
-      args->if_name  = create_tun_pl(state->private_addr, state->private_mask, &fd_tun);
-   else if (args->freebsd)
-      args->if_name  = create_tun_pl(state->private_addr, state->private_mask, &fd_tun);
-   else
-      args->if_name  = create_tun(state->private_addr, state->private_mask, NULL, &fd_tun); 
+   tun(state, &fd_tun); 
    fd_udp         = udp_sock(state->udp_port);
 
    /* run server */
@@ -198,64 +162,5 @@ void tun_serv_aux(struct arguments *args) {
    close(fd_udp);close(fd_tun);
    free_tun_state(state);
    free(args->if_name);
-}
-
-void tun_serv_fbsd(struct arguments *args) {
-
-
-}
-
-void tun_serv_pl(struct arguments *args) {
-   int fd_max = 0, fd_udp = 0, sel = 0, i = 0, fd_tun = 0;
-
-   //init tun itf
-   const char *prefix = "24";
-   struct tun_state *state = init_tun_state(args);
-   char *if_name  = create_tun_pl(state->private_addr, state->private_mask, &fd_tun);
-
-   //udp sock & dst sockaddr
-   fd_udp   = udp_sock(state->udp_port);
-
-   fd_set input_set;
-   struct timeval tv;
-   char buf[__BUFFSIZE];
-   loop=1;
-   signal(SIGINT, serv_shutdown);
-   fd_max=max(fd_tun,fd_udp);
-
-   while (loop) {
-      //build select args
-      FD_ZERO(&input_set);
-      FD_SET(fd_udp, &input_set);FD_SET(fd_tun, &input_set);
-
-      sel = xselect(&input_set, fd_max, &tv, 0);
-
-      if (sel > 0) {
-         if (FD_ISSET(fd_udp, &input_set)) {
-            tun_serv_out(fd_udp, fd_tun, args, state, buf);
-         }
-         if (FD_ISSET(fd_tun, &input_set)) {
-            tun_serv_in(fd_udp, fd_tun, state, buf);
-         }
-      }
-   }
-
-   close(fd_udp);
-   free_tun_state(state);
-   free(if_name);
-}
-
-void build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw) {
-   int i = 0, max_fd = 0, fd = 0;
-   FD_ZERO(input_set); //TODO move this to sock
-   for (;i<len;i++) {
-      fd = fds_raw[i];
-      if (fd) {
-       FD_SET(fd, input_set);
-       max_fd = max(fd,max_fd);
-      } else break;
-   }
-
-   *max_fd_raw = max_fd;
 }
 

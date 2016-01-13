@@ -4,6 +4,7 @@
  * \author k.edeline
  * \version 0.1
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,7 +22,6 @@
 #include "state.h"
 #include "thread.h"
 #include "sock.h"
-#include "tunalloc.h"
 #include "net.h"
 
 /**
@@ -51,10 +51,6 @@ static void tun_cli_in(int fd_udp, int fd_tun, struct tun_state *state, char *bu
  */ 
 static void tun_cli_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
 
-static void tun_cli_aux(struct arguments *args);
-static void tun_cli_pl(struct arguments *args);
-static void tun_cli_fbsd(struct arguments *args);
-
 void cli_shutdown(int sig) { 
    debug_print("shutting down client ...\n");
 
@@ -64,7 +60,7 @@ void cli_shutdown(int sig) {
    loop = 0; 
 }
 
-void tun_cli_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
+void tun_cli_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {//TODO remove useless args, maybe pass struct args for faster mode lookup
 
       int recvd=xread(fd_tun, buf, __BUFFSIZE);
       debug_print("cli: recvd %db from tun\n", recvd);
@@ -105,22 +101,13 @@ void tun_cli_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
 }
 
 void tun_cli(struct arguments *args) {
-   if (args->planetlab)
-      tun_cli_pl(args);
-   else if (args->freebsd)
-      tun_cli_fbsd(args);
-   else
-      tun_cli_aux(args);
-}
-
-void tun_cli_aux(struct arguments *args) {
    int fd_tun = 0, fd_udp = 0, fd_max = 0, sel = 0;
    
    /* init state */
    struct tun_state *state = init_tun_state(args);
 
    /* create tun if and sockets */   
-   args->if_name  = create_tun(state->private_addr, state->private_mask, NULL, &fd_tun);   
+   tun(state, &fd_tun);
    fd_udp   = udp_sock(state->port);
 
    /* initial sleep */
@@ -157,57 +144,7 @@ void tun_cli_aux(struct arguments *args) {
    }
 
    close(fd_udp);close(fd_tun);
+   free_tun_state(state);
    free(args->if_name);
-   
-}
-
-void tun_cli_fbsd(struct arguments *args) {
-   // init tun itf
-   int fd_tun     = 0;
-
-}
-
-void tun_cli_pl(struct arguments *args) {
-   int fd_max = 0, fd_udp = 0, fd_tun = 0, sel = 0;
-   char *if_name = NULL;
-   struct sockaddr_in *udp_addr = NULL, *tcp_addr = NULL;
-   struct sock_fprog *bpf = NULL;
-
-   //init tun itf
-   int tun_fd = 0;
-   struct tun_state *state = init_tun_state(args);
-   if_name  = create_tun_pl(state->private_addr, state->private_mask, &tun_fd);
-   //udp sock & dst sockaddr
-
-   fd_udp   = udp_sock(state->port);
-   udp_addr = get_addr(state->public_addr, state->udp_port);
-
-   loop = 1;
-   signal(SIGINT, cli_shutdown);
-
-   fd_set input_set;
-   fd_max = max(fd_udp, tun_fd);
-   struct timeval tv;
-   char buf[__BUFFSIZE];
-
-   debug_print("main loop\n");
-   while (loop) {
-      //build select list
-      FD_ZERO(&input_set);
-      FD_SET(fd_udp, &input_set);FD_SET(tun_fd, &input_set);
-
-      sel = xselect(&input_set, fd_max, &tv, state->inactivity_timeout);
-
-      if (sel < 0) die("select");
-      else if (sel > 0) {
-         if (FD_ISSET(fd_tun, &input_set))      
-            tun_cli_in(fd_udp, fd_tun, state, buf);
-         if (FD_ISSET(fd_udp, &input_set)) 
-            tun_cli_out(fd_udp, fd_tun, state, buf);
-      }
-   }
-
-   close(fd_udp);
-   free(if_name);free(udp_addr);free((struct bpf_program *)bpf);
 }
 

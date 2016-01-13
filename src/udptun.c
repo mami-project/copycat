@@ -8,7 +8,6 @@
 #include <pthread.h>
 #include "udptun.h"
 
-//TODO: add sleep arguments before starting fullmsh cli
 /* argp variables and structs */
 
 const char *argp_program_version     = "udptun 0.1";

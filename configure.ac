@@ -37,19 +37,19 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS([pthread.h arpa/inet.h netinet/in.h pcap.h stdlib.h string.h sys/socket.h unistd.h fcntl.h sys/ioctl.h sys/time.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
+AC_TYPE_INT16_T
 AC_TYPE_MODE_T
 AC_TYPE_SIZE_T
 AC_TYPE_UINT8_T
 AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
-AC_TYPE_INT16_T
 AC_TYPE_PID_T
 
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_FORK
-AC_CHECK_FUNCS([inet_ntoa memset select socket strdup strtol atexit bzero strerror])
+AC_CHECK_FUNCS([inet_ntoa memset select socket strdup strtol atexit strerror])
 
 #PKG_CHECK_MODULES(GLIB, [glib-2.0])
 AM_CONDITIONAL([HAVE_DOXYGEN],

@@ -11,8 +11,35 @@
 #define _UDPTUN_NET_H
 
 #include <netinet/in.h>
-
 #include "state.h"
+
+/**
+ * \fn void tun(struct tun_state *state, int *fd_tun);
+ * \brief Allocate an AF_INET socket address structure.
+ *
+ * \param state udptun state
+ * \param fd_tun a pointer to the memory where the tun fd will
+ *               be written
+ */ 
+void tun(struct tun_state *state, int *fd_tun);
+
+/**
+ * \fn void *cli_thread(void *state);
+ * \brief the TCP cli thread
+ *
+ * \param state udptun state
+ * \return exit status
+ */ 
+void *cli_thread(void *state);
+
+/**
+ * \fn void *serv_thread(void *state);
+ * \brief the TCP serv thread
+ *
+ * \param state udptun state
+ * \return exit status
+ */
+void *serv_thread(void *state);
 
 /**
  * \fn struct sockaddr_in *get_addr(const char *addr, int port)
@@ -23,22 +50,5 @@
  * \return A pointer (malloc) to the created struct sockaddr_in
  */ 
 struct sockaddr_in *get_addr(const char *addr, int port);
-
-/**
- * \fn int tcp_serv(char *addr, int port, char *filename)
- * \brief connect a TCP socket to addr:port and write
- * received data to filename.
- *
- * \param addr The remote address to connect to.
- * \param port The remote port to connect to.
- * \param filename The file to write to.
- * \return exit status
- */ 
-
-void *cli_thread(void *state); //TODO move inside module
-
-void *serv_thread(void *state);
-
-int tcp_serv(char *daddr, int dport, char* dev, struct tun_state *state);
 
 #endif

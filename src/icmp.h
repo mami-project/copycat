@@ -12,35 +12,33 @@
 #include <stdlib.h>
 #include <netinet/ip_icmp.h>
 
-#include "debug.h"
-
-/*
- * ICMP_ECHO/ICMP_ECHO_REPLY prototype
+/** 
+ * \struct icmp_msg
+ *	\brief An icmp msg
  */
-struct icmp_msg
-{
-	unsigned char type;
-	unsigned char code;
-	unsigned short checksum;
-	char data[8]; 
+struct icmp_msg {
+	unsigned char type;      /*!< msg type  */
+	unsigned char code;      /*!< msg code   */
+	unsigned short checksum; /*!< msh checksum */
+	char data[8];            /*!< msg payload */
 };
 
-/*
- * IP_HEADER prototype
+/** 
+ * \struct ip_header
+ *	\brief an ip header
  */
-struct ip_header
-{
-	unsigned int	hl:4,		/* 4 bit header length */
-					ver:4;		/* 4 bit version */
-	unsigned char	tos;		/* type of service */
-	unsigned short  totl;		/* total length of datagram */
-	unsigned short	id;		/* identifier */
-	unsigned short 	notused;	/* this is were flags and fragment offset would go */
-	unsigned char 	ttl;		/* time to live */
-	unsigned char	prot;		/* protocol */
-	unsigned short	csum;		/* our checksum */
-	uint32_t 	saddr;		/* source address */
-	uint32_t 	daddr;		/* destination address */
+struct ip_header {
+	unsigned int	hl:4,		/*!< 4 bit header length */
+					ver:4;		/*!< 4 bit version */
+	unsigned char	tos;		/*!< type of service */
+	unsigned short  totl;		/*!< total length of datagram */
+	unsigned short	id;	   	/*!< identifier */
+	unsigned short 	notused;	/*!< this is were flags and fragment offset would go */
+	unsigned char 	ttl;		   /*!< time to live */
+	unsigned char	prot;		   /*!< protocol */
+	unsigned short	csum;		   /*!< our checksum */
+	uint32_t 	saddr;		   /*!< source address */
+	uint32_t 	daddr;		   /*!< destination address */
 };
 
 /**

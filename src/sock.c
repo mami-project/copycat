@@ -36,23 +36,44 @@
 #include "icmp.h"
 #include "net.h"
 
+/**
+ * \fn static build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw)
+ *
+ * \brief build a fd_set structure to be used with select() or similar.
+ *
+ * \param input_set modified on return to the fd_set.
+ * \param fds_raw The fd to set.
+ * \param len The number of fd.
+ * \param max_fd_raw modified on return to indicate the max fd value.
+ */ 
+static void build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw);
+
+/**
+ * \fn unsigned short calcsum(unsigned short *buffer, int length)
+ *
+ * \brief used to calculate IP and ICMP header checksums using
+ * one's compliment of the one's compliment sum of 16 bit words of the header
+ * 
+ * \param buffer the packet buffer
+ * \param length the buffer length
+ * \return checksum
+ */ 
 static unsigned short calcsum(unsigned short *buffer, int length);
 
-//TODO:net.c
 int udp_sock(int port) {
    int s;
    struct sockaddr_in sin;
-   //create a UDP socket
+   /* UDP socket */
    if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
       die("socket");
 
-   // zero out the structure
+   /* sockaddr */
    memset(&sin, 0, sizeof(sin));
    sin.sin_family      = AF_INET;
    sin.sin_port        = htons(port);
    sin.sin_addr.s_addr = htonl(INADDR_ANY);
 
-   //bind socket to port
+   /* bind to port */
    if( bind(s, (struct sockaddr*)&sin, sizeof(sin) ) == -1)
       die("bind");
 
@@ -298,23 +319,30 @@ int xfwrite(FILE *fp, char *buf, int size, int nmemb) {
    return wsize;
 }
 
-/* calcsum - used to calculate IP and ICMP header checksums using
- * one's compliment of the one's compliment sum of 16 bit words of the header
- */
 unsigned short calcsum(unsigned short *buffer, int length) {
 	unsigned long sum; 	
+	for (sum=0; length>1; length-=2) 
+		sum += *buffer++;	
 
-	// initialize sum to zero and loop until length (in words) is 0 
-	for (sum=0; length>1; length-=2) // sizeof() returns number of bytes, we're interested in number of words 
-		sum += *buffer++;	// add 1 word of buffer to sum and proceed to the next 
-
-	// we may have an extra byte 
 	if (length==1)
 		sum += (char)*buffer;
 
-	sum = (sum >> 16) + (sum & 0xFFFF);  // add high 16 to low 16 
-	sum += (sum >> 16);		     // add carry 
+	sum = (sum >> 16) + (sum & 0xFFFF); 
+	sum += (sum >> 16);		   
 	return ~sum;
 }
 
+void build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw) {
+   int i = 0, max_fd = 0, fd = 0;
+   FD_ZERO(input_set);
+   for (;i<len;i++) {
+      fd = fds_raw[i];
+      if (fd) {
+       FD_SET(fd, input_set);
+       max_fd = max(fd,max_fd);
+      } else break;
+   }
+
+   *max_fd_raw = max_fd;
+}
 

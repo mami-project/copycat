@@ -4,6 +4,7 @@
  * \author k.edeline
  * \version 0.1
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,8 +21,6 @@
 #include "state.h"
 #include "thread.h"
 #include "sock.h"
-#include "serv.h"
-#include "tunalloc.h"
 #include "net.h"
 
 /**
@@ -37,10 +36,6 @@ static volatile int loop;
  * \param sig Ignored
  */ 
 static void peer_shutdown(int sig);
-
-static void tun_peer_aux(struct arguments *args);
-static void tun_peer_pl(struct arguments *args);
-static void tun_peer_fbsd(struct arguments *args);
 
 /**
  * \fn static void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf)
@@ -76,15 +71,6 @@ static void tun_peer_out_cli(int fd_udp, int fd_tun, struct tun_state *state, ch
 static void tun_peer_out_serv(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
 
 void peer_shutdown(int sig) { loop = 0; }
-
-void tun_peer(struct arguments *args) {
-   if (args->planetlab)
-      tun_peer_pl(args);
-   else if (args->freebsd)
-      tun_peer_fbsd(args);
-   else
-      tun_peer_aux(args);
-}
 
 void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *state, char *buf) {
    int recvd=xread(fd_tun, buf, __BUFFSIZE);
@@ -177,7 +163,7 @@ void tun_peer_out_serv(int fd_udp, int fd_tun, struct tun_state *state, char *bu
 
 }
 
-void tun_peer_aux(struct arguments *args) {
+void tun_peer(struct arguments *args) {
    int fd_tun = 0, fd_serv = 0, fd_cli = 0;
    int fd_max = 0, sel = 0;
    
@@ -185,7 +171,7 @@ void tun_peer_aux(struct arguments *args) {
    struct tun_state *state = init_tun_state(args);
 
    /* create tun if and sockets */
-   args->if_name  = create_tun(state->private_addr, state->private_mask, NULL, &fd_tun);   
+   tun(state, &fd_tun);   
    fd_serv        = udp_sock(state->udp_port);
    fd_cli         = udp_sock(state->port);
 
@@ -233,13 +219,5 @@ void tun_peer_aux(struct arguments *args) {
    close(fd_cli);close(fd_serv);
    close(fd_tun);free_tun_state(state);
    free(args->if_name);
-}
-
-void tun_peer_fbsd(struct arguments *args) {
-
-}
-
-void tun_peer_pl(struct arguments *args) {
-
 }
 
