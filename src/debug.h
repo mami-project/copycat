@@ -38,8 +38,10 @@
 #define debug_perror() perror(NULL)
 
 #else
+
 #define debug_print(fmt, ...) 
 #define debug_perror()
+
 #endif /* DEBUG */
 
 #endif  /* DEBUG_H */

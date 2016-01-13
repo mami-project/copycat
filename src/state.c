@@ -32,6 +32,10 @@ static int parse_dest_file(struct arguments *args, struct tun_state *state);
 
 static int parse_cfg_file(struct tun_state *state);
 
+static void free_tun_rec_aux(gpointer key,
+                      gpointer value,
+                      gpointer user_data);
+
 struct tun_state *init_tun_state(struct arguments *args) {
    struct tun_state *state = calloc(1, sizeof(struct tun_state));
 
@@ -41,12 +45,20 @@ struct tun_state *init_tun_state(struct arguments *args) {
 
    /* create htables */
    if (args->mode == SERV_MODE || args->mode == FULLMESH_MODE) {
+#if defined(HAVE_LIBGLIB_2_0)
       state->serv = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, 
                                           (GDestroyNotify) free_tun_rec);
+#elif defined(HAVE_LIBGLIB)
+      state->serv = g_hash_table_new(g_int_hash, g_int_equal);
+#endif
    }
    if (args->mode == CLI_MODE || args->mode == FULLMESH_MODE) {
+#if defined(HAVE_LIBGLIB_2_0)
       state->cli  = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, 
                                           (GDestroyNotify) free_tun_rec);
+#elif defined(HAVE_LIBGLIB)
+      state->cli  = g_hash_table_new(g_int_hash, g_int_equal);
+#endif
       if (parse_dest_file(args, state) < 0)
          die("destination file");
    }
@@ -60,6 +72,18 @@ struct tun_state *init_tun_state(struct arguments *args) {
 }
 
 void free_tun_state(struct tun_state *state) {
+#if !defined(HAVE_LIBGLIB_2_0) && defined(HAVE_LIBGLIB)
+   if (state->serv) {
+      g_hash_table_foreach (state->serv, 
+                            (GHFunc) free_tun_rec_aux,
+                            NULL);
+   }
+   if (state->cli) {
+      g_hash_table_foreach (state->serv, 
+                            (GHFunc) free_tun_rec_aux,
+                            NULL);
+   }
+#endif
    if (state->serv)
       g_hash_table_destroy(state->serv); 
    if (state->cli)
@@ -85,6 +109,12 @@ struct tun_rec *init_tun_rec() {
    ret->slen      = sizeof(struct sockaddr_in);
 
    return ret;
+}
+
+void free_tun_rec_aux(gpointer key,
+                      gpointer value,
+                      gpointer user_data) { 
+   free_tun_rec((struct tun_rec *)value); 
 }
 
 void free_tun_rec(struct tun_rec *rec) { 

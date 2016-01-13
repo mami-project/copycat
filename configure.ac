@@ -26,7 +26,7 @@ AC_CHECK_LIB([glib-2.0], [g_hash_table_lookup], [],
 # Checks for modules.
 GLIB2=[glib-2.0]
 GLIB=[glib]
-PKG_CHECK_MODULES(GLIB2, [glib-2.0 >= 2.0], [],
+PKG_CHECK_MODULES(GLIB2, [glib-2.0 >= 2.12], [],
    [PKG_CHECK_MODULES(GLIB, [glib >= 1.2.10])]
 )
 #AX_PTHREAD()
