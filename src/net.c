@@ -31,6 +31,10 @@
 #include "thread.h"
 #include "tunalloc.h"
 
+/**
+ * \var char *serv_file
+ * \brief The server file location for inter-thread communication.
+ */
 static char *serv_file;
 
 /**
@@ -85,12 +89,15 @@ struct sockaddr_in *get_addr(const char *addr, int port) {
 
 void tun(struct tun_state *state, int *fd_tun) {
    struct arguments *args = state->args;
+#if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+   //TODO: OSx ??
+   state->if_name  = create_tun_bsd(state->private_addr, state->private_mask, fd_tun);
+#else
    if (args->planetlab)
-      state->if_name  = create_tun_pl(state->private_addr, state->private_mask, fd_tun);
-   else if (args->freebsd)
       state->if_name  = create_tun_pl(state->private_addr, state->private_mask, fd_tun);
    else
       state->if_name  = create_tun(state->private_addr, state->private_mask, state->if_name, fd_tun); 
+#endif
 }
 
 void *cli_thread(void *st) {

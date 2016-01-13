@@ -25,6 +25,8 @@
  */ 
 char *create_tun_pl(const char *ip, const char *prefix, int *tun_fds);
 
+char *create_tun_bsd(const char *ip, const char *prefix, int *tun_fds);
+
 /**
  * \fn char *create_tun(const char *ip, const char *prefix, int nat, int *tun_fds)
  * \brief Allocate and set up a tun interface.

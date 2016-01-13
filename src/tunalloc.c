@@ -201,6 +201,10 @@ char *create_tun_pl(const char *ip, const char *prefix, int *tun_fds) {
    return if_name;
 }
 
+char *create_tun_bsd(const char *ip, const char *prefix, int *tun_fds) {
+
+}
+
 char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds) {
    int   fd;
    char *if_name = malloc(IFNAMSIZ);
@@ -380,8 +384,7 @@ int tun_alloc6(const char *ip, const char *prefix, char *dev, int common) {
     */
    close(s);
    return fd;
-} 
-
+}
 
 int tun_alloc(const char *ip, const char *prefix, char *dev, int common) {
    struct ifreq ifr; 

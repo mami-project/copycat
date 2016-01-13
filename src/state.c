@@ -30,6 +30,13 @@
  */
 static int parse_dest_file(struct arguments *args, struct tun_state *state);
 
+/**
+ * \fn static int parse_cfg_file(struct tun_state *state)
+ * \brief Parse configuration file 
+ *
+ * \param state
+ * \return 0 for success, -1 on error (errno is filled)
+ */
 static int parse_cfg_file(struct tun_state *state);
 
 static void free_tun_rec_aux(gpointer key,
@@ -38,7 +45,6 @@ static void free_tun_rec_aux(gpointer key,
 
 struct tun_state *init_tun_state(struct arguments *args) {
    struct tun_state *state = calloc(1, sizeof(struct tun_state));
-
    state->args = args;   
    if (parse_cfg_file(state) < 0)
       die("configuration file");
@@ -63,7 +69,7 @@ struct tun_state *init_tun_state(struct arguments *args) {
          die("destination file");
    }
 
-   /* Replace cfg value with args TODO*/
+   /* Replace cfg value with args HERE */
    if (args->inactivity_timeout)
       state->inactivity_timeout = args->inactivity_timeout;
 
@@ -73,16 +79,14 @@ struct tun_state *init_tun_state(struct arguments *args) {
 
 void free_tun_state(struct tun_state *state) {
 #if !defined(HAVE_LIBGLIB_2_0) && defined(HAVE_LIBGLIB)
-   if (state->serv) {
+   if (state->serv) 
       g_hash_table_foreach (state->serv, 
                             (GHFunc) free_tun_rec_aux,
                             NULL);
-   }
-   if (state->cli) {
+   if (state->cli) 
       g_hash_table_foreach (state->serv, 
                             (GHFunc) free_tun_rec_aux,
                             NULL);
-   }
 #endif
    if (state->serv)
       g_hash_table_destroy(state->serv); 
