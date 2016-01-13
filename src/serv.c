@@ -162,6 +162,6 @@ void tun_serv(struct arguments *args) {
    /* Close, free, ... */
    close(fd_udp);close(fd_tun);
    free_tun_state(state);
-   free(args->if_name);
+   free(state->if_name);
 }
 

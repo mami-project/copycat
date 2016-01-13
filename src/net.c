@@ -83,11 +83,11 @@ struct sockaddr_in *get_addr(const char *addr, int port) {
 void tun(struct tun_state *state, int *fd_tun) {
    struct arguments *args = state->args;
    if (args->planetlab)
-      args->if_name  = create_tun_pl(state->private_addr, state->private_mask, fd_tun);
+      state->if_name  = create_tun_pl(state->private_addr, state->private_mask, fd_tun);
    else if (args->freebsd)
-      args->if_name  = create_tun_pl(state->private_addr, state->private_mask, fd_tun);
+      state->if_name  = create_tun_pl(state->private_addr, state->private_mask, fd_tun);
    else
-      args->if_name  = create_tun(state->private_addr, state->private_mask, NULL, fd_tun); 
+      state->if_name  = create_tun(state->private_addr, state->private_mask, state->if_name, fd_tun); 
 }
 
 void *cli_thread(void *st) {
@@ -108,7 +108,7 @@ void *serv_thread(void *st) {
    struct tun_state *state = st;
    struct arguments *args = state->args;
    serv_file = state->serv_file;
-   tcp_serv(state->private_addr, state->tcp_port, args->if_name, state);
+   tcp_serv(state->private_addr, state->tcp_port, state->if_name, state);
    return 0;
 }
 
@@ -192,11 +192,9 @@ void *serv_worker_thread(void *socket_desc) {
 }
 
 int tcp_cli(struct tun_state *st, struct sockaddr *sa) {
-
    struct tun_state *state = st;
    struct arguments *args = state->args;
    struct sockaddr_in sout;
-   char *dev = args->if_name;
    int s, i, err = 0, tmp; 
 
    /* TCP socket */
@@ -207,6 +205,7 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa) {
    /* Socket opts */
    struct timeval snd_timeout = {state->tcp_snd_timeout, 0}; 
    struct timeval rcv_timeout = {state->tcp_rcv_timeout, 0}; 
+   char *dev = state->if_name;
    if (dev && setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev))) 
       die("bind to device");
    if (setsockopt (s, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout,

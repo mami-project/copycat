@@ -140,6 +140,8 @@ int parse_cfg_file(struct tun_state *state) {
             state->max_segment_size = strtol(val, NULL, 10);
          else if (!strcmp(key, "initial-sleep")) 
             state->initial_sleep = strtol(val, NULL, 10);
+         else if (!strcmp(key, "if-name")) 
+            state->if_name = strdup(val);
       
          /* NOTE: add cfg parameters here */
       } 
@@ -178,6 +180,7 @@ int parse_dest_file(struct arguments *args, struct tun_state *state) {
       debug_print("%s:%d\n", public, sport);
       count++;
    }   
+
    rewind(fp);
 
    /* build destination list */

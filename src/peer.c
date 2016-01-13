@@ -218,6 +218,6 @@ void tun_peer(struct arguments *args) {
    /* Close, free, ... */
    close(fd_cli);close(fd_serv);
    close(fd_tun);free_tun_state(state);
-   free(args->if_name);
+   free(state->if_name);
 }
 

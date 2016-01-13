@@ -37,9 +37,10 @@ struct tun_state {
    struct tun_rec **cli_private; /*!<  Destination list. */
    uint8_t sa_len;               /*!<  Number of destinations. */
 
-   //char            *if_name;   /*!<  The tun interface name. TODO:*/
+
 
    /* Fields defined in cfg file */
+   char    *if_name;        /*!< The tun interface name. */
    char    *private_addr;   /*!< The private ip address */
    char    *private_mask;   /*!< The private ip mask */
    char    *private_addr6;  /*!< The private ipv6 address */
@@ -54,11 +55,11 @@ struct tun_state {
 
    uint16_t tcp_snd_timeout;
    uint16_t tcp_rcv_timeout;
-   int16_t inactivity_timeout;
+   int16_t  inactivity_timeout;
    uint16_t initial_sleep;
    
-   char *cli_file;
-   char *serv_file;
+   char    *cli_file;
+   char    *serv_file;
 
    uint32_t buf_length;
    uint32_t backlog_size;
