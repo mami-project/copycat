@@ -60,6 +60,7 @@ static void build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw)
  */ 
 static unsigned short calcsum(unsigned short *buffer, int length);
 
+
 int udp_sock(int port) {
    int s;
    struct sockaddr_in sin;
@@ -243,7 +244,7 @@ int xfwerr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *state
 	      struct icmp_msg* icmp;
          char *pkt;
          int pkt_len = sizeof(struct ip_header) + sizeof(struct icmp_msg);
-	      if ( (pkt = malloc(pkt_len)) == NULL)
+	      if ( (pkt = calloc(1, pkt_len)) == NULL)
 		      die("Could not allocate memory for packet\n");
 	      ipheader = (struct ip_header*)pkt;
 	      icmp = (struct icmp_msg*)(pkt+sizeof(struct ip_header));

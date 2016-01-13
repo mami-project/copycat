@@ -51,12 +51,12 @@ static void tun_cli_in(int fd_udp, int fd_tun, struct tun_state *state, char *bu
  */ 
 static void tun_cli_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
 
+
 void cli_shutdown(int sig) { 
    debug_print("shutting down client ...\n");
 
    /* Wait for delayed acks to avoid sending icmp */
    sleep(__CLOSE_TIMEOUT);
-
    loop = 0; 
 }
 

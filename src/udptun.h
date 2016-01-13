@@ -67,6 +67,5 @@ struct arguments {
        __typeof__ (b) _b = (b); \
      _a > _b ? _a : _b; })
 
-
 #endif
 

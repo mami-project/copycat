@@ -210,11 +210,13 @@ char *create_tun_pl(const char *ip, const char *prefix, int *tun_fds) {
 char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds) {
    int   fd;
    char *if_name = malloc(IFNAMSIZ);
-   
-   if (dev && ((fd = tun_alloc(ip, prefix, dev, 0)) >= 0)) {
-      strcpy(if_name, dev);
-      goto succ;
-   } else goto err;
+
+   if (dev) {
+      if ((fd = tun_alloc(ip, prefix, dev, 0)) >= 0) {
+         strcpy(if_name, dev);
+         goto succ;
+      } else goto err;
+   }
 
    for (int i=0; i<99; i++) {
       sprintf(if_name, "tun%d", i);
@@ -484,18 +486,14 @@ err:
 
 int tun_set_queue(int fd, int enable) {
    struct ifreq ifr;
-
    memset(&ifr, 0, sizeof(ifr));
 
    if (enable)
       ifr.ifr_flags = IFF_ATTACH_QUEUE;
    else
       ifr.ifr_flags = IFF_DETACH_QUEUE;
-
    return ioctl(fd, TUNSETQUEUE, (void *)&ifr);
 }
 
 #endif
-
-
 

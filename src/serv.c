@@ -61,6 +61,7 @@ static void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *b
  */ 
 static void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_state *state, char *buf);
 
+
 void serv_shutdown(int sig) { loop = 0; }
 
 void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {

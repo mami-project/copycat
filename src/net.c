@@ -72,12 +72,11 @@ static int tcp_serv(char *addr, int port, char* dev, struct tun_state *state);
 static void *serv_worker_thread(void *socket_desc);
 
 struct sockaddr_in *get_addr(const char *addr, int port) {
-   struct sockaddr_in *ret = malloc(sizeof(struct sockaddr));
-   memset(ret, 0, sizeof(struct sockaddr_in));//TODO calloc
-   ret->sin_family      = AF_INET;
-   ret->sin_addr.s_addr = inet_addr(addr);
-   ret->sin_port        = htons(port);
-   
+   struct sockaddr_in *ret = calloc(1, sizeof(struct sockaddr));
+   ret->sin_family         = AF_INET;
+   ret->sin_addr.s_addr    = inet_addr(addr);
+   ret->sin_port           = htons(port);
+
    return ret;
 }
 
