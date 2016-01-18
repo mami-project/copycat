@@ -8,9 +8,11 @@
 #ifndef _UDPTUN_ICMP_H
 #define _UDPTUN_ICMP_H
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <netinet/ip_icmp.h>
+#include <sys/uio.h>
+#include <netinet/ip.h>
+
+#include "state.h"
 
 /** 
  * \struct icmp_msg
@@ -50,5 +52,7 @@ struct ip_header {
  */ 
 void print_icmp_type(uint8_t type, uint8_t code);
 
+char *forge_icmp(int *pkt_len, struct sock_extended_err *sock_err,
+                 struct iovec *iov, struct tun_state *state);
 #endif
 

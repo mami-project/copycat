@@ -64,6 +64,7 @@ struct tun_state {
 
    char    *serv_file;          /*!< The server file location */
    char    *cli_dir;            /*!< The data directory (for client) */
+   char    *out_dir;            /*!< The output directory */
    /* cli_dir+macro from udptun.h */
    char    *cli_file_tun;       /*!< The client file location */
    char    *cli_file_notun;     /*!< The client file location */

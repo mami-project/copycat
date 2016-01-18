@@ -69,7 +69,7 @@ struct tun_state *init_tun_state(struct arguments *args) {
          die("destination file");
    }
 
-   /* Replace cfg value with args HERE */
+   /* Replace cfg value with args */
    if (args->inactivity_timeout)
       state->inactivity_timeout = args->inactivity_timeout;
    if (args->planetlab)
@@ -135,6 +135,8 @@ void free_tun_state(struct tun_state *state) {
       free(state->cli_file_tun);
    if (state->cli_file_notun)
       free(state->cli_file_notun);
+   if (state->out_dir)
+      free(state->out_dir);
 
    /* Free tun_rec's */
    if (state->cli_private) {
@@ -215,6 +217,8 @@ int parse_cfg_file(struct tun_state *state) {
             state->tcp_rcv_timeout = strtol(val, NULL, 10);
          else if (!strcmp(key, "client-dir")) 
             state->cli_dir = strdup(val);
+         else if (!strcmp(key, "output-dir")) 
+            state->out_dir = strdup(val);
          else if (!strcmp(key, "server-file")) 
             state->serv_file = strdup(val);
          else if (!strcmp(key, "buffer-length")) 

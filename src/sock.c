@@ -48,18 +48,6 @@
  */ 
 static void build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw);
 
-/**
- * \fn unsigned short calcsum(unsigned short *buffer, int length)
- *
- * \brief used to calculate IP and ICMP header checksums using
- * one's compliment of the one's compliment sum of 16 bit words of the header
- * 
- * \param buffer the packet buffer
- * \param length the buffer length
- * \return checksum
- */ 
-static unsigned short calcsum(unsigned short *buffer, int length);
-
 
 int udp_sock(int port) {
    int s;
@@ -184,9 +172,8 @@ int xrecverr(int fd, void *buf, size_t buflen) {
    msg.msg_controllen = buflen;
 
    /* recv msg */
-   int return_status  = recvmsg(fd, &msg, MSG_ERRQUEUE);
-   if (return_status < 0)
-      return return_status;
+   if (recvmsg(fd, &msg, MSG_ERRQUEUE) < 0)
+      die("recvmsg");
 
    /* parse msg */
    for (cmsg = CMSG_FIRSTHDR(&msg);cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
@@ -222,9 +209,8 @@ int xfwerr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *state
    msg.msg_controllen = buflen;
 
    /* recv msg */
-   int return_status  = recvmsg(fd, &msg, MSG_ERRQUEUE), i;
-   if (return_status < 0)
-      return return_status;
+   if (recvmsg(fd, &msg, MSG_ERRQUEUE) < 0)
+      die("recvmsg");
 
    /* parse msg */
    for (cmsg = CMSG_FIRSTHDR(&msg);cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
@@ -236,40 +222,9 @@ int xfwerr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *state
             print_icmp_type(sock_err->ee_type, sock_err->ee_code);
          else debug_print("non-icmp err msg\n");
 
-         struct sockaddr *sa = SO_EE_OFFENDER(sock_err);
-         debug_print("%s\n", inet_ntoa(((struct sockaddr_in *)sa)->sin_addr));
-
          /* re-build icmp msg */
-	      struct ip_header* ipheader;
-	      struct icmp_msg* icmp;
-         char *pkt;
-         int pkt_len = sizeof(struct ip_header) + sizeof(struct icmp_msg);
-	      if ( (pkt = calloc(1, pkt_len)) == NULL)
-		      die("Could not allocate memory for packet\n");
-	      ipheader = (struct ip_header*)pkt;
-	      icmp = (struct icmp_msg*)(pkt+sizeof(struct ip_header));
-
-         /* fill packet */
-	      ipheader->ver 		= 4; //TODO wrap it to icmp.c
-	      ipheader->hl		= 5; 	
-	      ipheader->tos		= 0;
-	      ipheader->totl		= pkt_len;
-	      ipheader->id		= 0;
-	      ipheader->notused	= 0;	
-	      ipheader->ttl		= 255;  
-	      ipheader->prot		= 1;	
-	      ipheader->csum		= 0;
-	      ipheader->saddr 	= ((struct sockaddr_in *)sa)->sin_addr.s_addr;
-	      ipheader->daddr   = (unsigned long)inet_addr(state->private_addr);
-	      icmp->type		   = sock_err->ee_type;		
-	      icmp->code		   = sock_err->ee_code;		
-		   icmp->checksum    = 0;
-         for (i=0; i<8; i++)          
-            icmp->data[i]  = ((unsigned char *) iov.iov_base)[i];
-		   icmp->checksum    = calcsum((unsigned short*)icmp, 
-                                     sizeof(struct icmp_msg));
-	      ipheader->csum		= calcsum((unsigned short*)ipheader, 
-                                     sizeof(struct ip_header));
+         int pkt_len; 
+         char *pkt = forge_icmp(&pkt_len, sock_err, &iov, state);
 
          int sent = xwrite(fd_out, pkt, pkt_len);
          free(pkt);
@@ -322,19 +277,6 @@ int xfwrite(FILE *fp, char *buf, int size, int nmemb) {
 void die(char *s) {
     perror(s);
     exit(1);
-}
-
-unsigned short calcsum(unsigned short *buffer, int length) {
-	unsigned long sum; 	
-	for (sum=0; length>1; length-=2) 
-		sum += *buffer++;	
-
-	if (length==1)
-		sum += (char)*buffer;
-
-	sum = (sum >> 16) + (sum & 0xFFFF); 
-	sum += (sum >> 16);		   
-	return ~sum;
 }
 
 void build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw) {

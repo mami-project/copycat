@@ -9,10 +9,15 @@ TCP tunneling over UDP
    each line should describe one destination with as followed
    <unique-source-port> <public-address> <private-address>
 
-# Standard & Libs
-- c99 or gnu99
-- libpcap-devel/libpcap-dev for BPFs
+# Libs
 - libglib-devel/libglib-dev (>= 1.2.10) or libglib-2.0-devel/libglib-2.0-dev
+- libpcap
+
+# TODO list
+- FREEBSD tun alloc
+- IPv6
+- IPv4-IPv6 & IPv6-IPv4
+- Integrate IPFIX export
 
 # Contact
 k.edeline
