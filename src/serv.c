@@ -74,7 +74,7 @@ void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
       struct tun_rec *rec = NULL; 
       //read sport for clients mapping
       int sport = (int) ntohs( *((uint16_t *)(buf+22)) ); 
-      if (sport == state->tcp_port) {
+      if (sport == state->private_port) {
          // lookup initial server database from file 
       } else if ( (rec = g_hash_table_lookup(state->serv, &sport)) ) {   
          debug_print("sport lookup: OK\n");
@@ -126,7 +126,7 @@ void tun_serv(struct arguments *args) {
 
    /* create tun if and sockets */
    tun(state, &fd_tun); 
-   fd_udp         = udp_sock(state->udp_port);
+   fd_udp         = udp_sock(state->public_port);
 
    /* run server */
    debug_print("running serv ...\n");  
@@ -162,6 +162,5 @@ void tun_serv(struct arguments *args) {
    /* Close, free, ... */
    close(fd_udp);close(fd_tun);
    free_tun_state(state);
-   free(state->if_name);
 }
 

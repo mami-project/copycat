@@ -139,10 +139,10 @@ void cli_thread_parallel(struct tun_state *state, struct arguments *args, int i)
       /* set thread arguments */
       struct cli_thread_parallel_args args_tun = {state, 
                          state->cli_private[i]->sa, state->if_name, 
-                         state->private_addr, state->port, 1, __CLI_TUN_FILE};
+                         state->private_addr, state->port, 1, state->cli_file_tun};
       struct cli_thread_parallel_args args_notun = {state, 
                          state->cli_public[i]->sa, NULL, 
-                         state->public_addr, state->port, 0, __CLI_NOTUN_FILE};
+                         state->public_addr, state->port, 0, state->cli_file_notun};
 
       /* launch threads */
       pthread_t tid_tun   = xthread_create(forked_cli, (void*)&args_tun);
@@ -156,19 +156,19 @@ void cli_thread_parallel(struct tun_state *state, struct arguments *args, int i)
 void cli_thread_tun(struct tun_state *state, struct arguments *args, int i) {
       /* run tunneled flow */
       tcp_cli(state, state->cli_private[i]->sa, state->if_name, 
-              state->private_addr, state->port, 1, __CLI_TUN_FILE);
+              state->private_addr, state->port, 1, state->cli_file_tun);
       /* run notun flow */
       tcp_cli(state, state->cli_public[i]->sa, NULL, 
-              NULL, state->port, 0, __CLI_NOTUN_FILE);
+              NULL, state->port, 0, state->cli_file_notun);
 }
 
 void cli_thread_notun(struct tun_state *state, struct arguments *args, int i) {
       /* run notun flow */
       tcp_cli(state, state->cli_public[i]->sa, NULL, 
-              NULL, state->port, 0, __CLI_NOTUN_FILE);
+              NULL, state->port, 0, state->cli_file_notun);
       /* run tunneled flow */
       tcp_cli(state, state->cli_private[i]->sa, state->if_name, 
-              state->private_addr, state->port, 1, __CLI_TUN_FILE);
+              state->private_addr, state->port, 1, state->cli_file_tun);
 }
 
 void *cli_thread(void *st) {
@@ -210,13 +210,13 @@ void *serv_thread(void *st) {
 
 void *serv_thread_private(void *st) {
    struct tun_state *state = st;
-   tcp_serv(state->private_addr, state->tcp_port, state->if_name, state, 1);
+   tcp_serv(state->private_addr, state->private_port, state->if_name, state, 1);
    return 0;
 }
 
 void *serv_thread_public(void *st) {
    struct tun_state *state = st;
-   tcp_serv(state->public_addr, state->udp_port, NULL, state, 0);
+   tcp_serv(state->public_addr, state->public_port, NULL, state, 0);
    return 0;
 }
 
@@ -270,15 +270,14 @@ int tcp_serv(char *addr, int port, char* dev, struct tun_state *state, int set_m
 }
 
 void *serv_worker_thread(void *socket_desc) {
-   char buf[__BUFFSIZE];
-   int s = *(int*)socket_desc;
-
    FILE *fp = fopen(serv_file, "r");
    if(fp == NULL) 
       die("file note found");
 
-   memset(buf, 0, __BUFFSIZE);
+   int s = *(int*)socket_desc;
    int bsize = 0, wsize = 0;
+   char buf[__BUFFSIZE];
+   memset(buf, 0, __BUFFSIZE);
 
    /* Send loop */
    debug_print("sending data ...\n");
@@ -305,9 +304,8 @@ void *serv_worker_thread(void *socket_desc) {
 int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
             char *addr, int port, int tun, char* filename) {
    struct tun_state *state = st;
-   struct sockaddr_in sout;
-   int s, i, err = 0; 
 
+   int s, err = 0; //TODO clean out useless vars
    /* TCP socket */
    if ((s=socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) 
       die("socket");
@@ -336,10 +334,10 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
       if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, (char *)&tmp,
              sizeof(tmp)) < 0)
          die("setsockopt failed"); TODO: is it ever useful ?*/
-
    }
    
    /* bind socket to local addr */
+   struct sockaddr_in sout;
    memset(&sout, 0, sizeof(sout));
    sout.sin_family = AF_INET;
    sout.sin_port   = htons(port);
@@ -358,7 +356,7 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
       goto err;
    }
    /* transfer file */
-   FILE *fp = fopen(state->cli_file, "w");//TODO cat with filename
+   FILE *fp = fopen(filename, "w");
    if(fp == NULL) die("fopen");
 
    char buf[__BUFFSIZE];
@@ -385,7 +383,7 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
 
    /* set file permission */
    mode_t m = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
-   if (chmod(state->cli_file, m) < 0)
+   if (chmod(filename, m) < 0)
       die("chmod");
 
 succ:

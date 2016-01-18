@@ -83,8 +83,8 @@ void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *state, c
       int dport = (int) ntohs( *((uint16_t *)(buf+22)) ); // 26 with PI
 
       /* cli */
-      if (dport == state->tcp_port) {
-         // lookup initial server database from file 
+      if (dport == state->private_port) {
+         /* lookup initial server database from file */
          in_addr_t priv_addr = (int) *((uint32_t *)(buf+16));
          debug_print("%s\n", inet_ntoa((struct in_addr){priv_addr}));
          /* lookup private addr */
@@ -172,7 +172,7 @@ void tun_peer(struct arguments *args) {
 
    /* create tun if and sockets */
    tun(state, &fd_tun);   
-   fd_serv        = udp_sock(state->udp_port);
+   fd_serv        = udp_sock(state->public_port);
    fd_cli         = udp_sock(state->port);
 
    /* run server */
@@ -190,7 +190,7 @@ void tun_peer(struct arguments *args) {
    fd_set input_set;
    struct timeval tv;
    char buf[__BUFFSIZE];
-   fd_max = max(max(fd_cli, fd_tun),fd_serv);
+   fd_max = max(max(fd_cli, fd_tun), fd_serv);
    loop   = 1;
    signal(SIGINT, peer_shutdown);
 
@@ -218,6 +218,5 @@ void tun_peer(struct arguments *args) {
    /* Close, free, ... */
    close(fd_cli);close(fd_serv);
    close(fd_tun);free_tun_state(state);
-   free(state->if_name);
 }
 

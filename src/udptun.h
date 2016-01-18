@@ -16,6 +16,12 @@
  */
 #define __BUFFSIZE 8192
 
+/** 
+ * \def __STRSIZE
+ * \brief The maximal size of a location string.
+ */
+#define __STRSIZE 512
+
 /**
  * \def __CLOSE_TIMEOUT
  * \brief The time to wait for delayed finack/ack while closing 
@@ -49,7 +55,7 @@ struct arguments {
    uint8_t ipv6;               /*!< IPv6 mode */
    uint8_t dual_stack;         /*!< Dual stack mode */
 
-   char *config_file;          /*!< The destination file  */
+   char *config_file;          /*!< The configuration file  */
    char *dest_file;            /*!< The destination file  */
    uint8_t inactivity_timeout; /*!< The inactivity timeout */
 };

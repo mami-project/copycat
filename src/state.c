@@ -73,11 +73,20 @@ struct tun_state *init_tun_state(struct arguments *args) {
    if (args->inactivity_timeout)
       state->inactivity_timeout = args->inactivity_timeout;
 
+   /* File locations */
+   state->cli_file_tun = malloc(__STRSIZE); //TODO alloca/malloc at preprocess
+   state->cli_file_notun = malloc(__STRSIZE);
+   strncpy(state->cli_file_tun, state->cli_dir, __STRSIZE);
+   strncpy(state->cli_file_notun, state->cli_dir, __STRSIZE);
+   strncat(state->cli_file_tun, __CLI_TUN_FILE, __STRSIZE);
+   strncat(state->cli_file_notun, __CLI_NOTUN_FILE, __STRSIZE);
+
    init_destructors(state);
    return state;
 }
 
 void free_tun_state(struct tun_state *state) {
+   /* Free HTables (GLIB 1 && GLIB 2 < 2.12)  */
 #if !defined(HAVE_LIBGLIB_2_0) && defined(HAVE_LIBGLIB)
    if (state->serv) 
       g_hash_table_foreach (state->serv, 
@@ -88,16 +97,38 @@ void free_tun_state(struct tun_state *state) {
                             (GHFunc) free_tun_rec_aux,
                             NULL);
 #endif
+
+   /* Free HTables (GLIB 2 >= 2.12) */
    if (state->serv)
       g_hash_table_destroy(state->serv); 
    if (state->cli)
       g_hash_table_destroy(state->cli); 
+
+   /* Free mallocs */
    if (state->private_addr)
       free(state->private_addr);
-   if (state->cli_file)
-      free(state->cli_file);
+   if (state->private_mask)
+      free(state->private_mask);
+   if (state->private_addr6)
+      free(state->private_addr6);
+   if (state->private_mask6)
+      free(state->private_mask6);
+   if (state->public_addr)
+      free(state->public_addr);
+   if (state->public_addr6)
+      free(state->public_addr6);
+   if (state->cli_dir)
+      free(state->cli_dir);
    if (state->serv_file)
       free(state->serv_file);
+   if (state->if_name)
+      free(state->if_name);
+   if (state->cli_file_tun)
+      free(state->cli_file_tun);
+   if (state->cli_file_notun)
+      free(state->cli_file_notun);
+
+   /* Free tun_rec's */
    if (state->cli_private) {
       int i;
       for (i=0; i<state->sa_len; i++) 
@@ -150,10 +181,10 @@ int parse_cfg_file(struct tun_state *state) {
             die("configuration file");
          debug_print("%s %s\n", key, val); 
 
-         if (!strcmp(key, "udp-server-port")) 
-            state->udp_port = strtol(val, NULL, 10);  
-         else if (!strcmp(key, "tcp-server-port")) 
-            state->tcp_port = strtol(val, NULL, 10);
+         if (!strcmp(key, "public-server-port")) 
+            state->public_port = strtol(val, NULL, 10);  
+         else if (!strcmp(key, "private-server-port")) 
+            state->private_port = strtol(val, NULL, 10);
          else if (!strcmp(key, "source-port")) 
             state->port = strtol(val, NULL, 10);
          else if (!strcmp(key, "private-address")) 
@@ -174,8 +205,8 @@ int parse_cfg_file(struct tun_state *state) {
             state->tcp_snd_timeout = strtol(val, NULL, 10);
          else if (!strcmp(key, "tcp-receive-timeout")) 
             state->tcp_rcv_timeout = strtol(val, NULL, 10);
-         else if (!strcmp(key, "client-file")) 
-            state->cli_file = strdup(val);
+         else if (!strcmp(key, "client-dir")) 
+            state->cli_dir = strdup(val);
          else if (!strcmp(key, "server-file")) 
             state->serv_file = strdup(val);
          else if (!strcmp(key, "buffer-length")) 
@@ -220,7 +251,7 @@ int parse_dest_file(struct arguments *args, struct tun_state *state) {
    /* build port to public addr lookup table */
    while (fscanf(fp, "%d %s %s", &sport, public, private) == 3) {
       struct tun_rec *nrec = init_tun_rec();
-      nrec->sa    = (struct sockaddr *)get_addr(public, state->udp_port);
+      nrec->sa    = (struct sockaddr *)get_addr(public, state->public_port);
       nrec->sport = sport;  
       nrec->priv_addr = inet_addr(private);
 
@@ -240,11 +271,11 @@ int parse_dest_file(struct arguments *args, struct tun_state *state) {
       struct tun_rec *nrec_priv = init_tun_rec();
       struct tun_rec *nrec_pub  = init_tun_rec();
 
-      nrec_priv->sa    = (struct sockaddr *)get_addr(private, state->tcp_port);
+      nrec_priv->sa    = (struct sockaddr *)get_addr(private, state->private_port);
       nrec_priv->sport = sport;  
       state->cli_private[i] = nrec_priv;
 
-      nrec_pub->sa    = (struct sockaddr *)get_addr(public, state->udp_port);
+      nrec_pub->sa    = (struct sockaddr *)get_addr(public, state->public_port);
       nrec_pub->sport = sport;  
       state->cli_public[i++] = nrec_pub;
    }

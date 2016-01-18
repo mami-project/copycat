@@ -44,21 +44,23 @@ struct tun_state {
    char    *private_mask;       /*!< The private ip mask */
    char    *private_addr6;      /*!< The private ipv6 address */
    char    *private_mask6;      /*!< The private ipv6 mask */
-   //TODO fill public addrs
    char    *public_addr;        /*!< The public ip address */
    char    *public_addr6;       /*!< The public ipv6 address */
+
    uint16_t port;               /*!< The UNIQUE per-peer port number */
-   //TODO to public & private_port
-   uint16_t udp_port;           /*!<  The udp listen port */
-   uint16_t tcp_port;           /*!<  The tcp listen port */
+   uint16_t public_port;        /*!<  The udp listen port */
+   uint16_t private_port;       /*!<  The tcp listen port */
 
    uint16_t tcp_snd_timeout;    /*!< TCP client send timeout */
    uint16_t tcp_rcv_timeout;    /*!< TCP client receive timeout */
    int16_t  inactivity_timeout; /*!< Inactivity timeout */
    uint16_t initial_sleep;      /*!< Initial sleep time (client & peer) */
-   //TODO cli dir
-   char    *cli_file;           /*!< The client file location */
+
    char    *serv_file;          /*!< The server file location */
+   char    *cli_dir;            /*!< The data directory (for client) */
+   /* cli_dir+macro from udptun.h */
+   char    *cli_file_tun;       /*!< The client file location */
+   char    *cli_file_notun;     /*!< The client file location */
 
    uint32_t buf_length;         /*!< buffer length */
    uint32_t backlog_size;       /*!< backlog size  */
