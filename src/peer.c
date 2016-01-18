@@ -227,11 +227,11 @@ void tun_peer(struct arguments *args) {
          break;
       } else if (sel > 0) {
          if (FD_ISSET(fd_tun, &input_set))      
-            tun_peer_in(fd_tun, fd_cli, fd_serv, state, buf); 
+            tun_peer_in(fd_tun, fd_cli, fd_serv, state, buffer); 
          if (FD_ISSET(fd_cli, &input_set)) 
-            tun_peer_out_cli(fd_cli, fd_tun, state, buf);
+            tun_peer_out_cli(fd_cli, fd_tun, state, buffer);
          if (FD_ISSET(fd_serv, &input_set)) 
-            tun_peer_out_serv(fd_serv, fd_tun, state, buf);
+            tun_peer_out_serv(fd_serv, fd_tun, state, buffer);
       }
    }
 

@@ -236,6 +236,11 @@ int tcp_serv(char *addr, int port, char* dev, struct tun_state *state, int set_m
          die("setsockopt maxseg");
    }
 
+   int tmp = 1;
+   if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, (char *)&tmp,
+          sizeof(tmp)) < 0)
+      die("setsockopt failed");
+
    /* bind to sport */
    memset(&sout, 0, sizeof(sout));
    sout.sin_family = AF_INET;
@@ -329,9 +334,7 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
       int tmp = state->max_segment_size;
       if (setsockopt (s, IPPROTO_TCP, TCP_MAXSEG, &tmp, sizeof(tmp)) < 0)
          die("setsockopt maxseg");
-   } else {
-  
-   }
+   } 
    int tmp = 1;
    if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, (char *)&tmp,
           sizeof(tmp)) < 0)
