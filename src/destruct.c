@@ -7,6 +7,8 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
+
 #include "destruct.h"
 #include "sock.h"
 #include "debug.h"

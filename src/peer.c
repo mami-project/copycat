@@ -78,6 +78,11 @@ void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *state, c
 
    if (recvd > 32) {
 
+      /* Remove PlanetLab TUN PPI header */
+      if (state->planetlab) {
+         buf+=4;recvd-=4;
+      }
+
       struct tun_rec *rec = NULL; 
       //read sport for clients mapping
       int dport = (int) ntohs( *((uint16_t *)(buf+22)) ); // 26 with PI
@@ -101,7 +106,6 @@ void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *state, c
 
       /* serv */
       } else if ((rec = g_hash_table_lookup(state->serv, &dport))) {   
-         debug_print("dport lookup: OK\n");
 
          int sent = xsendto(fd_serv, rec->sa, buf, recvd);
          debug_print("wrote %db to udp\n",sent);
@@ -122,8 +126,13 @@ void tun_peer_out_cli(int fd_udp, int fd_tun, struct tun_state *state, char *buf
       debug_print("recvd %db from udp\n", recvd);
 
       if (recvd > 32) {
-         int sent = xwrite(fd_tun, buf, recvd);
 
+         /* Add PlanetLab TUN PPI header */
+         if (state->planetlab) {
+            buf-=4; recvd+=4;
+         }
+
+         int sent = xwrite(fd_tun, buf, recvd);
          debug_print("wrote %d to tun\n", sent);     
       } else debug_print("recvd empty pkt\n");
    }
@@ -133,8 +142,12 @@ void tun_peer_out_serv(int fd_udp, int fd_tun, struct tun_state *state, char *bu
    struct tun_rec *nrec = init_tun_rec();
    int recvd = 0;
    recvd=xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, &nrec->slen, buf, __BUFFSIZE);
-
    debug_print("recvd %db from udp\n", recvd);
+
+   /* Add PlanetLab TUN PPI header */
+   if (state->planetlab) {
+      buf-=4; recvd+=4;
+   }
 
    if (recvd > 32) {
       struct tun_rec *rec = NULL;
@@ -189,7 +202,14 @@ void tun_peer(struct arguments *args) {
    /* init select main loop */
    fd_set input_set;
    struct timeval tv;
-   char buf[__BUFFSIZE];
+   char buf[__BUFFSIZE], *buffer;
+   buffer=buf;
+   if (state->planetlab) {
+      buffer[0]=0;buffer[1]=0;
+      buffer[2]=8;buffer[3]=0;
+      buffer+=4;
+   }
+
    fd_max = max(max(fd_cli, fd_tun), fd_serv);
    loop   = 1;
    signal(SIGINT, peer_shutdown);

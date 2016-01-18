@@ -172,11 +172,11 @@ void cli_thread_notun(struct tun_state *state, struct arguments *args, int i) {
 }
 
 void *cli_thread(void *st) {
-   int i; 
    struct tun_state *state = st;
    struct arguments *args = state->args;
 
    /* Client loop */
+   int i; 
    for (i=0; i<state->sa_len; i++) {
       switch (args->cli_mode) {
          case PARALLEL_MODE:
@@ -251,7 +251,7 @@ int tcp_serv(char *addr, int port, char* dev, struct tun_state *state, int set_m
       die("listen");
 
    /* listen loop */
-   debug_print("TCP server listenning on %s:%d ...\n", addr ? addr : "*", port);
+   debug_print("TCP server listening on %s:%d ...\n", addr ? addr : "*", port);
    int success = 0, ws;
    pthread_t thread_id;
    while(!success) {
@@ -330,11 +330,12 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
       if (setsockopt (s, IPPROTO_TCP, TCP_MAXSEG, &tmp, sizeof(tmp)) < 0)
          die("setsockopt maxseg");
    } else {
-      /*int tmp = 1;
-      if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, (char *)&tmp,
-             sizeof(tmp)) < 0)
-         die("setsockopt failed"); TODO: is it ever useful ?*/
+  
    }
+   int tmp = 1;
+   if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, (char *)&tmp,
+          sizeof(tmp)) < 0)
+      die("setsockopt failed"); //TODO: is it ever useful ?
    
    /* bind socket to local addr */
    struct sockaddr_in sout;

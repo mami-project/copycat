@@ -69,15 +69,17 @@ void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    int recvd=xread(fd_tun, buf, __BUFFSIZE);
    debug_print("serv: recvd %db from tun\n", recvd);
 
+   /* Remove PlanetLab TUN PPI header */
+   if (state->planetlab) {
+      buf+=4;recvd-=4;
+   }
+
    if (recvd > 32) {
 
       struct tun_rec *rec = NULL; 
       //read sport for clients mapping
       int sport = (int) ntohs( *((uint16_t *)(buf+22)) ); 
-      if (sport == state->private_port) {
-         // lookup initial server database from file 
-      } else if ( (rec = g_hash_table_lookup(state->serv, &sport)) ) {   
-         debug_print("sport lookup: OK\n");
+      if ( (rec = g_hash_table_lookup(state->serv, &sport)) ) {   
 
          int sent = xsendto(fd_udp, rec->sa, buf, recvd);
          debug_print("serv: wrote %db to udp\n",sent);
@@ -91,8 +93,12 @@ void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
 void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_state *state, char *buf) {
    struct tun_rec *nrec = init_tun_rec();
    int recvd=xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, &nrec->slen, buf, __BUFFSIZE);
-
    debug_print("serv: recvd %db from udp\n", recvd);
+
+   /* Add PlanetLab TUN PPI header */
+   if (state->planetlab) {
+      buf-=4; recvd+=4;
+   }
 
    if (recvd > 32) {
       struct tun_rec *rec = NULL;
@@ -135,7 +141,13 @@ void tun_serv(struct arguments *args) {
    /* init select loop */
    fd_set input_set;
    struct timeval tv;
-   char buf[__BUFFSIZE];
+   char buf[__BUFFSIZE], *buffer;
+   buffer=buf;
+   if (state->planetlab) {
+      buffer[0]=0;buffer[1]=0;
+      buffer[2]=8;buffer[3]=0;
+      buffer+=4;
+   }
 
    fd_max=max(fd_tun,fd_udp);
    loop=1;
@@ -153,9 +165,9 @@ void tun_serv(struct arguments *args) {
          break;
       } else if (sel > 0) {
          if (FD_ISSET(fd_udp, &input_set)) 
-            tun_serv_out(fd_udp, fd_tun, args, state, buf);
+            tun_serv_out(fd_udp, fd_tun, args, state, buffer);
          if (FD_ISSET(fd_tun, &input_set)) 
-            tun_serv_in(fd_udp, fd_tun, state, buf);
+            tun_serv_in(fd_udp, fd_tun, state, buffer);
       }
    }
 

@@ -72,6 +72,14 @@ struct tun_state *init_tun_state(struct arguments *args) {
    /* Replace cfg value with args HERE */
    if (args->inactivity_timeout)
       state->inactivity_timeout = args->inactivity_timeout;
+   if (args->planetlab)
+      state->planetlab = 1;
+   if (args->freebsd)
+      state->freebsd = 1;
+   if (args->ipv6)
+      state->ipv6 = 1;
+   if (args->dual_stack)
+      state->dual_stack = 1; 
 
    /* File locations */
    state->cli_file_tun = malloc(__STRSIZE); //TODO alloca/malloc at preprocess

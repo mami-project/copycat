@@ -62,25 +62,29 @@ void cli_shutdown(int sig) {
 
 void tun_cli_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {//TODO remove useless args, maybe pass struct args for faster mode lookup
 
-      int recvd=xread(fd_tun, buf, __BUFFSIZE);
-      debug_print("cli: recvd %db from tun\n", recvd);
+   int recvd=xread(fd_tun, buf, __BUFFSIZE);
+   debug_print("cli: recvd %db from tun\n", recvd);
 
-      // lookup initial server database from file 
-      struct tun_rec *rec = NULL; 
-      in_addr_t priv_addr = (int) *((uint32_t *)(buf+16));
-      debug_print("%s\n", inet_ntoa((struct in_addr){priv_addr}));
+   /* Remove PlanetLab TUN PPI header */
+   if (state->planetlab) {
+      buf+=4;recvd-=4;
+   }
 
-      /* lookup private addr */
-      if ( (rec = g_hash_table_lookup(state->cli, &priv_addr)) ) {
-         debug_print("priv addr lookup: OK\n");
+   // lookup initial server database from file 
+   struct tun_rec *rec = NULL; 
+   in_addr_t priv_addr = (int) *((uint32_t *)(buf+16));
+   debug_print("%s\n", inet_ntoa((struct in_addr){priv_addr}));
 
-         int sent = xsendto(fd_udp, rec->sa, buf, recvd);
-         debug_print("cli: wrote %db to udp\n",sent);
+   /* lookup private addr */
+   if ( (rec = g_hash_table_lookup(state->cli, &priv_addr)) ) {
 
-      } else {
-         errno=EFAULT;
-         die("cli lookup");
-      }
+      int sent = xsendto(fd_udp, rec->sa, buf, recvd);
+      debug_print("cli: wrote %db to udp\n",sent);
+
+   } else {
+      errno=EFAULT;
+      die("cli lookup");
+   }
 }
 
 void tun_cli_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
@@ -93,8 +97,12 @@ void tun_cli_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
       debug_print("cli: recvd %db from udp\n", recvd);
 
       if (recvd > 32) {
-         int sent = xwrite(fd_tun, buf, recvd);
+         /* Add PlanetLab TUN PPI header */
+         if (state->planetlab) {
+            buf-=4; recvd+=4;
+         }
 
+         int sent = xwrite(fd_tun, buf, recvd);
          debug_print("cli: wrote %db to tun\n",sent);    
       } else debug_print("recvd empty pkt\n");
    }
@@ -120,7 +128,14 @@ void tun_cli(struct arguments *args) {
    /* init select loop */
    fd_set input_set;
    struct timeval tv;
-   char buf[__BUFFSIZE];
+   char buf[__BUFFSIZE], *buffer;
+   buffer=buf;
+   if (state->planetlab) {
+      buffer[0]=0;buffer[1]=0;
+      buffer[2]=8;buffer[3]=0;
+      buffer+=4;
+   }
+
    fd_max = max(fd_udp, fd_tun);
    loop = 1;
    signal(SIGINT, cli_shutdown);
@@ -137,9 +152,9 @@ void tun_cli(struct arguments *args) {
          break;
       } else if (sel > 0) {
          if (FD_ISSET(fd_tun, &input_set))      
-            tun_cli_in(fd_udp, fd_tun, state, buf);
+            tun_cli_in(fd_udp, fd_tun, state, buffer);
          if (FD_ISSET(fd_udp, &input_set)) 
-            tun_cli_out(fd_udp, fd_tun, state, buf);
+            tun_cli_out(fd_udp, fd_tun, state, buffer);
       }
    }
 

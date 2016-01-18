@@ -31,6 +31,12 @@ struct tun_state {
    /* From command-line arguments  */
    struct arguments *args;       /*!< The arguments */
 
+   /* Modes */
+   uint8_t planetlab;          /*!<  PlanetLab mode */
+   uint8_t freebsd;            /*!<  FREEBSD mode */
+   uint8_t ipv6;               /*!< IPv6 mode */
+   uint8_t dual_stack;         /*!< Dual stack mode */
+
    /* From destination file */
    GHashTable      *serv;        /*!<  Source port to public address lookup table. */
    GHashTable      *cli;         /*!<  Private address to public address lookup table. */
@@ -38,7 +44,7 @@ struct tun_state {
    struct tun_rec **cli_public;  /*!<  Destination list. */ //TODO v6 equivalent
    uint8_t sa_len;               /*!<  Number of destinations. */
 
-   /* Fields defined in cfg file */
+   /* From cfg file */
    char    *if_name;            /*!< The tun interface name. */
    char    *private_addr;       /*!< The private ip address */
    char    *private_mask;       /*!< The private ip mask */
@@ -48,8 +54,8 @@ struct tun_state {
    char    *public_addr6;       /*!< The public ipv6 address */
 
    uint16_t port;               /*!< The UNIQUE per-peer port number */
-   uint16_t public_port;        /*!<  The udp listen port */
-   uint16_t private_port;       /*!<  The tcp listen port */
+   uint16_t public_port;        /*!< The udp listen port */
+   uint16_t private_port;       /*!< The tcp listen port */
 
    uint16_t tcp_snd_timeout;    /*!< TCP client send timeout */
    uint16_t tcp_rcv_timeout;    /*!< TCP client receive timeout */
