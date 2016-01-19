@@ -126,32 +126,6 @@ void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_sta
    } else debug_print("recvd empty pkt\n");
 }
 
-void *serv_capture_tun(void *arg) {
-   struct tun_state *state = (struct tun_state *)arg;
-   char file_loc[512];
-   strncpy(file_loc, state->out_dir, 512);
-   
-   strncat(file_loc, SERV_PCAP_FILE, 512);
-   strncat(file_loc, "tun", 512);
-   strncat(file_loc, ".id", 512);
-   strncat(file_loc, ".pcap", 512);
-   debug_print("%s\n", file_loc);
-   xcapture(state->if_name, state->private_addr, 0, file_loc);
-}
-
-void *serv_capture_notun(void *arg) {
-   struct tun_state *state = (struct tun_state *)arg;
-   char file_loc[512];
-   strncpy(file_loc, state->out_dir, 512);
-   
-   strncat(file_loc, SERV_PCAP_FILE, 512);
-   strncat(file_loc, "notun", 512);
-   strncat(file_loc, ".id", 512);
-   strncat(file_loc, ".pcap", 512);
-   debug_print("%s\n", file_loc);
-   xcapture(state->default_if, state->public_addr, state->public_port, file_loc);
-}
-
 void tun_serv(struct arguments *args) {
    int fd_max = 0, fd_udp = 0, sel = 0, fd_tun = 0;
 
@@ -162,8 +136,9 @@ void tun_serv(struct arguments *args) {
    tun(state, &fd_tun); 
    fd_udp         = udp_sock(state->public_port);
 
-   xthread_create(serv_capture_tun, (void *) state);
-   xthread_create(serv_capture_notun, (void *) state);
+   xthread_create(capture_tun, (void *) state);
+   xthread_create(capture_notun, (void *) state);
+   synchronize();
 
    /* run server */
    debug_print("running serv ...\n");  
@@ -183,6 +158,7 @@ void tun_serv(struct arguments *args) {
    fd_max=max(fd_tun,fd_udp);
    loop=1;
    signal(SIGINT, serv_shutdown);
+   signal(SIGTERM, serv_shutdown);
 
    while (loop) {
       FD_ZERO(&input_set);

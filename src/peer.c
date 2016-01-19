@@ -22,6 +22,7 @@
 #include "thread.h"
 #include "sock.h"
 #include "net.h"
+#include "xpcap.h"
 
 /**
  * \var static volatile int loop
@@ -188,6 +189,11 @@ void tun_peer(struct arguments *args) {
    fd_serv        = udp_sock(state->public_port);
    fd_cli         = udp_sock(state->port);
 
+   /* run capture threads */
+   xthread_create(capture_tun, (void *) state);
+   xthread_create(capture_notun, (void *) state);
+   synchronize();
+
    /* run server */
    debug_print("running serv ...\n");  
    xthread_create(serv_thread, (void*) state);
@@ -213,6 +219,7 @@ void tun_peer(struct arguments *args) {
    fd_max = max(max(fd_cli, fd_tun), fd_serv);
    loop   = 1;
    signal(SIGINT, peer_shutdown);
+   signal(SIGTERM, peer_shutdown);
 
    while (loop) {
       FD_ZERO(&input_set);

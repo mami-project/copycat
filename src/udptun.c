@@ -31,6 +31,8 @@ static struct argp_option options[] = {
   {"verbose",    'v', 0,      0,  "Produce verbose output" },
   {"quiet",      'q', 0,      0,  "Don't produce any output" },
 
+  {"run-id",     'i',"ID",    0,  "Run ID"},
+
   {"client",     'c', 0,      0,  "Client mode" },
   {"server",     's', 0,      0,  "Server mode" },
   {"fullmesh",   'f', 0,      0,  "Fullmesh mode (both client and server)" },
@@ -110,7 +112,8 @@ error_t parse_args(int key, char *arg, struct argp_state *state) {
          arguments->dest_file = arg;break;
       case 'o':
          arguments->config_file = arg;break;
-         break;
+      case 'i':
+         arguments->run_id = arg;break;
       case ARGP_KEY_ARG: 
          return 0;
       default: 
@@ -131,6 +134,7 @@ void init_args(struct arguments *args) {
    args->config_file = NULL;
    args->dest_file   = NULL;
    args->inactivity_timeout = 0;
+   args->run_id      = NULL;
 }
 
 void print_args(struct arguments *args) {

@@ -40,9 +40,6 @@
  */
 #define __CLI_NOTUN_FILE "cli_notun.dat"
 
-#define CLI_PCAP_FILE "udptun.cli."
-#define SERV_PCAP_FILE "udptun.serv."
-
 //TODO remove __'s
 /** 
  * \struct arguments
@@ -62,6 +59,8 @@ struct arguments {
    char *config_file;          /*!< The configuration file  */
    char *dest_file;            /*!< The destination file  */
    uint8_t inactivity_timeout; /*!< The inactivity timeout */
+
+   char *run_id;               /*!< The run ID */
 };
 
 #include "debug.h"

@@ -19,6 +19,7 @@
 #include "udptun.h"
 #include "destruct.h"
 #include "net.h"
+#include "xpcap.h"
 
 /**
  * \fn static int parse_dest_file(struct arguments *args, struct tun_state *state)
@@ -89,7 +90,9 @@ struct tun_state *init_tun_state(struct arguments *args) {
    strncat(state->cli_file_tun, __CLI_TUN_FILE, __STRSIZE);
    strncat(state->cli_file_notun, __CLI_NOTUN_FILE, __STRSIZE);
 
+   init_barrier(3);
    init_destructors(state);
+
    return state;
 }
 
@@ -152,6 +155,8 @@ void free_tun_state(struct tun_state *state) {
       free(state->cli_public);
    }
    free(state);
+
+   destroy_barrier();
 }
 
 struct tun_rec *init_tun_rec() {
