@@ -15,6 +15,35 @@
 #include "icmp.h"
 #include "debug.h"
 
+/** 
+ * \struct icmp_msg
+ *	\brief An icmp msg
+ */
+struct icmp_msg {
+	unsigned char type;      /*!< msg type  */
+	unsigned char code;      /*!< msg code   */
+	unsigned short checksum; /*!< msh checksum */
+	char data[8];            /*!< msg payload */
+};
+
+/** 
+ * \struct ip_header
+ *	\brief an ip header
+ */
+struct ip_header {
+	unsigned int	hl:4,		/*!< 4 bit header length */
+					ver:4;		/*!< 4 bit version */
+	unsigned char	tos;		/*!< type of service */
+	unsigned short  totl;		/*!< total length of datagram */
+	unsigned short	id;	   	/*!< identifier */
+	unsigned short 	notused;	/*!< this is were flags and fragment offset would go */
+	unsigned char 	ttl;		   /*!< time to live */
+	unsigned char	prot;		   /*!< protocol */
+	unsigned short	csum;		   /*!< our checksum */
+	uint32_t 	saddr;		   /*!< source address */
+	uint32_t 	daddr;		   /*!< destination address */
+};
+
 /**
  * \fn unsigned short calcsum(unsigned short *buffer, int length)
  *

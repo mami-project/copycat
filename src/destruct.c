@@ -95,6 +95,7 @@ void destruct() {
    for (int i=0; i<ctid_index; i++) {
       if (!pthread_cancel(ctid[i])) {
          debug_print("thread %u canceled\n", (unsigned int)ctid[i]);
+         pthread_join(ctid[i], NULL);
          continue;
       }
       pthread_kill(ctid[i], SIGKILL);

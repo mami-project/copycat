@@ -18,7 +18,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include <pcap.h>
 
 #include <netinet/ip_icmp.h>
 #include <netinet/tcp.h>
@@ -35,6 +34,7 @@
 #include "debug.h"
 #include "icmp.h"
 #include "net.h"
+#include "xpcap.h"
 
 /**
  * \fn static build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw)
@@ -107,29 +107,6 @@ int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, const ch
 
    debug_print("raw socket created on %s port %d\n", dev, port);
    return s;
-}
-
-struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dport) {
-   pcap_t *handle;		// Session handle 
-   char errbuf[PCAP_ERRBUF_SIZE];	// Error string 
-   struct bpf_program *fp= malloc(sizeof(struct bpf_program));// The compiled filter expression 
-
-   char filter_exp[64]; // "src port " p " and dst port " p2
-   if (sport && dport)
-      sprintf(filter_exp, "src port %d and dst port %d", sport, dport);
-   else if (sport && !dport)
-      sprintf(filter_exp, "src port %d", sport);
-   else if (!sport && dport)
-      sprintf(filter_exp, "dst port %d", dport);
-
-   bpf_u_int32 net = inet_addr(addr);
-   handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
-   if (!handle) 
-      die( "Couldn't open device %s: %s");
-   if (pcap_compile(handle, fp, filter_exp, 0, net) == -1) 
-      die("Couldn't parse filter %s: %s\n");
-
-   return (struct sock_fprog *)fp;
 }
 
 int xselect(fd_set *input_set, int fd_max, struct timeval *tv, int timeout) {
@@ -227,7 +204,7 @@ int xfwerr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *state
          char *pkt = forge_icmp(&pkt_len, sock_err, &iov, state);
 
          int sent = xwrite(fd_out, pkt, pkt_len);
-         free(pkt);
+         free(pkt); //TODO: add this function as a feature of xrecverr
       } 
    }
    return 0;

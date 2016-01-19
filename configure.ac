@@ -18,6 +18,7 @@ fi
 
 # Checks for libraries.
 AC_CHECK_LIB(pthread, pthread_create)
+AC_CHECK_LIB(pthread, pthread_cleanup_push)
 AC_CHECK_LIB([pcap], [pcap_compile])
 AC_CHECK_LIB([glib-2.0], [g_hash_table_lookup], [],
    [AC_CHECK_LIB([glib], [g_hash_table_lookup])]

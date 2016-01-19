@@ -40,6 +40,10 @@
  */
 #define __CLI_NOTUN_FILE "cli_notun.dat"
 
+#define CLI_PCAP_FILE "udptun.cli."
+#define SERV_PCAP_FILE "udptun.serv."
+
+//TODO remove __'s
 /** 
  * \struct arguments
  *	\brief The programs arguments.

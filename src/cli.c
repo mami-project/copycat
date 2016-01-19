@@ -23,6 +23,7 @@
 #include "thread.h"
 #include "sock.h"
 #include "net.h"
+#include "xpcap.h"
 
 /**
  * \var static volatile int loop
@@ -51,6 +52,8 @@ static void tun_cli_in(int fd_udp, int fd_tun, struct tun_state *state, char *bu
  */ 
 static void tun_cli_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
 
+static void *cli_capture_tun(void *arg);
+static void *cli_capture_notun(void *arg);
 
 void cli_shutdown(int sig) { 
    debug_print("shutting down client ...\n");
@@ -108,6 +111,32 @@ void tun_cli_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    }
 }
 
+void *cli_capture_tun(void *arg) {
+   struct tun_state *state = (struct tun_state *)arg;
+   char file_loc[512];
+   strncpy(file_loc, state->out_dir, 512);
+   
+   strncat(file_loc, CLI_PCAP_FILE, 512);
+   strncat(file_loc, "tun", 512);
+   strncat(file_loc, ".id", 512);
+   strncat(file_loc, ".pcap", 512);
+   debug_print("%s\n", file_loc);
+   xcapture(state->if_name, state->private_addr, 0, file_loc);
+}
+
+void *cli_capture_notun(void *arg) {
+   struct tun_state *state = (struct tun_state *)arg;
+   char file_loc[512];
+   strncpy(file_loc, state->out_dir, 512);
+   
+   strncat(file_loc, CLI_PCAP_FILE, 512);
+   strncat(file_loc, "notun", 512);
+   strncat(file_loc, ".id", 512);
+   strncat(file_loc, ".pcap", 512);
+   debug_print("%s\n", file_loc);
+   xcapture(state->default_if, state->public_addr, state->public_port, file_loc);
+}
+
 void tun_cli(struct arguments *args) {
    int fd_tun = 0, fd_udp = 0, fd_max = 0, sel = 0;
    
@@ -117,6 +146,9 @@ void tun_cli(struct arguments *args) {
    /* create tun if and sockets */   
    tun(state, &fd_tun);
    fd_udp   = udp_sock(state->port);
+
+   xthread_create(cli_capture_tun, (void *) state);
+   xthread_create(cli_capture_notun, (void *) state);
 
    /* initial sleep */
    sleep(state->initial_sleep);

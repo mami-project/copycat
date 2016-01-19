@@ -95,7 +95,7 @@ am_udptun_OBJECTS = udptun-udptun.$(OBJEXT) udptun-sock.$(OBJEXT) \
 	udptun-tunalloc.$(OBJEXT) udptun-icmp.$(OBJEXT) \
 	udptun-peer.$(OBJEXT) udptun-state.$(OBJEXT) \
 	udptun-destruct.$(OBJEXT) udptun-thread.$(OBJEXT) \
-	udptun-net.$(OBJEXT)
+	udptun-net.$(OBJEXT) udptun-xpcap.$(OBJEXT)
 udptun_OBJECTS = $(am_udptun_OBJECTS)
 udptun_LDADD = $(LDADD)
 udptun_LINK = $(CCLD) $(udptun_CFLAGS) $(CFLAGS) $(udptun_LDFLAGS) \
@@ -254,7 +254,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-udptun_SOURCES = udptun.c sock.c cli.c serv.c tunalloc.c icmp.c peer.c state.c destruct.c thread.c net.c debug.h udptun.h sock.h cli.h serv.h tunalloc.h icmp.h peer.h state.h destruct.h thread.h net.h
+udptun_SOURCES = udptun.c sock.c cli.c serv.c tunalloc.c icmp.c peer.c state.c destruct.c thread.c net.c xpcap.c debug.h udptun.h sock.h cli.h serv.h tunalloc.h icmp.h peer.h state.h destruct.h thread.h net.h xpcap.h
 udptun_CFLAGS = ${GLIB_CFLAGS} \
                 ${GLIB2_CFLAGS}
 
@@ -359,6 +359,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-thread.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-tunalloc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-udptun.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/udptun-xpcap.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -527,6 +528,20 @@ udptun-net.obj: net.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='net.c' object='udptun-net.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-net.obj `if test -f 'net.c'; then $(CYGPATH_W) 'net.c'; else $(CYGPATH_W) '$(srcdir)/net.c'; fi`
+
+udptun-xpcap.o: xpcap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-xpcap.o -MD -MP -MF $(DEPDIR)/udptun-xpcap.Tpo -c -o udptun-xpcap.o `test -f 'xpcap.c' || echo '$(srcdir)/'`xpcap.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-xpcap.Tpo $(DEPDIR)/udptun-xpcap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xpcap.c' object='udptun-xpcap.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-xpcap.o `test -f 'xpcap.c' || echo '$(srcdir)/'`xpcap.c
+
+udptun-xpcap.obj: xpcap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -MT udptun-xpcap.obj -MD -MP -MF $(DEPDIR)/udptun-xpcap.Tpo -c -o udptun-xpcap.obj `if test -f 'xpcap.c'; then $(CYGPATH_W) 'xpcap.c'; else $(CYGPATH_W) '$(srcdir)/xpcap.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/udptun-xpcap.Tpo $(DEPDIR)/udptun-xpcap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xpcap.c' object='udptun-xpcap.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(udptun_CFLAGS) $(CFLAGS) -c -o udptun-xpcap.obj `if test -f 'xpcap.c'; then $(CYGPATH_W) 'xpcap.c'; else $(CYGPATH_W) '$(srcdir)/xpcap.c'; fi`
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique

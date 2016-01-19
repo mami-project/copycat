@@ -60,20 +60,6 @@ int raw_tcp_sock(const char *addr, int port, const struct sock_fprog * bpf, cons
 int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev, int proto);
 
 /**
- * \fn struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dport)
- * \brief Create a Berkeley Packet Filter (BPF). Bind it to a socket.
- * 
- *    The filter is equivalent to $tcpdump -i dev 'src port sport and dst port dport'
- *
- * \param dev The interface of the socket. 
- * \param addr The address of the socket.
- * \param sport The source port to filter or 0 for no filtering.
- * \param dport The destination port to filter or 0 for no filtering.
- * \return 
- */ 
-struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dport);
-
-/**
  * \fn int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen)
  * \brief sendto syscall wrapper that dies with failure.
  *

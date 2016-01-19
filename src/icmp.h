@@ -14,35 +14,6 @@
 
 #include "state.h"
 
-/** 
- * \struct icmp_msg
- *	\brief An icmp msg
- */
-struct icmp_msg {
-	unsigned char type;      /*!< msg type  */
-	unsigned char code;      /*!< msg code   */
-	unsigned short checksum; /*!< msh checksum */
-	char data[8];            /*!< msg payload */
-};
-
-/** 
- * \struct ip_header
- *	\brief an ip header
- */
-struct ip_header {
-	unsigned int	hl:4,		/*!< 4 bit header length */
-					ver:4;		/*!< 4 bit version */
-	unsigned char	tos;		/*!< type of service */
-	unsigned short  totl;		/*!< total length of datagram */
-	unsigned short	id;	   	/*!< identifier */
-	unsigned short 	notused;	/*!< this is were flags and fragment offset would go */
-	unsigned char 	ttl;		   /*!< time to live */
-	unsigned char	prot;		   /*!< protocol */
-	unsigned short	csum;		   /*!< our checksum */
-	uint32_t 	saddr;		   /*!< source address */
-	uint32_t 	daddr;		   /*!< destination address */
-};
-
 /**
  * \fn void print_icmp_type((uint8_t type, uint8_t code)
  * \brief print (via debug_print macro) the icmp msg type
@@ -52,6 +23,18 @@ struct ip_header {
  */ 
 void print_icmp_type(uint8_t type, uint8_t code);
 
+/**
+ * \fn char *forge_icmp(int *pkt_len, struct sock_extended_err *sock_err,
+ *                struct iovec *iov, struct tun_state *state)
+ * \brief a dirty function that re-forge an icmp msg from
+ *          iovec and sock_extended_err and returns it.
+ *
+ * \param pkt_len
+ * \param sock_err
+ * \param iov
+ * \param state The program state
+ * \return The packet
+ */ 
 char *forge_icmp(int *pkt_len, struct sock_extended_err *sock_err,
                  struct iovec *iov, struct tun_state *state);
 #endif

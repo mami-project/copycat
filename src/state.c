@@ -233,6 +233,8 @@ int parse_cfg_file(struct tun_state *state) {
             state->initial_sleep = strtol(val, NULL, 10);
          else if (!strcmp(key, "if-name")) 
             state->if_name = strdup(val);
+         else if (!strcmp(key, "default-if")) 
+            state->default_if = strdup(val);
       
          /* NOTE: add cfg parameters here */
       } 
