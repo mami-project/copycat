@@ -12,8 +12,8 @@
  * \version 0.1
  */
 
-#ifndef _UDPTUN_SOCK_H
-#define _UDPTUN_SOCK_H
+#ifndef UDPTUN_SOCK_H
+#define UDPTUN_SOCK_H
 
 #include <netinet/in.h>
 #include <linux/filter.h>

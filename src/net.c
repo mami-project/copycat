@@ -281,19 +281,19 @@ void *serv_worker_thread(void *socket_desc) {
 
    int s = *(int*)socket_desc;
    int bsize = 0, wsize = 0;
-   char buf[__BUFFSIZE];
-   memset(buf, 0, __BUFFSIZE);
+   char buf[BUFF_SIZE];
+   memset(buf, 0, BUFF_SIZE);
 
    /* Send loop */
    debug_print("sending data ...\n");
-   while((bsize = fread(buf, sizeof(char), __BUFFSIZE, fp)) > 0) {
+   while((bsize = fread(buf, sizeof(char), BUFF_SIZE, fp)) > 0) {
       if((wsize = send(s, buf, bsize, 0)) < 0) { // TODO change buffer size for mss in old kernels without maxseg
          debug_print("ERROR: send");
          break;
       }
       if (wsize < bsize) 
          die("file write\n");
-      memset(buf, 0, __BUFFSIZE);
+      memset(buf, 0, BUFF_SIZE);
    }
 
    /* shutdown connection */
@@ -363,12 +363,12 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
    FILE *fp = fopen(filename, "w");
    if(fp == NULL) die("fopen");
 
-   char buf[__BUFFSIZE];
-   memset(buf, 0, __BUFFSIZE);
+   char buf[BUFF_SIZE];
+   memset(buf, 0, BUFF_SIZE);
    int bsize = 0;
-   while(bsize = xrecv(s, buf, __BUFFSIZE)) {
+   while(bsize = xrecv(s, buf, BUFF_SIZE)) {
        xfwrite(fp, buf, sizeof(char), bsize);
-       memset(buf, 0, __BUFFSIZE);
+       memset(buf, 0, BUFF_SIZE);
    }
 
    /* shutdown connection */
@@ -377,7 +377,7 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
       goto err;
    }
    /* wait for fin and send ack */
-   if (xrecv(s, buf, __BUFFSIZE) != 0) {
+   if (xrecv(s, buf, BUFF_SIZE) != 0) {
       err=errno;
       goto err;
    }

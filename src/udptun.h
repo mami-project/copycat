@@ -5,42 +5,41 @@
  * \version 0.1
  */
 
-#ifndef _UDPTUN_MAIN_H
-#define _UDPTUN_MAIN_H
+#ifndef UDPTUN_MAIN_H
+#define UDPTUN_MAIN_H
 
 #include <sys/types.h>
 
 /** 
- * \def __BUFFSIZE
+ * \def BUFF_SIZE
  * \brief The size of the client and server buffers.
  */
-#define __BUFFSIZE 8192
+#define BUFF_SIZE 8192
 
 /** 
- * \def __STRSIZE
+ * \def STR_SIZE
  * \brief The maximal size of a location string.
  */
-#define __STRSIZE 512
+#define STR_SIZE 512
 
 /**
- * \def __CLOSE_TIMEOUT
+ * \def CLOSE_TIMEOUT
  * \brief The time to wait for delayed finack/ack while closing 
  *  a connection (sec).
  */
-#define __CLOSE_TIMEOUT 1
+#define CLOSE_TIMEOUT 1
 
 /**
- * \def __CLI_TUN_FILE
+ * \def CLI_TUN_FILE
  * \brief 
  */
-#define __CLI_TUN_FILE "cli_tun.dat"
+#define CLI_TUN_FILE "cli_tun.dat"
 
 /**
- * \def __CLI_NOTUN_FILE
+ * \def CLI_NOTUN_FILE
  */
-#define __CLI_NOTUN_FILE "cli_notun.dat"
+#define CLI_NOTUN_FILE "cli_notun.dat"
 
-//TODO remove __'s
 /** 
  * \struct arguments
  *	\brief The programs arguments.

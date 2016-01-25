@@ -17,7 +17,6 @@ TCP tunneling over UDP
 - FREEBSD tun alloc
 - IPv6
 - IPv4-IPv6 & IPv6-IPv4
-- Integrate IPFIX export
 
 # Contact
 k.edeline

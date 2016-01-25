@@ -25,11 +25,30 @@
 #include "state.h"
 #include "udptun.h"
 
+/**
+ * \var pthread_barrier_t barr
+ * \brief The synchronization barrier.
+ */
 pthread_barrier_t barr;
 
+/**
+ * \fn static void *term_capture(void* arg)
+ * \brief Flush & properly close pcap dump buffers.
+ *
+ * \param arg pcap_t handle
+ */ 
 static void *term_capture(void* arg);
 
-static void xcapture(char *dev, const char *addr, int port, char *filename);
+/**
+ * \fn static void capture(char *dev, const char *addr, int port, char *filename)
+ * \brief pcap sniff & dump process
+ *
+ * \param dev The network interface to sniff on
+ * \param addr The address of this itf
+ * \param port 
+ * \param filename The location of the trace dump file
+ */ 
+static void capture(char *dev, const char *addr, int port, char *filename);
 
 void *term_capture(void* arg) {
    pcap_t *handle = (pcap_t *)arg;
@@ -66,7 +85,7 @@ void *capture_tun(void *arg) {
    }
    strncat(file_loc, ".pcap", 512);
    debug_print("%s\n", file_loc);
-   xcapture(state->if_name, state->private_addr, 0, file_loc);
+   capture(state->if_name, state->private_addr, 0, file_loc);
 }
 
 void *capture_notun(void *arg) {
@@ -82,10 +101,10 @@ void *capture_notun(void *arg) {
    }
    strncat(file_loc, ".pcap", 512);
    debug_print("%s\n", file_loc);
-   xcapture(state->default_if, state->public_addr, state->public_port, file_loc);
+   capture(state->default_if, state->public_addr, state->public_port, file_loc);
 }
 
-void xcapture(char *dev, const char *addr, int port, char *filename) {
+void capture(char *dev, const char *addr, int port, char *filename) {
 	pcap_t *handle;
    char errbuf[PCAP_ERRBUF_SIZE];
 	if ( (handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf)) == NULL) 
@@ -122,11 +141,12 @@ void xcapture(char *dev, const char *addr, int port, char *filename) {
 }
 
 struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dport) {
-   pcap_t *handle;		// Session handle 
-   char errbuf[PCAP_ERRBUF_SIZE];	// Error string 
-   struct bpf_program *fp= malloc(sizeof(struct bpf_program));// The compiled filter expression 
+   pcap_t *handle;		
+   char errbuf[PCAP_ERRBUF_SIZE];	
+   struct bpf_program *fp= malloc(sizeof(struct bpf_program));
 
-   char filter_exp[64]; // "src port " p " and dst port " p2
+   /* build filter */
+   char filter_exp[64]; 
    if (sport && dport)
       sprintf(filter_exp, "src port %d and dst port %d", sport, dport);
    else if (sport && !dport)
@@ -134,6 +154,7 @@ struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dpo
    else if (!sport && dport)
       sprintf(filter_exp, "dst port %d", dport);
 
+   /* compile filter */
    bpf_u_int32 net = inet_addr(addr);
    handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
    if (!handle) 

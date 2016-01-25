@@ -59,13 +59,13 @@ void cli_shutdown(int sig) {
    debug_print("shutting down client ...\n");
 
    /* Wait for delayed acks to avoid sending icmp */
-   sleep(__CLOSE_TIMEOUT);
+   sleep(CLOSE_TIMEOUT);
    loop = 0; 
 }
 
 void tun_cli_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {//TODO remove useless args, maybe pass struct args for faster mode lookup
 
-   int recvd=xread(fd_tun, buf, __BUFFSIZE);
+   int recvd=xread(fd_tun, buf, BUFF_SIZE);
    debug_print("cli: recvd %db from tun\n", recvd);
 
    /* Remove PlanetLab TUN PPI header */
@@ -92,10 +92,10 @@ void tun_cli_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {//T
 
 void tun_cli_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    int recvd = 0;
-   if ( (recvd=xrecv(fd_udp, buf, __BUFFSIZE)) < 0) {
+   if ( (recvd=xrecv(fd_udp, buf, BUFF_SIZE)) < 0) {
       /* recvd ICMP msg */
-      //xfwerr(fd_udp, buf,  __BUFFSIZE, fd_tun, state);
-      xrecverr(fd_udp, buf,  __BUFFSIZE);
+      //xfwerr(fd_udp, buf,  BUFF_SIZE, fd_tun, state);
+      xrecverr(fd_udp, buf,  BUFF_SIZE);
    } else {
       debug_print("cli: recvd %db from udp\n", recvd);
 
@@ -136,7 +136,7 @@ void tun_cli(struct arguments *args) {
    /* init select loop */
    fd_set input_set;
    struct timeval tv;
-   char buf[__BUFFSIZE], *buffer;
+   char buf[BUFF_SIZE], *buffer;
    buffer=buf;
    if (state->planetlab) {
       buffer[0]=0;buffer[1]=0;

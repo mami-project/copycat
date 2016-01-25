@@ -5,8 +5,8 @@
  * \version 0.1
  */
 
-#ifndef _UDPTUN_SERV_H
-#define _UDPTUN_SERV_H
+#ifndef UDPTUN_SERV_H
+#define UDPTUN_SERV_H
 
 #include "udptun.h"
 

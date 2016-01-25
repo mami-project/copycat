@@ -7,8 +7,8 @@
  * \version 0.1
  */
 
-#ifndef _UDPTUN_NET_H
-#define _UDPTUN_NET_H
+#ifndef UDPTUN_NET_H
+#define UDPTUN_NET_H
 
 #include <netinet/in.h>
 #include "state.h"

@@ -4,8 +4,8 @@
  * \author k.edeline
  * \version 0.1
  */
-#ifndef _UDPTUN_THREAD_H
-#define _UDPTUN_THREAD_H
+#ifndef UDPTUN_THREAD_H
+#define UDPTUN_THREAD_H
 
 #include <pthread.h>
 

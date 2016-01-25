@@ -5,8 +5,8 @@
  * \version 0.1
  */
 
-#ifndef _UDPTUN_PEER_H
-#define _UDPTUN_PEER_H
+#ifndef UDPTUN_PEER_H
+#define UDPTUN_PEER_H
 
 #include "udptun.h"
 

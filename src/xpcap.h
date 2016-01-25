@@ -5,8 +5,8 @@
  * \version 0.1
  */
 
-#ifndef _UDPTUN_XPCAP_H
-#define _UDPTUN_XPCAP_H
+#ifndef UDPTUN_XPCAP_H
+#define UDPTUN_XPCAP_H
 
 #include <linux/filter.h>
 

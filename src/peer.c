@@ -74,7 +74,7 @@ static void tun_peer_out_serv(int fd_udp, int fd_tun, struct tun_state *state, c
 void peer_shutdown(int sig) { loop = 0; }
 
 void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *state, char *buf) {
-   int recvd=xread(fd_tun, buf, __BUFFSIZE);
+   int recvd=xread(fd_tun, buf, BUFF_SIZE);
    debug_print("recvd %db from tun\n", recvd);
 
    if (recvd > 32) {
@@ -119,10 +119,10 @@ void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *state, c
 
 void tun_peer_out_cli(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    int recvd = 0;
-   if ( (recvd=xrecv(fd_udp, buf, __BUFFSIZE)) < 0) {
+   if ( (recvd=xrecv(fd_udp, buf, BUFF_SIZE)) < 0) {
       /* recvd ICMP msg */
-      //xfwerr(fd_udp, buf,  __BUFFSIZE, fd_tun, state);
-      xrecverr(fd_udp, buf,  __BUFFSIZE);
+      //xfwerr(fd_udp, buf,  BUFF_SIZE, fd_tun, state);
+      xrecverr(fd_udp, buf,  BUFF_SIZE);
    } else {
       debug_print("recvd %db from udp\n", recvd);
 
@@ -142,7 +142,7 @@ void tun_peer_out_cli(int fd_udp, int fd_tun, struct tun_state *state, char *buf
 void tun_peer_out_serv(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    struct tun_rec *nrec = init_tun_rec();
    int recvd = 0;
-   recvd=xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, &nrec->slen, buf, __BUFFSIZE);
+   recvd=xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, &nrec->slen, buf, BUFF_SIZE);
    debug_print("recvd %db from udp\n", recvd);
 
    /* Add PlanetLab TUN PPI header */
@@ -208,7 +208,7 @@ void tun_peer(struct arguments *args) {
    /* init select main loop */
    fd_set input_set;
    struct timeval tv;
-   char buf[__BUFFSIZE], *buffer;
+   char buf[BUFF_SIZE], *buffer;
    buffer=buf;
    if (state->planetlab) {
       buffer[0]=0;buffer[1]=0;

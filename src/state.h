@@ -5,8 +5,8 @@
  * \version 0.1
  */
 
-#ifndef _UDPTUN_STATE_H
-#define _UDPTUN_STATE_H
+#ifndef UDPTUN_STATE_H
+#define UDPTUN_STATE_H
 
 #include <glib.h>
 #include <stdint.h>

@@ -69,7 +69,7 @@ void serv_shutdown(int sig) { loop = 0; }
 
 void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
 
-   int recvd=xread(fd_tun, buf, __BUFFSIZE);
+   int recvd=xread(fd_tun, buf, BUFF_SIZE);
    debug_print("serv: recvd %db from tun\n", recvd);
 
    /* Remove PlanetLab TUN PPI header */
@@ -95,7 +95,7 @@ void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
 
 void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_state *state, char *buf) {
    struct tun_rec *nrec = init_tun_rec();
-   int recvd=xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, &nrec->slen, buf, __BUFFSIZE);
+   int recvd=xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, &nrec->slen, buf, BUFF_SIZE);
    debug_print("serv: recvd %db from udp\n", recvd);
 
    /* Add PlanetLab TUN PPI header */
@@ -147,7 +147,7 @@ void tun_serv(struct arguments *args) {
    /* init select loop */
    fd_set input_set;
    struct timeval tv;
-   char buf[__BUFFSIZE], *buffer;
+   char buf[BUFF_SIZE], *buffer;
    buffer=buf;
    if (state->planetlab) {
       buffer[0]=0;buffer[1]=0;

@@ -83,12 +83,12 @@ struct tun_state *init_tun_state(struct arguments *args) {
       state->dual_stack = 1; 
 
    /* File locations */
-   state->cli_file_tun = malloc(__STRSIZE); //TODO alloca/malloc at preprocess
-   state->cli_file_notun = malloc(__STRSIZE);
-   strncpy(state->cli_file_tun, state->cli_dir, __STRSIZE);
-   strncpy(state->cli_file_notun, state->cli_dir, __STRSIZE);
-   strncat(state->cli_file_tun, __CLI_TUN_FILE, __STRSIZE);
-   strncat(state->cli_file_notun, __CLI_NOTUN_FILE, __STRSIZE);
+   state->cli_file_tun = malloc(STR_SIZE); //TODO alloca/malloc at preprocess
+   state->cli_file_notun = malloc(STR_SIZE);
+   strncpy(state->cli_file_tun, state->cli_dir, STR_SIZE);
+   strncpy(state->cli_file_notun, state->cli_dir, STR_SIZE);
+   strncat(state->cli_file_tun, CLI_TUN_FILE, STR_SIZE);
+   strncat(state->cli_file_notun, CLI_NOTUN_FILE, STR_SIZE);
 
    init_barrier(3);
    init_destructors(state);

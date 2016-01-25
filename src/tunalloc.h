@@ -5,8 +5,8 @@
  * \author k.edeline
  * \version 0.1
  */
-#ifndef _TUNALLOC_H
-#define _TUNALLOC_H
+#ifndef UDPTUN_TUNALLOC_H
+#define UDPTUN_TUNALLOC_H
  
 /**
  * \fn char *create_tun_pl(const char *ip, const char *prefix, int nat, int *tun_fds)

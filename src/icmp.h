@@ -5,8 +5,8 @@
  * \version 0.1
  */
 
-#ifndef _UDPTUN_ICMP_H
-#define _UDPTUN_ICMP_H
+#ifndef UDPTUN_ICMP_H
+#define UDPTUN_ICMP_H
 
 #include <netinet/ip_icmp.h>
 #include <sys/uio.h>

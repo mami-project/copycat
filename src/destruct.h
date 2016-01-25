@@ -5,8 +5,8 @@
  * \version 0.1
  */
 
-#ifndef _UDPTUN_DESTRUCT_H
-#define _UDPTUN_DESTRUCT_H
+#ifndef UDPTUN_DESTRUCT_H
+#define UDPTUN_DESTRUCT_H
 
 #include <pthread.h>
 #include <sys/types.h>
