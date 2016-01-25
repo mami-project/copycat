@@ -19,7 +19,7 @@
 void tun_cli(struct arguments *args);
 
 /**
- * \fn static void int_handler(int sig)
+ * \fn void cli_shutdown(int sig)
  * \brief Callback function for SIGINT catcher.
  *
  * \param sig Ignored

@@ -80,7 +80,7 @@ void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    if (recvd > 32) {
 
       struct tun_rec *rec = NULL; 
-      //read sport for clients mapping
+      /* read sport for clients mapping */
       int sport = (int) ntohs( *((uint16_t *)(buf+22)) ); 
       if ( (rec = g_hash_table_lookup(state->serv, &sport)) ) {   
 

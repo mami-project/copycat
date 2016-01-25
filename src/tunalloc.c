@@ -1,4 +1,5 @@
-/* Slice-side code to allocate tuntap interface in root slice
+/** 
+ * Slice-side code to allocate tuntap interface in root slice
  * Based on bmsocket.c
  *  Thom Haddow - 08/10/09
  * Reworked

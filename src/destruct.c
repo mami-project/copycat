@@ -45,12 +45,12 @@ static volatile unsigned int ctid_index;
 
 /**
  * \var unsigned int cpid_index
- * \brief length of thread id list
+ * \brief length of process id list
  */
 static volatile unsigned int cpid_index;
 
 /**
- * \var unsigned int fd_inde
+ * \var unsigned int fd_index
  * \brief length of fd list
  */
 static volatile unsigned int fd_index;
@@ -69,10 +69,10 @@ void set_pthread(pthread_t t) {
       die("mutex unlock");
 }
 
-void set_cpid(pid_t c) {
+void set_cpid(pid_t p) {
    if (pthread_mutex_lock(&lock) != 0)
       die("mutex lock");
-   cpid[cpid_index++] = c;
+   cpid[cpid_index++] = p;
    if (pthread_mutex_unlock(&lock) != 0)
       die("mutex unlock");
 }

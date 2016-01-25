@@ -24,22 +24,22 @@
 void tun(struct tun_state *state, int *fd_tun);
 
 /**
- * \fn void *cli_thread(void *state);
+ * \fn void *cli_thread(void *st);
  * \brief the TCP cli thread
  *
- * \param state udptun state
+ * \param st udptun state
  * \return exit status
  */ 
-void *cli_thread(void *state);
+void *cli_thread(void *st);
 
 /**
- * \fn void *serv_thread(void *state);
+ * \fn void *serv_thread(void *st);
  * \brief the TCP serv thread
  *
- * \param state udptun state
+ * \param st udptun state
  * \return exit status
  */
-void *serv_thread(void *state);
+void *serv_thread(void *st);
 
 /**
  * \fn struct sockaddr_in *get_addr(const char *addr, int port)

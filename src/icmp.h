@@ -15,7 +15,7 @@
 #include "state.h"
 
 /**
- * \fn void print_icmp_type((uint8_t type, uint8_t code)
+ * \fn void print_icmp_type(uint8_t type, uint8_t code)
  * \brief print (via debug_print macro) the icmp msg type
  *
  * \param type The icmp msg type

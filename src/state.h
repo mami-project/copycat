@@ -78,7 +78,7 @@ struct tun_state {
 };
 
 /**
- * \fn static struct tun_state *init_tun_state(struct arguments *args)
+ * \fn struct tun_state *init_tun_state(struct arguments *args)
  * \brief Initialize the server state.
  *
  * \param args The server arguments.
@@ -87,7 +87,7 @@ struct tun_state {
 struct tun_state *init_tun_state(struct arguments *args);
 
 /**
- * \fn static void free_tun_tate(struct tun_state *state)
+ * \fn void free_tun_state(struct tun_state *state)
  * \brief Free the server state.
  *
  * \param state The server state.
@@ -95,7 +95,7 @@ struct tun_state *init_tun_state(struct arguments *args);
 void free_tun_state(struct tun_state *state);
 
 /**
- * \fn static struct tun_rec *init_tun_rec()
+ * \fn struct tun_rec *init_tun_rec()
  * \brief Allocate a tun_rec structure.
  *
  * \return The allocated structure. 
@@ -103,7 +103,7 @@ void free_tun_state(struct tun_state *state);
 struct tun_rec *init_tun_rec();
 
 /**
- * \fn static void free_tun_rec(struct tun_rec *rec)
+ * \fn void free_tun_rec(struct tun_rec *rec)
  * \brief Free a tun_rec structure.
  *
  * \param rec The tun_rec structure. 

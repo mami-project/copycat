@@ -129,7 +129,7 @@ int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen) {
    return sent;
 }
 
-int xrecverr(int fd, void *buf, size_t buflen) {
+int xrecverr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *state) {
    struct iovec iov;                      
    struct msghdr msg;                      
    struct cmsghdr *cmsg;                   
@@ -161,50 +161,15 @@ int xrecverr(int fd, void *buf, size_t buflen) {
          if (sock_err && sock_err->ee_origin == SO_EE_ORIGIN_ICMP) 
             print_icmp_type(sock_err->ee_type, sock_err->ee_code);
          else debug_print("non-icmp err msg\n");
-      } 
-   }
-   return 0;
-}
 
-int xfwerr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *state) {
-   struct iovec iov;                      
-   struct msghdr msg;                      
-   struct cmsghdr *cmsg;                   
-   struct sock_extended_err *sock_err;     
-   struct icmphdr icmph;  
-   struct sockaddr_in remote;
+         if (state) {
+            /* re-build icmp msg and forward it */
+            int pkt_len; 
+            char *pkt = forge_icmp(&pkt_len, sock_err, &iov, state);
 
-   /* init structs */
-   iov.iov_base       = &icmph;
-   iov.iov_len        = sizeof(icmph);
-   msg.msg_name       = (void*)&remote;
-   msg.msg_namelen    = sizeof(remote);
-   msg.msg_iov        = &iov;
-   msg.msg_iovlen     = 1;
-   msg.msg_flags      = 0;
-   msg.msg_control    = buf;
-   msg.msg_controllen = buflen;
-
-   /* recv msg */
-   if (recvmsg(fd, &msg, MSG_ERRQUEUE) < 0)
-      die("recvmsg");
-
-   /* parse msg */
-   for (cmsg = CMSG_FIRSTHDR(&msg);cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
-      /* ip level and error */
-      if (cmsg->cmsg_level == SOL_IP && cmsg->cmsg_type == IP_RECVERR) {
-          /* print err type */
-         sock_err = (struct sock_extended_err*)CMSG_DATA(cmsg);
-         if (sock_err && sock_err->ee_origin == SO_EE_ORIGIN_ICMP) 
-            print_icmp_type(sock_err->ee_type, sock_err->ee_code);
-         else debug_print("non-icmp err msg\n");
-
-         /* re-build icmp msg */
-         int pkt_len; 
-         char *pkt = forge_icmp(&pkt_len, sock_err, &iov, state);
-
-         int sent = xwrite(fd_out, pkt, pkt_len);
-         free(pkt); //TODO: add this function as a feature of xrecverr
+            int sent = xwrite(fd_out, pkt, pkt_len);
+            free(pkt); 
+         }
       } 
    }
    return 0;

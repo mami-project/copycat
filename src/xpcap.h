@@ -1,5 +1,5 @@
 /**
- * \file pcap.h
+ * \file xpcap.h
  * \brief libpcap wrapper headers
  * \author k.edeline
  * \version 0.1

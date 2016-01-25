@@ -121,8 +121,7 @@ void tun_peer_out_cli(int fd_udp, int fd_tun, struct tun_state *state, char *buf
    int recvd = 0;
    if ( (recvd=xrecv(fd_udp, buf, BUFF_SIZE)) < 0) {
       /* recvd ICMP msg */
-      //xfwerr(fd_udp, buf,  BUFF_SIZE, fd_tun, state);
-      xrecverr(fd_udp, buf,  BUFF_SIZE);
+      xrecverr(fd_udp, buf,  BUFF_SIZE, 0, NULL);
    } else {
       debug_print("recvd %db from udp\n", recvd);
 
