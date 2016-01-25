@@ -51,21 +51,17 @@ static void serv_shutdown(int sig);
 static void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
 
 /**
- * \fn static void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_state *state, char *buf)
+ * \fn static void tun_serv_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf)
  * \brief Forward a packet out of the tunnel.
  *
  * \param fd_udp The udp socket fd.
  * \param fd_tun The tun interface fd.
- * \param args The arguments of the server.
  * \param state The state of the server.
  * \param buf The buffer.
  */ 
-static void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_state *state, char *buf);
+static void tun_serv_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
 
-static void *serv_capture_tun(void *arg);
-static void *serv_capture_notun(void *arg);
-
-void serv_shutdown(int sig) { loop = 0; }
+void serv_shutdown(int UNUSED(sig)) { loop = 0; }
 
 void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
 
@@ -93,7 +89,7 @@ void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    } 
 }
 
-void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_state *state, char *buf) {
+void tun_serv_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    struct tun_rec *nrec = init_tun_rec();
    int recvd=xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, &nrec->slen, buf, BUFF_SIZE);
    debug_print("serv: recvd %db from udp\n", recvd);
@@ -172,7 +168,7 @@ void tun_serv(struct arguments *args) {
          break;
       } else if (sel > 0) {
          if (FD_ISSET(fd_udp, &input_set)) 
-            tun_serv_out(fd_udp, fd_tun, args, state, buffer);
+            tun_serv_out(fd_udp, fd_tun, state, buffer);
          if (FD_ISSET(fd_tun, &input_set)) 
             tun_serv_in(fd_udp, fd_tun, state, buffer);
       }

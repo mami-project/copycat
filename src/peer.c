@@ -50,7 +50,7 @@ static void peer_shutdown(int sig);
 static void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *state, char *buf);
 
 /**
- * \fn static void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_state *state, char *buf)
+ * \fn static void tun_serv_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf)
  * \brief Forward a packet out of the tunnel.
  *
  * \param fd_udp The udp socket fd.
@@ -61,7 +61,7 @@ static void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *s
 static void tun_peer_out_cli(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
 
 /**
- * \fn static void tun_serv_out(int fd_udp, int fd_tun, struct arguments *args, struct tun_state *state, char *buf)
+ * \fn static void tun_serv_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf)
  * \brief Forward a packet out of the tunnel.
  *
  * \param fd_udp The udp socket fd.
@@ -71,7 +71,7 @@ static void tun_peer_out_cli(int fd_udp, int fd_tun, struct tun_state *state, ch
  */ 
 static void tun_peer_out_serv(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
 
-void peer_shutdown(int sig) { loop = 0; }
+void peer_shutdown(int UNUSED(sig)) { loop = 0; }
 
 void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *state, char *buf) {
    int recvd=xread(fd_tun, buf, BUFF_SIZE);

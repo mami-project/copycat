@@ -28,28 +28,28 @@ static char args_doc[] = "\nSERVER mode usage: -s (-p) (-f) --udp-lport PORT --t
                          " --tcp-saddr ADDR --tcp-sport PORT --tcp-dport PORT";
 
 static struct argp_option options[] = { 
-  {"verbose",    'v', 0,      0,  "Produce verbose output" },
-  {"quiet",      'q', 0,      0,  "Don't produce any output" },
+  {"verbose",    'v', 0,      0,  "Produce verbose output", 0 },
+  {"quiet",      'q', 0,      0,  "Don't produce any output", 0 },
 
-  {"run-id",     'i',"ID",    0,  "Run ID"},
+  {"run-id",     'i',"ID",    0,  "Run ID", 0},
 
-  {"client",     'c', 0,      0,  "Client mode" },
-  {"server",     's', 0,      0,  "Server mode" },
-  {"fullmesh",   'f', 0,      0,  "Fullmesh mode (both client and server)" },
+  {"client",     'c', 0,      0,  "Client mode", 0 },
+  {"server",     's', 0,      0,  "Server mode", 0 },
+  {"fullmesh",   'f', 0,      0,  "Fullmesh mode (both client and server)", 0 },
 
-  {"parallel",   'a', 0,      0,  "Client parallel flows scheduling mode (default)" },
-  {"tun-first",  'u', 0,      0,  "Client tunnel first flows scheduling mode" },
-  {"notun-first",'n', 0,      0,  "Client notunnel first flows scheduling mode" },
+  {"parallel",   'a', 0,      0,  "Client parallel flows scheduling mode (default)", 0 },
+  {"tun-first",  'u', 0,      0,  "Client tunnel first flows scheduling mode", 0 },
+  {"notun-first",'n', 0,      0,  "Client notunnel first flows scheduling mode", 0 },
 
-  {"ipv6",        '6', 0,      0,  "IPv6 mode" },
-  {"dual-stack",  '2', 0,      0,  "IPv4-IPv6 mode" },
+  {"ipv6",        '6', 0,      0,  "IPv6 mode", 0 },
+  {"dual-stack",  '2', 0,      0,  "IPv4-IPv6 mode", 0 },
 
-  {"planetlab",  'p', 0,      0,  "PlanetLab mode" },
-  {"freebsd",    'b', 0,      0,  "FREEBSD mode" },
-  {"timeout",    't', "TIME", 0,  "Inactivity timeout" },
-  {"dest-file",  'd', "FILE", 0,  "Destination file"},
-  {"config",     'o', "FILE", 0,  "Configuration file"},
-    { 0, 0, 0, 0, 0 } 
+  {"planetlab",  'p', 0,      0,  "PlanetLab mode", 0 },
+  {"freebsd",    'b', 0,      0,  "FREEBSD mode", 0 },
+  {"timeout",    't', "TIME", 0,  "Inactivity timeout", 0 },
+  {"dest-file",  'd', "FILE", 0,  "Destination file", 0},
+  {"config",     'o', "FILE", 0,  "Configuration file", 0},
+    { 0, 0, 0, 0, 0, 0 } 
 };
 
 /**

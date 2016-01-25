@@ -92,7 +92,7 @@ void destruct() {
    debug_print("exiting ...\n");
    // Ensure child process is killed and socket is closed   
    /* thread ids */
-   for (int i=0; i<ctid_index; i++) {
+   for (unsigned int i=0; i<ctid_index; i++) {
       if (!pthread_cancel(ctid[i])) {
          debug_print("thread %u canceled\n", (unsigned int)ctid[i]);
          pthread_join(ctid[i], NULL);
@@ -102,12 +102,12 @@ void destruct() {
       pthread_kill(ctid[i], SIGTERM);
    }
    /* process ids */
-   for (int i=0; i<cpid_index; i++) {
+   for (unsigned int i=0; i<cpid_index; i++) {
       kill(cpid[i], SIGKILL);
       kill(cpid[i], SIGTERM);
    }
    /* file descriptors */
-   for (int i=0; i<fd_index; i++) 
+   for (unsigned int i=0; i<fd_index; i++) 
       close(fd[i]);
 
    /* mallocs */

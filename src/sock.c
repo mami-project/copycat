@@ -74,12 +74,12 @@ int udp_sock(int port) {
    debug_print("udp socket created on port %d\n", port);
    return s;
 }
-
-int raw_tcp_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev) {
-   return raw_sock(addr, port, bpf, dev, IPPROTO_TCP);
+// TODO add const
+int raw_tcp_sock(int port, const struct sock_fprog * bpf, const char *dev) {
+   return raw_sock(port, bpf, dev, IPPROTO_TCP);
 }
 
-int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev, int proto) {
+int raw_sock(int port, const struct sock_fprog * bpf, const char *dev, int proto) {
    int s;
    struct sockaddr_in sin;
    if ((s=socket(PF_INET, SOCK_RAW, proto)) == -1) 
@@ -166,8 +166,7 @@ int xrecverr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *sta
             /* re-build icmp msg and forward it */
             int pkt_len; 
             char *pkt = forge_icmp(&pkt_len, sock_err, &iov, state);
-
-            int sent = xwrite(fd_out, pkt, pkt_len);
+            xwrite(fd_out, pkt, pkt_len);
             free(pkt); 
          }
       } 

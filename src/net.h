@@ -11,6 +11,7 @@
 #define UDPTUN_NET_H
 
 #include <netinet/in.h>
+
 #include "state.h"
 
 /**

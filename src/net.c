@@ -95,9 +95,9 @@ static void *serv_worker_thread(void *socket_desc);
 static void *serv_thread_private(void *socket_desc);
 static void *serv_thread_public(void *socket_desc);
 
-static void cli_thread_parallel(struct tun_state *state, struct arguments *args, int i);
-static void cli_thread_notun(struct tun_state *state, struct arguments *args, int i);
-static void cli_thread_tun(struct tun_state *state, struct arguments *args, int i);
+static void cli_thread_parallel(struct tun_state *state, int index);
+static void cli_thread_notun(struct tun_state *state,  int index);
+static void cli_thread_tun(struct tun_state *state, int index);
 
 /**
  * stub for tcp_cli used in parallel scheduling mode
@@ -134,14 +134,13 @@ void *forked_cli(void *a) {
    return 0;
 }
 
-//TODO move thread functions to cli.c/serv.c
-void cli_thread_parallel(struct tun_state *state, struct arguments *args, int i) {
+void cli_thread_parallel(struct tun_state *state, int index) {
       /* set thread arguments */
       struct cli_thread_parallel_args args_tun = {state, 
-                         state->cli_private[i]->sa, state->if_name, 
+                         state->cli_private[index]->sa, state->if_name, 
                          state->private_addr, state->port, 1, state->cli_file_tun};
       struct cli_thread_parallel_args args_notun = {state, 
-                         state->cli_public[i]->sa, NULL, 
+                         state->cli_public[index]->sa, NULL, 
                          state->public_addr, state->port, 0, state->cli_file_notun};
 
       /* launch threads */
@@ -153,21 +152,21 @@ void cli_thread_parallel(struct tun_state *state, struct arguments *args, int i)
       pthread_join(tid_notun, NULL);
 }
 
-void cli_thread_tun(struct tun_state *state, struct arguments *args, int i) {
+void cli_thread_tun(struct tun_state *state, int index) {
       /* run tunneled flow */
-      tcp_cli(state, state->cli_private[i]->sa, state->if_name, 
+      tcp_cli(state, state->cli_private[index]->sa, state->if_name, 
               state->private_addr, state->port, 1, state->cli_file_tun);
       /* run notun flow */
-      tcp_cli(state, state->cli_public[i]->sa, NULL, 
+      tcp_cli(state, state->cli_public[index]->sa, NULL, 
               NULL, state->port, 0, state->cli_file_notun);
 }
 
-void cli_thread_notun(struct tun_state *state, struct arguments *args, int i) {
+void cli_thread_notun(struct tun_state *state, int index) {
       /* run notun flow */
-      tcp_cli(state, state->cli_public[i]->sa, NULL, 
+      tcp_cli(state, state->cli_public[index]->sa, NULL, 
               NULL, state->port, 0, state->cli_file_notun);
       /* run tunneled flow */
-      tcp_cli(state, state->cli_private[i]->sa, state->if_name, 
+      tcp_cli(state, state->cli_private[index]->sa, state->if_name, 
               state->private_addr, state->port, 1, state->cli_file_tun);
 }
 
@@ -176,17 +175,16 @@ void *cli_thread(void *st) {
    struct arguments *args = state->args;
 
    /* Client loop */
-   int i; 
-   for (i=0; i<state->sa_len; i++) {
+   for (int i=0; i<state->sa_len; i++) {
       switch (args->cli_mode) {
          case PARALLEL_MODE:
-            cli_thread_parallel(state, args, i);
+            cli_thread_parallel(state, i);
             break;
          case TUN_FIRST_MODE:
-            cli_thread_tun(state, args, i);
+            cli_thread_tun(state, i);
             break;
          case NOTUN_FIRST_MODE:
-            cli_thread_notun(state, args, i);
+            cli_thread_notun(state, i);
             break;
          default:
             errno=EINVAL;
@@ -221,7 +219,8 @@ void *serv_thread_public(void *st) {
 }
 
 int tcp_serv(char *addr, int port, char* dev, struct tun_state *state, int set_maxseg) {
-   int s, sin_size;
+   int s;
+   unsigned int sin_size;
    struct sockaddr_in sin, sout;
 
    /* TCP socket */
@@ -258,7 +257,6 @@ int tcp_serv(char *addr, int port, char* dev, struct tun_state *state, int set_m
    /* listen loop */
    debug_print("TCP server listening on %s:%d ...\n", addr ? addr : "*", port);
    int success = 0, ws;
-   pthread_t thread_id;
    while(!success) {
 
       sin_size = sizeof(struct sockaddr_in);
@@ -338,7 +336,7 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
    int tmp = 1;
    if (setsockopt (s, SOL_SOCKET, SO_REUSEADDR, (char *)&tmp,
           sizeof(tmp)) < 0)
-      die("setsockopt failed"); //TODO: is it ever useful ?
+      die("setsockopt failed");
    
    /* bind socket to local addr */
    struct sockaddr_in sout;
@@ -366,7 +364,7 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
    char buf[BUFF_SIZE];
    memset(buf, 0, BUFF_SIZE);
    int bsize = 0;
-   while(bsize = xrecv(s, buf, BUFF_SIZE)) {
+   while((bsize = xrecv(s, buf, BUFF_SIZE))) {
        xfwrite(fp, buf, sizeof(char), bsize);
        memset(buf, 0, BUFF_SIZE);
    }
@@ -390,7 +388,6 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
    if (chmod(filename, m) < 0)
       die("chmod");
 
-succ:
    debug_print("socket %d successfuly closed.\n", s);
    return 0;
 err:

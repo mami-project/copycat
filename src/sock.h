@@ -37,27 +37,25 @@ int udp_sock(int port);
  *    Equivalent to raw_sock(addr, port, bpf, dev, IPPROTO_TCP).
  *    This function is planetlab-specific.
  *
- * \param addr The address for the bind call.
  * \param port The port for the bind call.
  * \param bpf A pointer to a BPF to be attached or NULL.
  * \param dev A pointer to the name of the device to bind. 
  * \return The socket fd.
  */ 
-int raw_tcp_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev);
+int raw_tcp_sock(int port, const struct sock_fprog * bpf, const char *dev);
 
 /**
  * \fn int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev, int proto)
  * \brief Create and bind a RAW socket.
  *    This function is planetlab-specific.
  *
- * \param addr The address for the bind call.
  * \param port The port for the bind call.
  * \param bpf A pointer to a BPF to be attached or NULL.
  * \param dev A pointer to the name of the device to bind. 
  * \param proto The protocol of the raw socket (planetlab-specific).
  * \return The socket fd.
  */ 
-int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev, int proto);
+int raw_sock(int port, const struct sock_fprog * bpf, const char *dev, int proto);
 
 /**
  * \fn int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen)

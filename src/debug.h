@@ -13,6 +13,19 @@
 #endif /* HAVE_CONFIG_H */
 
 /**
+ * \def UNUSED
+ * \brief Unused var macro.
+ */
+#ifdef UNUSED
+#elif defined(__GNUC__)
+# define UNUSED(x) UNUSED_ ## x __attribute__((unused))
+#elif defined(__LCLINT__)
+# define UNUSED(x) /*@unused@*/ x
+#else
+# define UNUSED(x) x
+#endif
+
+/**
  * \def DEBUG
  * \brief Uncomment to allow debugging messages.
  */

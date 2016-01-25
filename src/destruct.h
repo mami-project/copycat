@@ -10,6 +10,7 @@
 
 #include <pthread.h>
 #include <sys/types.h>
+
 #include "state.h"
 
 /**
@@ -43,7 +44,6 @@ void set_cpid(pid_t p);
  * \param fds The fd
  */ 
 void set_fd(int fds);
-
 
 #endif 
 

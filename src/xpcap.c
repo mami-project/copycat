@@ -55,6 +55,7 @@ void *term_capture(void* arg) {
    pcap_breakloop(handle);
    pcap_close(handle);
    debug_print("closing pcap dump process...\n");
+   return 0;
 }
 
 void init_barrier(int nthreads) {
@@ -86,6 +87,7 @@ void *capture_tun(void *arg) {
    strncat(file_loc, ".pcap", 512);
    debug_print("%s\n", file_loc);
    capture(state->if_name, state->private_addr, 0, file_loc);
+   return 0;
 }
 
 void *capture_notun(void *arg) {
@@ -102,6 +104,7 @@ void *capture_notun(void *arg) {
    strncat(file_loc, ".pcap", 512);
    debug_print("%s\n", file_loc);
    capture(state->default_if, state->public_addr, state->public_port, file_loc);
+   return 0;
 }
 
 void capture(char *dev, const char *addr, int port, char *filename) {

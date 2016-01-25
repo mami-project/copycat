@@ -88,15 +88,6 @@ static int tun_alloc6(const char *ip, const char *prefix, char *dev, int common)
 static int tun_alloc46(const char *ip, const char *prefix, char *dev, int common);
 
 /**
- * \fn int tun_alloc_old(char *dev);
- * \brief Allocate a tun interface.
- *
- * \param dev The device name
- * \return fd
- */ 
-static int tun_alloc_old(char *dev);
-
-/**
  * \fn int tun_alloc_pl(int iftype, char *if_name)
  * \brief Allocate a tun interface on a PlanetLab
  * VM.
@@ -192,7 +183,7 @@ char *create_tun_pl(const char *ip, const char *prefix, int *tun_fds) {
    // else
    fprintf(in, "%s\n%s\n%s\n\n", if_name, ip, prefix);
 
-   // close pipe to indicate end parameter passing and flush the fifo
+   /* close pipe to flush the fifo */
    fclose(in);
 
    if (fread((void*)errbuff, 4096, 1, out) && strcmp(errbuff, ""))
@@ -203,7 +194,9 @@ char *create_tun_pl(const char *ip, const char *prefix, int *tun_fds) {
 }
 
 char *create_tun_bsd(const char *ip, const char *prefix, int *tun_fds) {
+   //TODO
 
+   return NULL;
 }
 
 char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds) {
@@ -230,7 +223,7 @@ succ:
       *tun_fds = fd;
    return if_name;
 err:
-   return 0;
+   return NULL;
 }
 
 int tun_alloc46(const char *ip, const char *prefix, char *dev, int common) {

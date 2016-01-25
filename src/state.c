@@ -167,9 +167,9 @@ struct tun_rec *init_tun_rec() {
    return ret;
 }
 
-void free_tun_rec_aux(gpointer key,
+void free_tun_rec_aux(gpointer UNUSED(key),
                       gpointer value,
-                      gpointer user_data) { 
+                      gpointer UNUSED(user_data)) { 
    free_tun_rec((struct tun_rec *)value); 
 }
 
@@ -184,7 +184,6 @@ int parse_cfg_file(struct tun_state *state) {
       return -1;
    }
 
-   int sport, count=0;
    char key[256], val[256], c;
    /* build port to public addr lookup table */
    while ((c =fgetc(fp)) != EOF) {
