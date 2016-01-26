@@ -15,8 +15,13 @@
 #ifndef UDPTUN_SOCK_H
 #define UDPTUN_SOCK_H
 
-#include <netinet/in.h>
+#if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+#include <net/bpf.h>
+#else
 #include <linux/filter.h>
+#endif
+
+#include <netinet/in.h>
 #include <sys/time.h>
 
 #include "udptun.h"

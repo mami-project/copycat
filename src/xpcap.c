@@ -6,7 +6,6 @@
  */
 
 #include <sys/stat.h>
-#include <linux/filter.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>

@@ -8,6 +8,14 @@
  * new tuntap interface. Interface name can be acquired via TUNGETIFF ioctl.
  */
 
+
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <fcntl.h>
+
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/un.h>
@@ -15,16 +23,15 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#include <linux/if.h>
-#include <linux/if_tun.h>
 #include <netpacket/packet.h>
 #include <net/ethernet.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <fcntl.h>
+
+#if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+
+#else
+#include <linux/if.h>
+#include <linux/if_tun.h>
+#endif
 
 #include "sock.h"
 #include "debug.h"

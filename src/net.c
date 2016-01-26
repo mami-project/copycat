@@ -19,10 +19,15 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/stat.h>
-#include <linux/if.h>
-#include <linux/if_tun.h>
-#include <linux/errqueue.h>
 #include <sys/socket.h>
+
+#if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+#include "errqueue.h"
+#else
+#include <linux/if.h>
+#include <linux/if_tun.h> // net equivalent ?
+#include <linux/errqueue.h>
+#endif
 
 #include "net.h"
 #include "debug.h"
