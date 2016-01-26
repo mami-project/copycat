@@ -29,9 +29,10 @@
 
 #if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 #include "errqueue.h"
+#include <net/if_tun.h>
 #else
 #include <linux/if.h>
-#include <linux/if_tun.h> // net equivalent ?
+#include <linux/if_tun.h> -
 #include <linux/errqueue.h>
 #endif
 

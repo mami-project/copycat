@@ -27,7 +27,7 @@
 #include <net/ethernet.h>
 
 #if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
-
+#include <net/if_tun.h>
 #else
 #include <linux/if.h>
 #include <linux/if_tun.h>
