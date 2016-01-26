@@ -97,14 +97,16 @@ int raw_sock(int port, const struct sock_fprog * bpf, const char *dev, int proto
    if (setsockopt(s, 0, IP_HDRINCL, &on, sizeof(on))) 
       die("IP_HDRINCL");
 
+#if defined(SO_BINDTODEVICE)
    if (dev && setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev))) 
       die("bind to device");
-
+#endif
+#if defined(SO_ATTACH_FILTER)
    /* set bpf */
    if (bpf && setsockopt(s, SOL_SOCKET, SO_ATTACH_FILTER, 
                          bpf, sizeof(struct sock_fprog)) < 0 ) 
        die("attach filter");
-
+#endif
    memset(&sin, 0, sizeof(sin));
    sin.sin_family = AF_INET;
    sin.sin_port = htons(port);

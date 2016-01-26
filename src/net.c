@@ -233,8 +233,10 @@ int tcp_serv(char *addr, int port, char* dev, struct tun_state *state, int set_m
    if ((s=socket(AF_INET, SOCK_STREAM, 0)) < 0) 
      die("socket");
    set_fd(s);
+#if defined(SO_BINDTODEVICE)
    if (dev && setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev))) 
       die("bind to device");
+#endif
    if (set_maxseg) {
       int tmp = state->max_segment_size;
       if (setsockopt (s, IPPROTO_TCP, TCP_MAXSEG, &tmp, sizeof(tmp)) < 0)
