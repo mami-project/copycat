@@ -70,14 +70,13 @@ void tun_cli_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {//T
       buf+=4;recvd-=4;
    }
 
-   // lookup initial server database from file 
+   /* lookup initial server database from file */
    struct tun_rec *rec = NULL; 
    in_addr_t priv_addr = (int) *((uint32_t *)(buf+16));
    debug_print("%s\n", inet_ntoa((struct in_addr){priv_addr}));
 
    /* lookup private addr */
    if ( (rec = g_hash_table_lookup(state->cli, &priv_addr)) ) {
-
       int sent = xsendto(fd_udp, rec->sa, buf, recvd);
       debug_print("cli: wrote %db to udp\n",sent);
 
@@ -91,6 +90,7 @@ void tun_cli_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    int recvd = 0;
    if ( (recvd=xrecv(fd_udp, buf, BUFF_SIZE)) < 0) {
       /* recvd ICMP msg */
+      debug_print("icmp\n");
       xrecverr(fd_udp, buf,  BUFF_SIZE, 0, NULL);
    } else {
       debug_print("cli: recvd %db from udp\n", recvd);

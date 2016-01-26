@@ -19,4 +19,10 @@
  */ 
 pthread_t xthread_create(void *(*start_routine) (void *), void *args);
 
+void init_barrier(int nthreads);
+
+void destroy_barrier();
+
+void synchronize();
+
 #endif

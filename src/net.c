@@ -25,10 +25,6 @@
 #if defined(BSD_OS)
 #include <net/if_tun.h>
 #include <net/if_dl.h> // ifreq
-#ifndef SOL_IP
-#define SOL_IP IPPROTO_IP
-#endif
-
 #else
 #include <linux/if.h>
 #include <linux/if_tun.h> 
@@ -127,7 +123,6 @@ struct sockaddr_in *get_addr(const char *addr, int port) {
 void tun(struct tun_state *state, int *fd_tun) {
    struct arguments *args = state->args;
 #if defined(BSD_OS)
-   //TODO: OSx ?? BSD is defined with OSX
    state->if_name  = create_tun_bsd(state->private_addr, state->private_mask, fd_tun);
 #else
    if (args->planetlab)
@@ -364,8 +359,8 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
    /* connect peer */
    struct sockaddr_in sin = *((struct sockaddr_in *)sa);
    debug_print("connecting socket %d\n", s);
-   if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) == -1) {
-      err=ETIMEDOUT;
+   if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {     
+      err = (errno == EINPROGRESS) ? ETIMEDOUT : errno;
       goto err;
    }
    /* transfer file */

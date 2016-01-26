@@ -33,10 +33,4 @@ void *capture_notun(void *arg);
  */ 
 struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dport);
 
-void init_barrier(int nthreads);
-
-void destroy_barrier();
-
-void synchronize();
-
 #endif

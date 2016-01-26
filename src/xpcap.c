@@ -22,13 +22,8 @@
 #include "sock.h"
 #include "xpcap.h"
 #include "state.h"
+#include "thread.h"
 #include "udptun.h"
-
-/**
- * \var pthread_barrier_t barr
- * \brief The synchronization barrier.
- */
-pthread_barrier_t barr;
 
 /**
  * \fn static void *term_capture(void* arg)
@@ -55,21 +50,6 @@ void *term_capture(void* arg) {
    pcap_close(handle);
    debug_print("closing pcap dump process...\n");
    return 0;
-}
-
-void init_barrier(int nthreads) {
-   pthread_barrier_init(&barr, NULL, nthreads);
-   debug_print("barrier initialized with %d threads\n", nthreads);
-}
-
-void destroy_barrier() {
-   pthread_barrier_destroy(&barr);
-}
-
-void synchronize() {
-   int ret = pthread_barrier_wait(&barr);
-   if (ret != 0 && ret != PTHREAD_BARRIER_SERIAL_THREAD) 
-      die("pthread_barrier_wait");
 }
 
 void *capture_tun(void *arg) {

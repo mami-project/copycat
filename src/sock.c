@@ -42,7 +42,7 @@
 #include "icmp.h"
 #include "net.h"
 #include "xpcap.h"
-
+#undef IP_RECVERR
 /**
  * \fn static build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw)
  *
@@ -73,7 +73,7 @@ int udp_sock(int port) {
    if( bind(s, (struct sockaddr*)&sin, sizeof(sin) ) == -1)
       die("bind");
 
-#if defined(BSD_OS)
+#if defined(IP_RECVERR)
    /* enable icmp catching */
    int on = 1;
    if (setsockopt(s, SOL_IP, IP_RECVERR, (char*)&on, sizeof(on))) 
@@ -138,6 +138,7 @@ int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen) {
 }
 
 int xrecverr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *state) {
+#if defined(IP_RECVERR)
    struct iovec iov;                      
    struct msghdr msg;                      
    struct cmsghdr *cmsg;                   
@@ -179,6 +180,9 @@ int xrecverr(int fd, void *buf, size_t buflen, int fd_out, struct tun_state *sta
          }
       } 
    }
+#else
+   debug_print("recvd icmp\n");
+#endif
    return 0;
 }
 

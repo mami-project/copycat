@@ -20,6 +20,7 @@
 #include "destruct.h"
 #include "net.h"
 #include "xpcap.h"
+#include "thread.h"
 
 /**
  * \fn static int parse_dest_file(struct arguments *args, struct tun_state *state)
