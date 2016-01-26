@@ -26,7 +26,8 @@
 #include <netpacket/packet.h>
 #include <net/ethernet.h>
 
-#if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+#include "sysconfig.h"
+#if defined(BSD_OS)
 #include <net/if_tun.h>
 #else
 #include <linux/if.h>

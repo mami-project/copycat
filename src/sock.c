@@ -27,12 +27,13 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 
-#if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
-#include "errqueue.h"
+#include "sysconfig.h"
+#if defined(BSD_OS)
 #include <net/if_tun.h>
+#include <net/if_dl.h>
 #else
 #include <linux/if.h>
-#include <linux/if_tun.h> -
+#include <linux/if_tun.h>
 #include <linux/errqueue.h>
 #endif
 
@@ -72,11 +73,12 @@ int udp_sock(int port) {
    if( bind(s, (struct sockaddr*)&sin, sizeof(sin) ) == -1)
       die("bind");
 
+#if defined(BSD_OS)
    /* enable icmp catching */
    int on = 1;
    if (setsockopt(s, SOL_IP, IP_RECVERR, (char*)&on, sizeof(on))) 
       die("IP_RECVERR");
-   
+#endif
    debug_print("udp socket created on port %d\n", port);
    return s;
 }

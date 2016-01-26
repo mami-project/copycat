@@ -15,7 +15,8 @@
 #ifndef UDPTUN_SOCK_H
 #define UDPTUN_SOCK_H
 
-#if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+#include "sysconfig.h"
+#if defined(BSD_OS)
 #include <net/bpf.h>
 #else
 #include <linux/filter.h>

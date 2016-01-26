@@ -52,18 +52,18 @@ struct tun_state *init_tun_state(struct arguments *args) {
 
    /* create htables */
    if (args->mode == SERV_MODE || args->mode == FULLMESH_MODE) {
-#if defined(HAVE_LIBGLIB_2_0)
+#if defined(GLIB2)
       state->serv = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, 
                                           (GDestroyNotify) free_tun_rec);
-#elif defined(HAVE_LIBGLIB)
+#elif defined(GLIB1)
       state->serv = g_hash_table_new(g_int_hash, g_int_equal);
 #endif
    }
    if (args->mode == CLI_MODE || args->mode == FULLMESH_MODE) {
-#if defined(HAVE_LIBGLIB_2_0)
+#if defined(GLIB2)
       state->cli  = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, 
                                           (GDestroyNotify) free_tun_rec);
-#elif defined(HAVE_LIBGLIB)
+#elif defined(GLIB1)
       state->cli  = g_hash_table_new(g_int_hash, g_int_equal);
 #endif
       if (parse_dest_file(args, state) < 0)
@@ -98,7 +98,7 @@ struct tun_state *init_tun_state(struct arguments *args) {
 
 void free_tun_state(struct tun_state *state) {
    /* Free HTables (GLIB 1 && GLIB 2 < 2.12)  */
-#if !defined(HAVE_LIBGLIB_2_0) && defined(HAVE_LIBGLIB)
+#if defined(GLIB1)
    if (state->serv) 
       g_hash_table_foreach (state->serv, 
                             (GHFunc) free_tun_rec_aux,

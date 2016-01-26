@@ -21,9 +21,14 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 
-#if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
-#include "errqueue.h"
+#include "sysconfig.h"
+#if defined(BSD_OS)
 #include <net/if_tun.h>
+#include <net/if_dl.h> // ifreq
+#ifndef SOL_IP
+#define SOL_IP IPPROTO_IP
+#endif
+
 #else
 #include <linux/if.h>
 #include <linux/if_tun.h> 
@@ -121,7 +126,7 @@ struct sockaddr_in *get_addr(const char *addr, int port) {
 
 void tun(struct tun_state *state, int *fd_tun) {
    struct arguments *args = state->args;
-#if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+#if defined(BSD_OS)
    //TODO: OSx ?? BSD is defined with OSX
    state->if_name  = create_tun_bsd(state->private_addr, state->private_mask, fd_tun);
 #else
