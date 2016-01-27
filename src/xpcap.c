@@ -42,7 +42,7 @@ static void *term_capture(void* arg);
  * \param port 
  * \param filename The location of the trace dump file
  */ 
-static void capture(char *dev, const char *addr, int port, char *filename);
+static void capture(char *dev, const char *addr, int port, char *filename, unsigned int snaplen);
 
 void *term_capture(void* arg) {
    pcap_t *handle = (pcap_t *)arg;
@@ -65,7 +65,7 @@ void *capture_tun(void *arg) {
    }
    strncat(file_loc, ".pcap", 512);
    debug_print("%s\n", file_loc);
-   capture(state->if_name, state->private_addr, 0, file_loc);
+   capture(state->if_name, state->private_addr, 0, file_loc, 70);
    return 0;
 }
 
@@ -82,14 +82,14 @@ void *capture_notun(void *arg) {
    }
    strncat(file_loc, ".pcap", 512);
    debug_print("%s\n", file_loc);
-   capture(state->default_if, state->public_addr, state->public_port, file_loc);
+   capture(state->default_if, state->public_addr, state->public_port, file_loc, 110);
    return 0;
 }
 
-void capture(char *dev, const char *addr, int port, char *filename) {
+void capture(char *dev, const char *addr, int port, char *filename, unsigned int snaplen) {
 	pcap_t *handle;
    char errbuf[PCAP_ERRBUF_SIZE];
-	if ( (handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf)) == NULL) 
+	if ( (handle = pcap_open_live(dev, snaplen, 0, 1000, errbuf)) == NULL) 
 	   die("pcap_open_live");
 
    /* build filter */

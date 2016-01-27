@@ -97,7 +97,8 @@ void destruct() {
          debug_print("thread %u canceled\n", (unsigned int)ctid[i]);
          pthread_join(ctid[i], NULL);
          continue;
-      }
+      }   
+      debug_print("no response, killing %u ...\n", (unsigned int)ctid[i]);
       pthread_kill(ctid[i], SIGKILL);
       pthread_kill(ctid[i], SIGTERM);
    }

@@ -132,13 +132,13 @@ void tun_serv(struct arguments *args) {
    tun(state, &fd_tun); 
    fd_udp         = udp_sock(state->public_port);
 
-   xthread_create(capture_tun, (void *) state);
-   xthread_create(capture_notun, (void *) state);
+   xthread_create(capture_tun, (void *) state, 1);
+   xthread_create(capture_notun, (void *) state, 1);
    synchronize();
 
    /* run server */
    debug_print("running serv ...\n");  
-   xthread_create(serv_thread, (void*) state);
+   xthread_create(serv_thread, (void*) state, 1);
 
    /* init select loop */
    fd_set input_set;

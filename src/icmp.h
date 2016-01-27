@@ -9,8 +9,8 @@
 #define UDPTUN_ICMP_H
 
 #include <netinet/ip_icmp.h>
-#include <sys/uio.h>
 #include <netinet/ip.h>
+#include <sys/uio.h>
 
 #include "state.h"
 
@@ -23,6 +23,7 @@
  */ 
 void print_icmp_type(uint8_t type, uint8_t code);
 
+#if !defined(BSD_OS)
 /**
  * \fn char *forge_icmp(int *pkt_len, struct sock_extended_err *sock_err,
  *                struct iovec *iov, struct tun_state *state)
@@ -37,5 +38,7 @@ void print_icmp_type(uint8_t type, uint8_t code);
  */ 
 char *forge_icmp(int *pkt_len, struct sock_extended_err *sock_err,
                  struct iovec *iov, struct tun_state *state);
+#endif
+
 #endif
 

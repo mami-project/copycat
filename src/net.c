@@ -150,8 +150,8 @@ void cli_thread_parallel(struct tun_state *state, int index) {
                          state->public_addr, state->port, 0, state->cli_file_notun};
 
       /* launch threads */
-      pthread_t tid_tun   = xthread_create(forked_cli, (void*)&args_tun);
-      pthread_t tid_notun = xthread_create(forked_cli, (void*)&args_notun);
+      pthread_t tid_tun   = xthread_create(forked_cli, (void*)&args_tun, 0);
+      pthread_t tid_notun = xthread_create(forked_cli, (void*)&args_notun, 0);
       
       /* join threads */
       pthread_join(tid_tun, NULL);
@@ -199,15 +199,17 @@ void *cli_thread(void *st) {
    }
 
    /* Shutdown client, not peer */
-   cli_shutdown(0);
+   if (args->mode == CLI_MODE)
+      cli_shutdown(0);
+
    return 0;
 }
 
 void *serv_thread(void *st) {
    struct tun_state *state = st;
    serv_file = state->serv_file;
-   xthread_create(serv_thread_private, st);
-   xthread_create(serv_thread_public, st);
+   xthread_create(serv_thread_private, st, 1);
+   xthread_create(serv_thread_public, st, 1);
 
    return 0;
 }
@@ -233,10 +235,11 @@ int tcp_serv(char *addr, int port, char* dev, struct tun_state *state, int set_m
    if ((s=socket(AF_INET, SOCK_STREAM, 0)) < 0) 
      die("socket");
    set_fd(s);
+/*
 #if defined(SO_BINDTODEVICE)
    if (dev && setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev))) 
       die("bind to device");
-#endif
+#endif*/
    if (set_maxseg) {
       int tmp = state->max_segment_size;
       if (setsockopt (s, IPPROTO_TCP, TCP_MAXSEG, &tmp, sizeof(tmp)) < 0)
@@ -273,7 +276,7 @@ int tcp_serv(char *addr, int port, char* dev, struct tun_state *state, int set_m
       debug_print("accepted connection from %s on socket %d.\n", inet_ntoa(sin.sin_addr), ws);
 
       /* Fork worker thread */
-      xthread_create(serv_worker_thread, (void*) &ws);
+      xthread_create(serv_worker_thread, (void*) &ws, 1);
    }
 
    close(s);
@@ -315,7 +318,6 @@ void *serv_worker_thread(void *socket_desc) {
 int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
             char *addr, int port, int tun, char* filename) {
    struct tun_state *state = st;
-
    int s, err = 0; //TODO clean out useless vars
    /* TCP socket */
    if ((s=socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) 
@@ -323,11 +325,12 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
    set_fd(s);
 
    /* Socket opts */
-   struct timeval snd_timeout = {state->tcp_snd_timeout, 0}; 
-   struct timeval rcv_timeout = {state->tcp_rcv_timeout, 0}; 
+/*#if defined(SO_BINDTODEVICE)
    if (dev && (setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev)) < 0)) 
       die("bind to device");
-
+#endif*/
+   struct timeval snd_timeout = {state->tcp_snd_timeout, 0}; 
+   struct timeval rcv_timeout = {state->tcp_rcv_timeout, 0}; 
    if (setsockopt (s, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout,
                 sizeof(rcv_timeout)) < 0)
       die("setsockopt rcvtimeo");
@@ -357,6 +360,7 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
       sout.sin_addr.s_addr = htonl(INADDR_ANY);
    if (bind(s, (struct sockaddr *)&sout, sizeof(sout)) < 0) 
       die("bind");
+   debug_print("TCP cli bound on %s:%d\n",addr,port);
 
    /* connect peer */
    struct sockaddr_in sin = *((struct sockaddr_in *)sa);

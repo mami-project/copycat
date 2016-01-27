@@ -31,11 +31,12 @@ void synchronize() {
       die("pthread_barrier_wait");
 }
 
-pthread_t xthread_create(void *(*start_routine) (void *), void *args) {
+pthread_t xthread_create(void *(*start_routine) (void *), void *args, int garbage) {
    pthread_t thread_id;
    if (pthread_create(&thread_id, NULL, start_routine, args) < 0) 
       die("pthread_create");
-   set_pthread(thread_id);
+   if (garbage)
+      set_pthread(thread_id);
    return thread_id;
 }
 

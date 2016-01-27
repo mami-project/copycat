@@ -118,8 +118,8 @@ void tun_cli(struct arguments *args) {
    fd_udp   = udp_sock(state->port);
 
    /* run capture threads */
-   xthread_create(capture_tun, (void *) state);
-   xthread_create(capture_notun, (void *) state);
+   xthread_create(capture_tun, (void *) state, 1);
+   xthread_create(capture_notun, (void *) state, 1);
    synchronize();
 
    /* initial sleep */
@@ -127,7 +127,7 @@ void tun_cli(struct arguments *args) {
 
    /* run client */
    debug_print("running cli ...\n");    
-   xthread_create(cli_thread, (void*) state);
+   xthread_create(cli_thread, (void*) state, 1);
 
    /* init select loop */
    fd_set input_set;

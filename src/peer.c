@@ -71,7 +71,13 @@ static void tun_peer_out_cli(int fd_udp, int fd_tun, struct tun_state *state, ch
  */ 
 static void tun_peer_out_serv(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
 
-void peer_shutdown(int UNUSED(sig)) { loop = 0; }
+void peer_shutdown(int UNUSED(sig)) { 
+   debug_print("shutting down peer ...\n");
+
+   /* Wait for delayed acks to avoid sending icmp */
+   sleep(CLOSE_TIMEOUT);
+   loop = 0; 
+}
 
 void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *state, char *buf) {
    int recvd=xread(fd_tun, buf, BUFF_SIZE);
@@ -189,20 +195,20 @@ void tun_peer(struct arguments *args) {
    fd_cli         = udp_sock(state->port);
 
    /* run capture threads */
-   xthread_create(capture_tun, (void *) state);
-   xthread_create(capture_notun, (void *) state);
+   xthread_create(capture_tun, (void *) state, 1);
+   xthread_create(capture_notun, (void *) state, 1);
    synchronize();
 
    /* run server */
    debug_print("running serv ...\n");  
-   xthread_create(serv_thread, (void*) state);
+   xthread_create(serv_thread, (void*) state, 1);
 
    /* initial sleep */
    sleep(state->initial_sleep);
 
    /* run client */
    debug_print("running cli ...\n"); 
-   xthread_create(cli_thread, (void*) state);
+   xthread_create(cli_thread, (void*) state, 1);
 
    /* init select main loop */
    fd_set input_set;

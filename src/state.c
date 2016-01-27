@@ -239,7 +239,7 @@ int parse_cfg_file(struct tun_state *state) {
          else if (!strcmp(key, "if-name")) 
             state->if_name = strdup(val);
          else if (!strcmp(key, "default-if")) 
-            state->default_if = strdup(val);
+            state->default_if = strdup(val); //TODO find public addr from itf
       
          /* NOTE: add cfg parameters here */
       } 
