@@ -122,14 +122,10 @@ struct sockaddr_in *get_addr(const char *addr, int port) {
 
 void tun(struct tun_state *state, int *fd_tun) {
    struct arguments *args = state->args;
-#if defined(BSD_OS)
-   state->if_name  = create_tun_bsd(state->private_addr, state->private_mask, fd_tun);
-#elif defined(LINUX_OS)
    if (args->planetlab)
       state->if_name  = create_tun_pl(state->private_addr, state->private_mask, fd_tun);
    else
       state->if_name  = create_tun(state->private_addr, state->private_mask, state->if_name, fd_tun); 
-#endif
 }
 
 void *forked_cli(void *a) {

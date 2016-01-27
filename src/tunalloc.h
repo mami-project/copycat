@@ -37,7 +37,7 @@ char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds);
  */ 
 char *create_tun_pl(const char *ip, const char *prefix, int *tun_fds);
 
-char *create_tun_bsd(const char *ip, const char *prefix, char *dev, int *tun_fds);
+//char *create_tun_bsd(const char *ip, const char *prefix, char *dev, int *tun_fds);
 
 int tun_alloc_mq(char *dev, int queues, int *fds);
 int tun_set_queue(int fd, int enable);
