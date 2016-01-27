@@ -149,66 +149,6 @@ int receive_vif_fd(int fd, char *vif_name) {
 	return *(int*)CMSG_DATA(cmsg);
 }
 
-int tun_alloc_pl(int iftype, char *if_name) {
-    int control_fd;
-    struct sockaddr_un addr;
-    int remotefd;
-
-    control_fd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (control_fd == -1) 
-        die("Could not create UNIX socket\n");
-
-    memset(&addr, 0, sizeof(struct sockaddr_un));
-    /* Clear structure */
-    addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, VSYS_TUNTAP,
-            sizeof(addr.sun_path) - 1);
-
-    if (connect(control_fd, (struct sockaddr *) &addr,
-                sizeof(struct sockaddr_un)) == -1) 
-        die("Could not connect to Vsys control socket");
-
-    /* passing type param */
-    if (send(control_fd, &iftype, sizeof(iftype), 0) != sizeof(iftype)) 
-        die("Could not send paramater to Vsys control socket");
-
-    remotefd = receive_vif_fd(control_fd, if_name);
-    return remotefd;
-}
-
-char *create_tun_pl(const char *ip, const char *prefix, int *tun_fds) {
-   char *if_name = malloc(IFNAMSIZ);
-
-   FILE *in;
-   FILE *out;
-   char errbuff[4096];
-   memset(errbuff, 0, 4096);
-
-   int tun_fd = tun_alloc_pl(IFF_TUN, if_name);
-   if (tun_fds) *tun_fds = tun_fd;
-
-   debug_print("allocated tun device: %s fd=%d\n", if_name, tun_fd);
-   if (!(in = fopen (VSYS_VIFUP_IN, "a"))) 
-     die("fopen VSYS_VIFUP_IN");
-   if (!(out = fopen (VSYS_VIFUP_OUT, "r"))) 
-      die("fopen VSYS_VIFUP_OUT");
-   
-   // send input to process
-   //if (nat)
-   //   fprintf (in, "%s\n%s\n%s\nsnat=1\n", if_name, ip, prefix);
-   // else
-   fprintf(in, "%s\n%s\n%s\n\n", if_name, ip, prefix);
-
-   /* close pipe to flush the fifo */
-   fclose(in);
-
-   if (fread((void*)errbuff, 4096, 1, out) && strcmp(errbuff, ""))
-      debug_print("%s\n",errbuff);
-
-   fclose(out);
-   return if_name;
-}
-
 char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds) {
    int   fd;
    char *if_name = malloc(IFNAMSIZ);
@@ -516,7 +456,65 @@ int tun_alloc6(const char *ip, const char *prefix, char *dev, int common) {
    return fd;
 }
 
-#endif  
+int tun_alloc_pl(int iftype, char *if_name) {
+    int control_fd;
+    struct sockaddr_un addr;
+    int remotefd;
+
+    control_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (control_fd == -1) 
+        die("Could not create UNIX socket\n");
+
+    memset(&addr, 0, sizeof(struct sockaddr_un));
+    /* Clear structure */
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, VSYS_TUNTAP,
+            sizeof(addr.sun_path) - 1);
+
+    if (connect(control_fd, (struct sockaddr *) &addr,
+                sizeof(struct sockaddr_un)) == -1) 
+        die("Could not connect to Vsys control socket");
+
+    /* passing type param */
+    if (send(control_fd, &iftype, sizeof(iftype), 0) != sizeof(iftype)) 
+        die("Could not send paramater to Vsys control socket");
+
+    remotefd = receive_vif_fd(control_fd, if_name);
+    return remotefd;
+}
+
+char *create_tun_pl(const char *ip, const char *prefix, int *tun_fds) {
+   char *if_name = malloc(IFNAMSIZ);
+
+   FILE *in;
+   FILE *out;
+   char errbuff[4096];
+   memset(errbuff, 0, 4096);
+
+   int tun_fd = tun_alloc_pl(IFF_TUN, if_name);
+   if (tun_fds) *tun_fds = tun_fd;
+
+   debug_print("allocated tun device: %s fd=%d\n", if_name, tun_fd);
+   if (!(in = fopen (VSYS_VIFUP_IN, "a"))) 
+     die("fopen VSYS_VIFUP_IN");
+   if (!(out = fopen (VSYS_VIFUP_OUT, "r"))) 
+      die("fopen VSYS_VIFUP_OUT");
+   
+   // send input to process
+   //if (nat)
+   //   fprintf (in, "%s\n%s\n%s\nsnat=1\n", if_name, ip, prefix);
+   // else
+   fprintf(in, "%s\n%s\n%s\n\n", if_name, ip, prefix);
+
+   /* close pipe to flush the fifo */
+   fclose(in);
+
+   if (fread((void*)errbuff, 4096, 1, out) && strcmp(errbuff, ""))
+      debug_print("%s\n",errbuff);
+
+   fclose(out);
+   return if_name;
+}
 
 #ifdef IFF_MULTI_QUEUE
 
@@ -566,5 +564,7 @@ int tun_set_queue(int fd, int enable) {
    return ioctl(fd, TUNSETQUEUE, (void *)&ifr);
 }
 
-#endif
+#endif // IFF_MULTI_QUEUE 
+
+#endif // LINUX_OS
 
