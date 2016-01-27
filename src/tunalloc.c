@@ -23,15 +23,23 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#include <netpacket/packet.h>
 #include <net/ethernet.h>
 
 #include "sysconfig.h"
-#if defined(BSD_OS)
+#if defined(__DragonFly__)
+#include <net/tun/if_tun.h>
+#elif defined(BSD_OS)
+#define __u32 uint32_t
 #include <net/if_tun.h>
+#include <sys/param.h>
+#include <sys/time.h>
+#include <net/if.h>
+#include <net/if_var.h>
+#include <net/if_types.h>
 #elif defined(LINUX_OS)
 #include <linux/if.h>
 #include <linux/if_tun.h>
+//#include <netpacket/packet.h>
 #endif
 
 #include "sock.h"
@@ -105,6 +113,8 @@ static int tun_alloc46(const char *ip, const char *prefix, char *dev, int common
  * \return fd
  */ 
 static int tun_alloc_pl(int iftype, char *if_name);
+
+static int tun_alloc_bsd(const char *ip, const char *prefix, char *dev, int common);
 
 /* Reads vif FD from "fd", writes interface name to vif_name, and returns vif FD.
  * vif_name should be IFNAMSIZ chars long. */
@@ -201,11 +211,93 @@ char *create_tun_pl(const char *ip, const char *prefix, int *tun_fds) {
    return if_name;
 }
 
-char *create_tun_bsd(const char *ip, const char *prefix, int *tun_fds) {
+char *create_tun_bsd(const char *ip, const char *prefix, char *dev, int *tun_fds) {
+   int   fd;
+   char *if_name = malloc(IFNAMSIZ);
+   
+   if (dev) {
+      if ((fd = tun_alloc_bsd(ip, prefix, dev, 0)) >= 0) {
+         strcpy(if_name, dev);//TODO func pointer for tun_alloc linux/bsd
+         goto succ;
+      } else goto err;
+   }
+
+   for (int i=0; i<99; i++) {
+      sprintf(if_name, "tun%d", i);
+      if ((fd = tun_alloc_bsd(ip, prefix, if_name, 1)) >= 0) {
+         break;
+      } else goto err;
+   }
+
+succ:
+   debug_print("%s interface created %d\n", if_name, fd);
+   if (tun_fds) 
+      *tun_fds = fd;
+   return if_name;
+err:
+   return NULL;
    //TODO
 
    return NULL;
 }
+
+int tun_alloc_bsd(const char *ip, const char *prefix, char *dev, int common) {
+   struct ifreq ifr; 
+   int fd;
+   
+   if (common) {
+      if((fd = open("/dev/net/tun", O_RDWR)) < 0 ) 
+         die("err opening tun fd\n");
+   } else {
+      char tunname[14];
+      sprintf(tunname, "/dev/%s", dev);
+      if((fd = open(tunname, O_RDWR)) < 0 ) 
+         //      mknod /dev/tun1 c 10 200
+         die("err opening tun fd\n");
+      return fd;
+   }
+
+   memset(&ifr, 0, sizeof(ifr));
+   //ifr.ifr_flags = IFF_TUN | IFF_NO_PI; 
+   if( *dev )
+      strncpy(ifr.ifr_name, dev, IFNAMSIZ);
+
+   //if( ioctl(fd, TUNSETIFF, (void *) &ifr) < 0 ) 
+   //   die("ioctl\n");
+   //strcpy(dev, ifr.ifr_name);
+
+   /* Create socket */
+   int s;
+   if ( (s = socket(AF_INET, SOCK_DGRAM, 0)) < 0) 
+      die("socket");
+
+   /* Get interface flags */
+   if (ioctl(s, SIOCGIFFLAGS, &ifr) < 0) 
+      die("cannot get interface flags");
+
+   /* Turn on interface */
+   //ifr.ifr_flags |= IFF_UP;
+   //if (ioctl(s, SIOCSIFFLAGS, &ifr) < 0) 
+   //   die("ioctl ifup");
+
+   /* Set interface address */
+   struct sockaddr_in  tun_addr;
+   memset((char *) &tun_addr, 0, sizeof(tun_addr));
+   tun_addr.sin_family = AF_INET;
+   tun_addr.sin_addr.s_addr = htonl(inet_network(ip));
+   memcpy(&ifr.ifr_addr, &tun_addr, sizeof(struct sockaddr));
+
+   if (ioctl(s, SIOCSIFADDR, &ifr) < 0) 
+      die("cannot set IP address. ");
+
+   char net_prefix_cmd[128];
+   sprintf(net_prefix_cmd, "ip addr add %s/%s dev %s", ip, prefix, dev);
+   if (system(net_prefix_cmd) < 0) 
+      die("tun prefix");
+
+   close(s);
+   return fd;
+}              
 
 char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds) {
    int   fd;
