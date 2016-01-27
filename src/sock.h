@@ -18,7 +18,7 @@
 #include "sysconfig.h"
 #if defined(BSD_OS)
 #include <net/bpf.h>
-#else
+#elif defined(LINUX_OS)
 #include <linux/filter.h>
 #endif
 
@@ -37,6 +37,7 @@
  */ 
 int udp_sock(int port);
 
+#if defined(LINUX_OS)
 /**
  * \fn int raw_tcp_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev)
  * \brief Create and bind a TCP RAW socket.
@@ -62,6 +63,7 @@ int raw_tcp_sock(int port, const struct sock_fprog * bpf, const char *dev);
  * \return The socket fd.
  */ 
 int raw_sock(int port, const struct sock_fprog * bpf, const char *dev, int proto);
+#endif
 
 /**
  * \fn int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen)

@@ -25,7 +25,7 @@
 #if defined(BSD_OS)
 #include <net/if_tun.h>
 #include <net/if_dl.h> // ifreq
-#else
+#elif defined(LINUX_OS)
 #include <linux/if.h>
 #include <linux/if_tun.h> 
 #include <linux/errqueue.h>
@@ -124,7 +124,7 @@ void tun(struct tun_state *state, int *fd_tun) {
    struct arguments *args = state->args;
 #if defined(BSD_OS)
    state->if_name  = create_tun_bsd(state->private_addr, state->private_mask, fd_tun);
-#else
+#elif defined(LINUX_OS)
    if (args->planetlab)
       state->if_name  = create_tun_pl(state->private_addr, state->private_mask, fd_tun);
    else
@@ -235,11 +235,7 @@ int tcp_serv(char *addr, int port, char* dev, struct tun_state *state, int set_m
    if ((s=socket(AF_INET, SOCK_STREAM, 0)) < 0) 
      die("socket");
    set_fd(s);
-/*
-#if defined(SO_BINDTODEVICE)
-   if (dev && setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev))) 
-      die("bind to device");
-#endif*/
+
    if (set_maxseg) {
       int tmp = state->max_segment_size;
       if (setsockopt (s, IPPROTO_TCP, TCP_MAXSEG, &tmp, sizeof(tmp)) < 0)

@@ -23,7 +23,7 @@
  */ 
 void print_icmp_type(uint8_t type, uint8_t code);
 
-#if !defined(BSD_OS)
+#if defined(LINUX_OS)
 /**
  * \fn char *forge_icmp(int *pkt_len, struct sock_extended_err *sock_err,
  *                struct iovec *iov, struct tun_state *state)

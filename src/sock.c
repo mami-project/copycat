@@ -19,6 +19,8 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include <netinet/in.h>
+#include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
@@ -31,7 +33,7 @@
 #if defined(BSD_OS)
 #include <net/if_tun.h>
 #include <net/if_dl.h>
-#else
+#elif defined(LINUX_OS)
 #include <linux/if.h>
 #include <linux/if_tun.h>
 #include <linux/errqueue.h>
@@ -83,6 +85,8 @@ int udp_sock(int port) {
    return s;
 }
 // TODO add const
+
+#if defined(LINUX_OS)
 int raw_tcp_sock(int port, const struct sock_fprog * bpf, const char *dev) {
    return raw_sock(port, bpf, dev, IPPROTO_TCP);
 }
@@ -118,6 +122,7 @@ int raw_sock(int port, const struct sock_fprog * bpf, const char *dev, int proto
    debug_print("raw socket created on %s port %d\n", dev, port);
    return s;
 }
+#endif
 
 int xselect(fd_set *input_set, int fd_max, struct timeval *tv, int timeout) {
    int sel;

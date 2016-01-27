@@ -29,7 +29,7 @@
 #include "sysconfig.h"
 #if defined(BSD_OS)
 #include <net/if_tun.h>
-#else
+#elif defined(LINUX_OS)
 #include <linux/if.h>
 #include <linux/if_tun.h>
 #endif

@@ -10,7 +10,8 @@
 
 #include "sysconfig.h"
 #if defined(BSD_OS)
-#else
+//no BSD errqueue :'(
+#elif defined(LINUX_OS)
 #include <linux/errqueue.h>
 #endif
 #include <sys/socket.h>
@@ -104,7 +105,7 @@ void print_icmp_type(uint8_t type, uint8_t code) {
    }
 }
 
-#if !defined(BSD_OS)
+#if defined(LINUX_OS)
 char *forge_icmp(int *pkt_len, struct sock_extended_err *sock_err, struct iovec *iov, struct tun_state *state) {
    /* re-build icmp msg */
    struct ip_header* ipheader;

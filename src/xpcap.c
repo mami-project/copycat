@@ -138,7 +138,7 @@ struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dpo
 
    /* compile filter */
    bpf_u_int32 net = inet_addr(addr);
-   handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
+   handle = pcap_open_live(dev, BUFSIZ, 0, 1000, errbuf);
    if (!handle) 
       die( "Couldn't open device %s: %s");
    if (pcap_compile(handle, fp, filter_exp, 0, net) == -1) 
