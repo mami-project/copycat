@@ -17,8 +17,8 @@ if test -z "$DOXYGEN";
 fi
 
 # Checks for libraries.
+#AC_CHECK_LIB(argp, argp_parse)
 AC_CHECK_LIB(pthread, pthread_create)
-AC_CHECK_LIB(pthread, pthread_cleanup_push)
 AC_CHECK_LIB([pcap], [pcap_compile])
 AC_CHECK_LIB([glib-2.0], [g_hash_table_lookup], [],
    [AC_CHECK_LIB([glib], [g_hash_table_lookup])]
@@ -35,7 +35,7 @@ PKG_CHECK_MODULES(GLIB2, [glib-2.0 >= 2.12], [],
 # Checks for header files.
 AC_HEADER_STDC
 #AC_CHECK_HEADER(glib.h)
-AC_CHECK_HEADERS([pthread.h arpa/inet.h netinet/in.h pcap.h stdlib.h string.h sys/socket.h unistd.h fcntl.h sys/ioctl.h sys/time.h])
+AC_CHECK_HEADERS([pthread.h arpa/inet.h netinet/in.h pcap.h stdlib.h string.h sys/socket.h unistd.h fcntl.h sys/ioctl.h sys/time.h sys/param.h argp.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_INT16_T

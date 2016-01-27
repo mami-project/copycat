@@ -4493,6 +4493,7 @@ $as_echo "$as_me: WARNING: Doxygen not found - continuing without Doxygen suppor
 fi
 
 # Checks for libraries.
+#AC_CHECK_LIB(argp, argp_parse)
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_create in -lpthread" >&5
 $as_echo_n "checking for pthread_create in -lpthread... " >&6; }
@@ -4531,51 +4532,6 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pthread_pthread_create" >&5
 $as_echo "$ac_cv_lib_pthread_pthread_create" >&6; }
 if test "x$ac_cv_lib_pthread_pthread_create" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBPTHREAD 1
-_ACEOF
-
-  LIBS="-lpthread $LIBS"
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_cleanup_push in -lpthread" >&5
-$as_echo_n "checking for pthread_cleanup_push in -lpthread... " >&6; }
-if ${ac_cv_lib_pthread_pthread_cleanup_push+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lpthread  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char pthread_cleanup_push ();
-int
-main ()
-{
-return pthread_cleanup_push ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_pthread_pthread_cleanup_push=yes
-else
-  ac_cv_lib_pthread_pthread_cleanup_push=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pthread_pthread_cleanup_push" >&5
-$as_echo "$ac_cv_lib_pthread_pthread_cleanup_push" >&6; }
-if test "x$ac_cv_lib_pthread_pthread_cleanup_push" = xyes; then :
   cat >>confdefs.h <<_ACEOF
 #define HAVE_LIBPTHREAD 1
 _ACEOF
@@ -5379,7 +5335,7 @@ fi
 done
 
 
-for ac_header in pthread.h arpa/inet.h netinet/in.h pcap.h stdlib.h string.h sys/socket.h unistd.h fcntl.h sys/ioctl.h sys/time.h
+for ac_header in pthread.h arpa/inet.h netinet/in.h pcap.h stdlib.h string.h sys/socket.h unistd.h fcntl.h sys/ioctl.h sys/time.h sys/param.h argp.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"

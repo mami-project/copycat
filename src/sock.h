@@ -17,7 +17,7 @@
 
 #include "sysconfig.h"
 #if defined(BSD_OS)
-#include <net/bpf.h>
+//#include <net/bpf.h>
 #elif defined(LINUX_OS)
 #include <linux/filter.h>
 #endif
