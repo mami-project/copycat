@@ -55,6 +55,8 @@ static volatile unsigned int cpid_index;
  */
 static volatile unsigned int fd_index;
 
+static struct tun_state *prog_state;
+
 /**
  * \var pthread_mutex_t lock
  * \brief Semaphore for destructor/garbage collector
@@ -118,6 +120,8 @@ void destruct() {
    if (pthread_mutex_unlock(&lock) != 0)
       die("mutex unlock");
    pthread_mutex_destroy(&lock);
+
+   free_tun_state(prog_state);
 }
 
 void init_destructors(struct tun_state *state) {
@@ -140,5 +144,7 @@ void init_destructors(struct tun_state *state) {
 
    if (pthread_mutex_unlock(&lock) != 0)
       die("mutex unlock");
+
+   prog_state = state;
 }
 

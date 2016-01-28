@@ -42,7 +42,7 @@ static void *term_capture(void* arg);
  * \param port 
  * \param filename The location of the trace dump file
  */ 
-static void capture(char *dev, const char *addr, int port, char *filename, unsigned int snaplen);
+static void capture(const char *dev, const char *addr, int port, char *filename, unsigned int snaplen);
 
 void *term_capture(void* arg) {
    pcap_t *handle = (pcap_t *)arg;
@@ -56,6 +56,7 @@ void *capture_tun(void *arg) {
    struct tun_state *state = (struct tun_state *)arg;
    struct arguments* args  = state->args;
    char file_loc[512];
+   memset(file_loc, '\0', 512);
 
    strncpy(file_loc, state->out_dir, 512);   
    strncat(file_loc, "tun", 512);
@@ -73,7 +74,7 @@ void *capture_notun(void *arg) {
    struct tun_state *state = (struct tun_state *)arg;
    struct arguments* args  = state->args;
    char file_loc[512];
-
+   memset(file_loc, '\0', 512);
    strncpy(file_loc, state->out_dir, 512);   
    strncat(file_loc, "notun", 512);
    if (args->run_id) {
@@ -82,11 +83,12 @@ void *capture_notun(void *arg) {
    }
    strncat(file_loc, ".pcap", 512);
    debug_print("%s\n", file_loc);
+
    capture(state->default_if, state->public_addr, state->public_port, file_loc, 110);
    return 0;
 }
 
-void capture(char *dev, const char *addr, int port, char *filename, unsigned int snaplen) {
+void capture(const char *dev, const char *addr, int port, char *filename, unsigned int snaplen) {
 	pcap_t *handle;
    char errbuf[PCAP_ERRBUF_SIZE];
 	if ( (handle = pcap_open_live(dev, snaplen, 0, 1000, errbuf)) == NULL) 

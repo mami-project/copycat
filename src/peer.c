@@ -249,6 +249,6 @@ void tun_peer(struct arguments *args) {
 
    /* Close, free, ... */
    close(fd_cli);close(fd_serv);
-   close(fd_tun);free_tun_state(state);
+   close(fd_tun);
 }
 

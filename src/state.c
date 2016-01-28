@@ -111,7 +111,7 @@ void free_tun_state(struct tun_state *state) {
 #endif
 
    /* Free HTables (GLIB 2 >= 2.12) */
-   if (state->serv)
+   if (state->serv) 
       g_hash_table_destroy(state->serv); 
    if (state->cli)
       g_hash_table_destroy(state->cli); 
@@ -135,6 +135,8 @@ void free_tun_state(struct tun_state *state) {
       free(state->serv_file);
    if (state->if_name)
       free(state->if_name);
+   if (state->default_if)
+      free(state->default_if);
    if (state->cli_file_tun)
       free(state->cli_file_tun);
    if (state->cli_file_notun)
@@ -236,7 +238,7 @@ int parse_cfg_file(struct tun_state *state) {
             state->max_segment_size = strtol(val, NULL, 10);
          else if (!strcmp(key, "initial-sleep")) 
             state->initial_sleep = strtol(val, NULL, 10);
-         else if (!strcmp(key, "if-name")) 
+         else if (!strcmp(key, "tun-if")) 
             state->if_name = strdup(val);
          else if (!strcmp(key, "default-if")) 
             state->default_if = strdup(val); //TODO find public addr from itf
@@ -249,6 +251,7 @@ int parse_cfg_file(struct tun_state *state) {
       } while (c != EOF && c != '\n');
    }
 
+   fclose(fp);
    return 0;
 }
 
@@ -299,6 +302,7 @@ int parse_dest_file(struct arguments *args, struct tun_state *state) {
       state->cli_public[i++] = nrec_pub;
    }
 
+   fclose(fp);
    return 0;
 }
 

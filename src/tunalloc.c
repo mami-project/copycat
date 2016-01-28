@@ -27,18 +27,18 @@
 
 #include "sysconfig.h"
 #if defined(__DragonFly__)
-#include <net/tun/if_tun.h>
+#  include <net/tun/if_tun.h>
 #elif defined(BSD_OS)
-#define __u32 uint32_t
-#include <net/if_tun.h>
-#include <sys/param.h>
-#include <sys/time.h>
-#include <net/if.h>
-#include <net/if_var.h>
-#include <net/if_types.h>
+#  define __u32 uint32_t
+#  include <net/if_tun.h>
+#  include <sys/param.h>
+#  include <sys/time.h>
+#  include <net/if.h>
+#  include <net/if_var.h>
+#  include <net/if_types.h>
 #elif defined(LINUX_OS)
-#include <linux/if.h>
-#include <linux/if_tun.h>
+#  include <linux/if.h>
+#  include <linux/if_tun.h>
 //#include <netpacket/packet.h>
 #endif
 

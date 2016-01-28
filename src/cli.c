@@ -163,7 +163,6 @@ void tun_cli(struct arguments *args) {
       }
    }
 
-   close(fd_udp);close(fd_tun);
-   free_tun_state(state);
+   close(fd_udp);close(fd_tun); // TODO check if those are closed
 }
 
