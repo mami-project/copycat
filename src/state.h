@@ -45,7 +45,7 @@ struct tun_state {
    uint8_t sa_len;               /*!<  Number of destinations. */
 
    /* From cfg file */
-   char    *tun_if;            /*!< The tun interface name. */ //TODO: rename
+   char    *tun_if;            /*!< The tun interface name. */
    char    *default_if;         /*!< The default interface name. */
    char    *private_addr;       /*!< The private ip address */
    char    *private_mask;       /*!< The private ip mask */

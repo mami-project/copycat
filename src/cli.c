@@ -115,7 +115,7 @@ void tun_cli(struct arguments *args) {
 
    /* create tun if and sockets */   
    tun(state, &fd_tun);
-   fd_udp   = udp_sock(state->port);
+   fd_udp   = udp_sock(state->port, 1);
 
    /* run capture threads */
    xthread_create(capture_tun, (void *) state, 1);
@@ -162,7 +162,5 @@ void tun_cli(struct arguments *args) {
             tun_cli_out(fd_udp, fd_tun, state, buffer);
       }
    }
-
-   close(fd_udp);close(fd_tun); // TODO check if those are closed
 }
 

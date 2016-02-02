@@ -127,10 +127,10 @@ void tun_serv(struct arguments *args) {
 
    /* init server state */
    struct tun_state *state = init_tun_state(args);
-   
+
    /* create tun if and sockets */
    tun(state, &fd_tun); 
-   fd_udp         = udp_sock(state->public_port);
+   fd_udp         = udp_sock(state->public_port, 1);
 
    xthread_create(capture_tun, (void *) state, 1);
    xthread_create(capture_notun, (void *) state, 1);
@@ -175,6 +175,6 @@ void tun_serv(struct arguments *args) {
    }
 
    /* Close, free, ... */
-   close(fd_udp);close(fd_tun);
+   close(fd_tun);
 }
 

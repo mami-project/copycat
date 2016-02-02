@@ -19,7 +19,7 @@
 #if defined(BSD_OS)
 //#include <net/bpf.h>
 #elif defined(LINUX_OS)
-#include <linux/filter.h>
+#  include <linux/filter.h>
 #endif
 
 #include <netinet/in.h>
@@ -33,9 +33,10 @@ char *addr_to_itf(char *addr);
  * \brief Create and bind a UDP DGRAM socket.
  *
  * \param port The port for the bind call.
+ * \param register_gc Register fd to garbage collector.
  * \return The socket fd.
  */ 
-int udp_sock(int port);
+int udp_sock(int port, uint8_t register_gc);
 
 #if defined(LINUX_OS)
 /**

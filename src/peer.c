@@ -191,8 +191,8 @@ void tun_peer(struct arguments *args) {
 
    /* create tun if and sockets */
    tun(state, &fd_tun);   
-   fd_serv        = udp_sock(state->public_port);
-   fd_cli         = udp_sock(state->port);
+   fd_serv = udp_sock(state->public_port, 1);
+   fd_cli  = udp_sock(state->port, 1);
 
    /* run capture threads */
    xthread_create(capture_tun, (void *) state, 1);
@@ -248,7 +248,6 @@ void tun_peer(struct arguments *args) {
    }
 
    /* Close, free, ... */
-   close(fd_cli);close(fd_serv);
    close(fd_tun);
 }
 

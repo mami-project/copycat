@@ -28,7 +28,7 @@
 #include <sys/uio.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
-//#include <net/if.h>
+
 #include <ifaddrs.h>
 
 #include "sysconfig.h"
@@ -46,7 +46,8 @@
 #include "icmp.h"
 #include "net.h"
 #include "xpcap.h"
-#undef IP_RECVERR
+#include "destruct.h"
+
 /**
  * \fn static build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw)
  *
@@ -77,13 +78,14 @@ char *addr_to_itf(char *addr) {
    return NULL;
 }
 
-int udp_sock(int port) {
+int udp_sock(int port, uint8_t register_gc) { //TODO switch types
    int s;
    struct sockaddr_in sin;
    /* UDP socket */
    if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
       die("socket");
-
+   if (register_gc)
+      set_fd(s);
    /* sockaddr */
    memset(&sin, 0, sizeof(sin));
    sin.sin_family      = AF_INET;

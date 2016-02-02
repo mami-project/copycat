@@ -130,6 +130,7 @@ void tun(struct tun_state *state, int *fd_tun) {
 #else
    state->tun_if  = create_tun(state->private_addr, state->private_mask, state->tun_if, fd_tun);
 #endif
+   if (*fd_tun) set_fd(*fd_tun);
 }
 
 void *forked_cli(void *a) {
