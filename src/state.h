@@ -45,7 +45,7 @@ struct tun_state {
    uint8_t sa_len;               /*!<  Number of destinations. */
 
    /* From cfg file */
-   char    *if_name;            /*!< The tun interface name. */ //TODO: rename
+   char    *tun_if;            /*!< The tun interface name. */ //TODO: rename
    char    *default_if;         /*!< The default interface name. */
    char    *private_addr;       /*!< The private ip address */
    char    *private_mask;       /*!< The private ip mask */
@@ -74,7 +74,7 @@ struct tun_state {
    uint32_t backlog_size;       /*!< backlog size  */
    uint32_t fd_lim;             /*!< max simultaneously open fd */
    
-   uint32_t max_segment_size;   /*!< The value passed as TCP_MAXSEG optval (max mss) */
+   uint32_t max_segment_size;   /*!< The value passed as TCP_MAXSEG optval (max mss) for tun flow */
 };
 
 /**

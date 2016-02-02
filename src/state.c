@@ -133,8 +133,8 @@ void free_tun_state(struct tun_state *state) {
       free(state->cli_dir);
    if (state->serv_file)
       free(state->serv_file);
-   if (state->if_name)
-      free(state->if_name);
+   if (state->tun_if)
+      free(state->tun_if);
    if (state->default_if)
       free(state->default_if);
    if (state->cli_file_tun)
@@ -197,7 +197,7 @@ int parse_cfg_file(struct tun_state *state) {
          if (fscanf(fp, "%s %s", key, val) < 0)
             die("configuration file");
          debug_print("%s %s\n", key, val); 
-
+         /* networking parameters */
          if (!strcmp(key, "public-server-port")) 
             state->public_port = strtol(val, NULL, 10);  
          else if (!strcmp(key, "private-server-port")) 
@@ -216,30 +216,34 @@ int parse_cfg_file(struct tun_state *state) {
             state->public_addr  = strdup(val);
          else if (!strcmp(key, "public-address6")) 
             state->public_addr6 = strdup(val);
+         /* timeouts */
          else if (!strcmp(key, "inactivity-timeout")) 
             state->inactivity_timeout = strtol(val, NULL, 10);
+         else if (!strcmp(key, "initial-sleep")) 
+            state->initial_sleep = strtol(val, NULL, 10);
          else if (!strcmp(key, "tcp-send-timeout")) 
             state->tcp_snd_timeout = strtol(val, NULL, 10);
          else if (!strcmp(key, "tcp-receive-timeout")) 
             state->tcp_rcv_timeout = strtol(val, NULL, 10);
+         /* locations & dirs */
          else if (!strcmp(key, "client-dir")) 
             state->cli_dir = strdup(val);
          else if (!strcmp(key, "output-dir")) 
             state->out_dir = strdup(val);
          else if (!strcmp(key, "server-file")) 
             state->serv_file = strdup(val);
+         /* system settings */
          else if (!strcmp(key, "buffer-length")) 
             state->buf_length = strtol(val, NULL, 10);
          else if (!strcmp(key, "backlog-size")) 
             state->backlog_size = strtol(val, NULL, 10);
          else if (!strcmp(key, "fd-lim")) 
             state->fd_lim = strtol(val, NULL, 10);
-         else if (!strcmp(key, "tcp-max-segment-size")) 
+         else if (!strcmp(key, "tun-tcp-mss")) 
             state->max_segment_size = strtol(val, NULL, 10);
-         else if (!strcmp(key, "initial-sleep")) 
-            state->initial_sleep = strtol(val, NULL, 10);
+         /* interfaces */
          else if (!strcmp(key, "tun-if")) 
-            state->if_name = strdup(val);
+            state->tun_if = strdup(val);
          else if (!strcmp(key, "default-if")) 
             state->default_if = strdup(val); //TODO find public addr from itf
       
@@ -293,10 +297,12 @@ int parse_dest_file(struct arguments *args, struct tun_state *state) {
       struct tun_rec *nrec_priv = init_tun_rec();
       struct tun_rec *nrec_pub  = init_tun_rec();
 
+      /* add private sockaddr */
       nrec_priv->sa    = (struct sockaddr *)get_addr(private, state->private_port);
       nrec_priv->sport = sport;  
       state->cli_private[i] = nrec_priv;
 
+      /* add public sockaddr */
       nrec_pub->sa    = (struct sockaddr *)get_addr(public, state->public_port);
       nrec_pub->sport = sport;  
       state->cli_public[i++] = nrec_pub;

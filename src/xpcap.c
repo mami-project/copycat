@@ -66,7 +66,7 @@ void *capture_tun(void *arg) {
    }
    strncat(file_loc, ".pcap", 512);
    debug_print("%s\n", file_loc);
-   capture(state->if_name, state->private_addr, 0, file_loc, 70);
+   capture(state->tun_if, state->private_addr, 0, file_loc, 70);
    return 0;
 }
 
