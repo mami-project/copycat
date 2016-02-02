@@ -14,7 +14,6 @@ TCP tunneling over UDP
 - libpcap
 
 # TODO list
-- FREEBSD tun alloc
 - IPv6
 - IPv4-IPv6 & IPv6-IPv4
 
