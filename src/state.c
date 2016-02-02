@@ -91,6 +91,10 @@ struct tun_state *init_tun_state(struct arguments *args) {
    strncat(state->cli_file_tun, CLI_TUN_FILE, STR_SIZE);
    strncat(state->cli_file_notun, CLI_NOTUN_FILE, STR_SIZE);
 
+   /* init network settings */
+   state->default_if = addr_to_itf(state->public_addr);
+
+   /* init synchronizer and garbage collector */
    init_barrier(3);
    init_destructors(state);
 
@@ -244,8 +248,6 @@ int parse_cfg_file(struct tun_state *state) {
          /* interfaces */
          else if (!strcmp(key, "tun-if")) 
             state->tun_if = strdup(val);
-         else if (!strcmp(key, "default-if")) 
-            state->default_if = strdup(val); //TODO find public addr from itf
       
          /* NOTE: add cfg parameters here */
       } 

@@ -28,6 +28,8 @@
 #include <sys/uio.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
+//#include <net/if.h>
+#include <ifaddrs.h>
 
 #include "sysconfig.h"
 #if defined(BSD_OS)
@@ -57,6 +59,23 @@
  */ 
 static void build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw);
 
+char *addr_to_itf(char *addr) {
+   struct ifaddrs *addrs, *iap;
+   struct sockaddr_in *sa;
+   char buf[32];
+
+   getifaddrs(&addrs);
+   for (iap = addrs; iap != NULL; iap = iap->ifa_next) {
+      if (iap->ifa_addr && (iap->ifa_flags & IFF_UP) && iap->ifa_addr->sa_family == AF_INET) {
+         sa = (struct sockaddr_in *)(iap->ifa_addr);
+         inet_ntop(iap->ifa_addr->sa_family, (void *)&(sa->sin_addr), buf, sizeof(buf));
+         if (!strcmp(addr, buf)) 
+            return strdup(iap->ifa_name);
+      }
+   }
+   freeifaddrs(addrs);
+   return NULL;
+}
 
 int udp_sock(int port) {
    int s;

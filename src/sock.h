@@ -27,7 +27,7 @@
 
 #include "udptun.h"
 #include "state.h"
-
+char *addr_to_itf(char *addr);
 /**
  * \fn int udp_sock(int port)
  * \brief Create and bind a UDP DGRAM socket.

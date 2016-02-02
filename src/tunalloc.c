@@ -168,7 +168,7 @@ char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds) {
    }
 
 succ:
-   debug_print("%s interface created %d\n", if_name, fd);
+   debug_print("%s interface created at fd %d\n", if_name, fd);
    if (tun_fds) 
       *tun_fds = fd;
    return if_name;
