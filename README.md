@@ -7,7 +7,7 @@ TCP tunneling over UDP
 - udptun.cfg: configuration file
 - dest.txt: destination file 
    each line should describe one destination with as followed
-   <unique-source-port> <public-address> <private-address>
+   \<unique-source-port\> \<public-address\> \<private-address\>
 
 # Libs
 - libglib-devel/libglib-dev (>= 1.2.10) or libglib-2.0-devel/libglib-2.0-dev
