@@ -123,7 +123,7 @@ void tun_serv_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
 }
 
 void tun_serv(struct arguments *args) {
-   int fd_max = 0, fd_udp = 0, sel = 0, fd_tun = 0;
+   int fd_udp = 0, fd_tun = 0;
 
    /* init server state */
    struct tun_state *state = init_tun_state(args);
@@ -132,6 +132,7 @@ void tun_serv(struct arguments *args) {
    tun(state, &fd_tun); 
    fd_udp         = udp_sock(state->public_port, 1);
 
+   /* run capture threads */
    xthread_create(capture_tun, (void *) state, 1);
    xthread_create(capture_notun, (void *) state, 1);
    synchronize();
@@ -143,8 +144,9 @@ void tun_serv(struct arguments *args) {
    /* init select loop */
    fd_set input_set;
    struct timeval tv;
+   int sel = 0, fd_max = 0;
    char buf[BUFF_SIZE], *buffer;
-   buffer=buf;
+   buffer = buf;
    if (state->planetlab) {
       buffer[0]=0;buffer[1]=0;
       buffer[2]=8;buffer[3]=0;

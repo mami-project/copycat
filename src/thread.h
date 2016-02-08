@@ -20,10 +20,27 @@
  */ 
 pthread_t xthread_create(void *(*start_routine) (void *), void *args, int garbage);
 
+/**
+ * \fn void init_barrier(int nthreads)
+ * \brief Initialize synchronization barriers
+ *
+ * \param nthreads The number of threads to be sync-ed
+ */
 void init_barrier(int nthreads);
 
+/**
+ * \fn void destroy_barrier()
+ * \brief Destroy the sync barriers.
+ *
+ */
 void destroy_barrier();
 
+/**
+ * \fn void synchronize()
+ * \brief Sync the threads
+ *
+ */
 void synchronize();
 
 #endif
+

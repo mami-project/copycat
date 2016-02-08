@@ -15,7 +15,6 @@
  */
 pthread_barrier_t barr;
 
-
 void init_barrier(int nthreads) {
    pthread_barrier_init(&barr, NULL, nthreads);
    debug_print("barrier initialized with %d threads\n", nthreads);
@@ -39,5 +38,4 @@ pthread_t xthread_create(void *(*start_routine) (void *), void *args, int garbag
       set_pthread(thread_id);
    return thread_id;
 }
-
 

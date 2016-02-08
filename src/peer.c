@@ -92,7 +92,7 @@ void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *state, c
 
       struct tun_rec *rec = NULL; 
       //read sport for clients mapping
-      int dport = (int) ntohs( *((uint16_t *)(buf+22)) ); // 26 with PI
+      int dport = (int) ntohs( *((uint16_t *)(buf+22)) );
 
       /* cli */
       if (dport == state->private_port) {
@@ -179,12 +179,10 @@ void tun_peer_out_serv(int fd_udp, int fd_tun, struct tun_state *state, char *bu
       debug_print("recvd empty pkt\n");
       free_tun_rec(nrec);
    }
-
 }
 
 void tun_peer(struct arguments *args) {
    int fd_tun = 0, fd_serv = 0, fd_cli = 0;
-   int fd_max = 0, sel = 0;
    
    /* init state */
    struct tun_state *state = init_tun_state(args);
@@ -213,8 +211,9 @@ void tun_peer(struct arguments *args) {
    /* init select main loop */
    fd_set input_set;
    struct timeval tv;
+   int fd_max = 0, sel = 0;
    char buf[BUFF_SIZE], *buffer;
-   buffer=buf;
+   buffer = buf;
    if (state->planetlab) {
       buffer[0]=0;buffer[1]=0;
       buffer[2]=8;buffer[3]=0;

@@ -55,6 +55,10 @@ static volatile unsigned int cpid_index;
  */
 static volatile unsigned int fd_index;
 
+/**
+ * \var static struct tun_state *prog_state
+ * \brief The program state
+ */
 static struct tun_state *prog_state;
 
 /**

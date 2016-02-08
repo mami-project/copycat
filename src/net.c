@@ -23,12 +23,12 @@
 
 #include "sysconfig.h"
 #if defined(BSD_OS)
-#include <net/if_tun.h>
-#include <net/if_dl.h> // ifreq
+#  include <net/if_tun.h>
+#  include <net/if_dl.h> // ifreq
 #elif defined(LINUX_OS)
-#include <linux/if.h>
-#include <linux/if_tun.h> 
-#include <linux/errqueue.h>
+#  include <linux/if.h>
+#  include <linux/if_tun.h> 
+#  include <linux/errqueue.h>
 #endif
 
 #include "net.h"
@@ -39,6 +39,10 @@
 #include "tunalloc.h"
 #include "udptun.h"
 
+/** 
+ * \struct cli_thread_parallel_args
+ *	\brief Client thread arguments
+ */
 struct cli_thread_parallel_args {
    struct tun_state *state;
    struct sockaddr *sa;
@@ -99,17 +103,56 @@ static int tcp_serv(char *addr, int port, char* dev, struct tun_state *state, in
  */ 
 static void *serv_worker_thread(void *socket_desc);
 
-static void *serv_thread_private(void *socket_desc);
-static void *serv_thread_public(void *socket_desc);
+/**
+ * \fn static void *serv_thread_private(void *socket_desc)
+ * \brief Run a TCP file server bound on private addr:port
+ *
+ * \param st The node state (struct tun_state *)
+ */
+static void *serv_thread_private(void *st);
 
+/**
+ * \fn static void *serv_thread_public(void *socket_desc)
+ * \brief Run a TCP file server bound on public addr:port
+ *
+ * \param st The node state (struct tun_state *)
+ */
+static void *serv_thread_public(void *st);
+
+/**
+ * \fn static void cli_thread_parallel(struct tun_state *state, int index)
+ * \brief Run the TCP file clients in parallel.
+ *
+ * \param state The node state 
+ * \param index The peer index (cli_private & cli_public)
+ */
 static void cli_thread_parallel(struct tun_state *state, int index);
+
+/**
+ * \fn static void cli_thread_notun(struct tun_state *state, int index)
+ * \brief Run the TCP file clients sequentially, NOTUN flow first.
+ *
+ * \param state The node state 
+ * \param index The peer index (cli_private & cli_public)
+ */
 static void cli_thread_notun(struct tun_state *state,  int index);
+
+/**
+ * \fn static void cli_thread_tun(struct tun_state *state, int index)
+ * \brief Run the TCP file clients sequentially, TUN flow first.
+ *
+ * \param state The node state 
+ * \param index The peer index (cli_private & cli_public)
+ */
 static void cli_thread_tun(struct tun_state *state, int index);
 
 /**
- * stub for tcp_cli used in parallel scheduling mode
+ * \fn  void *forked_cli(void *arg)
+ * \brief Stub for tcp_cli fork, used in parallel scheduling mode
+ *
+ * \aram arg A struct cli_thread_parallel_args specified tcp_cli's args.
  */
-static void *forked_cli(void *a);
+static void *forked_cli(void *arg);
 
 struct sockaddr_in *get_addr(const char *addr, int port) {
    struct sockaddr_in *ret = calloc(1, sizeof(struct sockaddr));
@@ -133,8 +176,8 @@ void tun(struct tun_state *state, int *fd_tun) {
    if (*fd_tun) set_fd(*fd_tun);
 }
 
-void *forked_cli(void *a) {
-   struct cli_thread_parallel_args *args = (struct cli_thread_parallel_args*) a;
+void *forked_cli(void *arg) {
+   struct cli_thread_parallel_args *args = (struct cli_thread_parallel_args*) arg;
    tcp_cli(args->state, args->sa, args->dev,
            args->addr, args->port, args->set_maxseg,
            args->filename);

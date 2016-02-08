@@ -14,12 +14,13 @@
 #include "sysconfig.h"
 #if defined(BSD_OS)
 //there is no BSD errqueue :'(
-#include <netinet/in.h>
-#include <netinet/ip.h>
-#include <netinet/ip_icmp.h>
+#  include <netinet/in.h>
+#  include <netinet/ip.h>
+#  include <netinet/ip_icmp.h>
 #elif defined(LINUX_OS)
-#include <linux/errqueue.h>
+#  include <linux/errqueue.h>
 #endif
+
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
@@ -28,7 +29,7 @@
 
 /** 
  * \struct icmp_msg
- *	\brief An icmp msg
+ *	\brief Defines an icmp msg
  */
 struct icmp_msg {
 	unsigned char type;      /*!< msg type  */
@@ -39,7 +40,7 @@ struct icmp_msg {
 
 /** 
  * \struct ip_header
- *	\brief an ip header
+ *	\brief Defines an ip header
  */
 struct ip_header {
 	unsigned int	hl:4,		/*!< 4 bit header length */

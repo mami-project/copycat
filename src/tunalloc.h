@@ -38,9 +38,31 @@ char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds);
  */ 
 char *create_tun_pl(const char *ip, const char *prefix, int *tun_fds);
 
+#ifdef IFF_MULTI_QUEUE
+
+/**
+ * \fn int tun_alloc_mq(char *dev, int queues, int *fds)
+ * \brief
+ *
+ * \param dev The desired interface name
+ * \param queues The desired amount of queue
+ * \param fds A pre-allocated array of size <queue> to be
+ *       filled with each queue fds.
+ * \return 0 on success, -1 on error
+ */
 int tun_alloc_mq(char *dev, int queues, int *fds);
 
+/**
+ * \fn int tun_set_queue(int fd, int enable)
+ * \brief Attach/Detach a queue
+ *
+ * \param fd The queue fd
+ * \param enable 1 To attach the queue, 0 to detach it
+ * \return 0 on success, -1 on error
+ */
 int tun_set_queue(int fd, int enable);
+
+#endif
 
 #endif
 

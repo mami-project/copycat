@@ -10,14 +10,32 @@
 
 #include "sysconfig.h"
 #if defined(BSD_OS)
-//ls#include <net/bpf.h>
-#include <pcap.h>
+//#   include <net/bpf.h>
+#  include <pcap.h>
 #elif defined(LINUX_OS)
-#include <linux/filter.h>
+#  include <linux/filter.h>
 #endif
 
+/**
+ * \fn void *capture_tun(void *arg)
+ * \brief Capture the tunneled flows in a separate thread
+ *          and write it to the output directory.
+ *   Warning: 
+ *          May fails to bind to right interface on certain OSs 
+ *          (Fedoras with 3.x kernels)
+ *  \param arg The program state (struct tun_state *)
+ *
+ */
 void *capture_tun(void *arg);
 
+/**
+ * \fn void *capture_notun(void *arg)
+ * \brief Capture the not-tunneled flows in a separate thread
+ *          and write it to the output directory.
+ * 
+ *  \param arg The program state (struct tun_state *)
+ *
+ */
 void *capture_notun(void *arg);
 
 /**
@@ -35,3 +53,4 @@ void *capture_notun(void *arg);
 struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dport);
 
 #endif
+

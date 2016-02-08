@@ -108,7 +108,7 @@ void tun_cli_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
 }
 
 void tun_cli(struct arguments *args) {
-   int fd_tun = 0, fd_udp = 0, fd_max = 0, sel = 0;
+   int fd_tun = 0, fd_udp = 0;
    
    /* init state */
    struct tun_state *state = init_tun_state(args);
@@ -132,8 +132,9 @@ void tun_cli(struct arguments *args) {
    /* init select loop */
    fd_set input_set;
    struct timeval tv;
+   int sel = 0, fd_max = 0;
    char buf[BUFF_SIZE], *buffer;
-   buffer=buf;
+   buffer = buf;
    if (state->planetlab) {
       buffer[0]=0;buffer[1]=0;
       buffer[2]=8;buffer[3]=0;

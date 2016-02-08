@@ -41,6 +41,16 @@ static int parse_dest_file(struct arguments *args, struct tun_state *state);
  */
 static int parse_cfg_file(struct tun_state *state);
 
+/**
+ * \fn static void free_tun_rec_aux(gpointer key,
+ *                                  gpointer value,
+ *                                  gpointer user_data)
+ * \brief A stub for GLIB2 auto free
+ *
+ * \param key unused
+ * \param value A pointer to a valid struct free_tun_rec
+ * \param user_data unused
+ */
 static void free_tun_rec_aux(gpointer key,
                       gpointer value,
                       gpointer user_data);

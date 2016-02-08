@@ -27,7 +27,19 @@
 
 #include "udptun.h"
 #include "state.h"
+
+/**
+ * \fn char *addr_to_itf(char *addr)
+ * \brief Lookup interface name from address.
+ *    Warning: 
+ *          You must provide the actual IP bound to the interface,
+ *          not the public address (if behind a NAT).    
+ *
+ * \param addr The ip address 
+ * \return The associated interface name.
+ */
 char *addr_to_itf(char *addr);
+
 /**
  * \fn int udp_sock(int port)
  * \brief Create and bind a UDP DGRAM socket.

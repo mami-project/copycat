@@ -14,7 +14,7 @@
 
 /** 
  * \struct tun_rec
- *	\brief A record represents a peer.
+ *	\brief Represents a peer of the node.
  */
 struct tun_rec {
    struct sockaddr *sa;        /*!<  The address of the client. */
@@ -40,8 +40,8 @@ struct tun_state {
    /* From destination file */
    GHashTable      *serv;        /*!<  Source port to public address lookup table. */
    GHashTable      *cli;         /*!<  Private address to public address lookup table. */
-   struct tun_rec **cli_private; /*!<  Destination list. */
-   struct tun_rec **cli_public;  /*!<  Destination list. */ //TODO v6 equivalent
+   struct tun_rec **cli_private; /*!<  Destination list. (private sockaddr's) */
+   struct tun_rec **cli_public;  /*!<  Destination list. (public sockaddr's) */ //TODO v6 equivalent
    uint8_t sa_len;               /*!<  Number of destinations. */
 
    /* From cfg file */
@@ -111,3 +111,4 @@ struct tun_rec *init_tun_rec();
 void free_tun_rec(struct tun_rec *rec);
 
 #endif
+

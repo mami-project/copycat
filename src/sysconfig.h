@@ -46,9 +46,9 @@
 /* Libs */
 
 #if defined(HAVE_LIBGLIB_2_0)
-#define GLIB2
+#  define GLIB2
 #elif defined(HAVE_LIBGLIB)
-#define GLIB1
+#  define GLIB1
 #endif
 
 #endif 

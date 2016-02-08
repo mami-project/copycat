@@ -28,17 +28,16 @@
 #include <sys/uio.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
-
 #include <ifaddrs.h>
 
 #include "sysconfig.h"
 #if defined(BSD_OS)
-#include <net/if_tun.h>
-#include <net/if_dl.h>
+#  include <net/if_tun.h>
+#  include <net/if_dl.h>
 #elif defined(LINUX_OS)
-#include <linux/if.h>
-#include <linux/if_tun.h>
-#include <linux/errqueue.h>
+#  include <linux/if.h>
+#  include <linux/if_tun.h>
+#  include <linux/errqueue.h>
 #endif
 
 #include "sock.h"
