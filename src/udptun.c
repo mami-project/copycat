@@ -41,6 +41,8 @@ static struct argp_option options[] = {
   {"tun-first",  'u', 0,      0,  "Client tunnel first flows scheduling mode", 0 },
   {"notun-first",'n', 0,      0,  "Client notunnel first flows scheduling mode", 0 },
 
+  {"capture-notun-only", '3', 0, 0, "Capture only at eth0, not at tun0"},
+
   {"ipv6",        '6', 0,      0,  "IPv6 mode", 0 },
   {"dual-stack",  '2', 0,      0,  "IPv4-IPv6 mode", 0 },
 
@@ -105,6 +107,8 @@ error_t parse_args(int key, char *arg, struct argp_state *state) {
          arguments->cli_mode = NOTUN_FIRST_MODE; break;
       case '2':
          arguments->dual_stack = 1; break;
+      case '3':
+         arguments->capture_notun_only = 1; break;
       case 't':
          arguments->inactivity_timeout = strtol(arg, NULL, 10);
          break;
@@ -133,8 +137,9 @@ void init_args(struct arguments *args) {
    args->dual_stack  = 0;
    args->config_file = NULL;
    args->dest_file   = NULL;
-   args->inactivity_timeout = 0;
    args->run_id      = NULL;
+   args->inactivity_timeout = 0;
+   args->capture_notun_only = 0;
 }
 
 void print_args(struct arguments *args) {

@@ -24,6 +24,10 @@ AC_CHECK_LIB([glib-2.0], [g_hash_table_lookup], [],
    [AC_CHECK_LIB([glib], [g_hash_table_lookup])]
 )
 
+# These libraries have to be explicitly linked in OpenSolaris (from libtrace)
+AC_SEARCH_LIBS(getaddrinfo, socket, [], [], -lnsl)
+AC_SEARCH_LIBS(inet_ntop, nsl, [], [], -lsocket)
+
 # Checks for modules.
 GLIB2=[glib-2.0]
 GLIB=[glib]

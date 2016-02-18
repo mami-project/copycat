@@ -76,20 +76,19 @@ static int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
             char *addr, int port, int tun, char* filename);
 
 /**
- * \fn static int tcp_serv(char *addr, int port, char* dev, struct tun_state *state)
+ * \fn static int tcp_serv(char *addr, int port, struct tun_state *state)
  * \brief Receive an error msg from MSG_ERRQUEUE and print a description 
  *        of it via the debug macro.
  *
  * \param addr The server address
  * \param port The server port
- * \param dev  The device to bind to
  * \param set_maxseg Set TCP_MAXSEG option to cfg file value
  * \param state The program state
  * 
  * \return 0 if an error msg was received, 
  *         a negative value if an error happened
  */ 
-static int tcp_serv(char *addr, int port, char* dev, struct tun_state *state, int set_maxseg);
+static int tcp_serv(char *addr, int port, struct tun_state *state, int set_maxseg);
 
 /**
  * \fn void *serv_worker_thread(void *socket_desc)
@@ -260,17 +259,17 @@ void *serv_thread(void *st) {
 
 void *serv_thread_private(void *st) {
    struct tun_state *state = st;
-   tcp_serv(state->private_addr, state->private_port, state->tun_if, state, 1);
+   tcp_serv(state->private_addr, state->private_port, /* state->tun_if,*/ state, 1);
    return 0;
 }
 
 void *serv_thread_public(void *st) {
    struct tun_state *state = st;
-   tcp_serv(state->public_addr, state->public_port, NULL, state, 0);
+   tcp_serv(state->public_addr, state->public_port, /*NULL,*/ state, 0);
    return 0;
 }
 
-int tcp_serv(char *addr, int port, char* dev, struct tun_state *state, int set_maxseg) {
+int tcp_serv(char *addr, int port, struct tun_state *state, int set_maxseg) {
    int s;
    unsigned int sin_size;
    struct sockaddr_in sin, sout;
@@ -355,10 +354,10 @@ void *serv_worker_thread(void *socket_desc) {
    return 0;
 }
 
-int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev,
+int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev, //TODO check if useful
             char *addr, int port, int tun, char* filename) {
    struct tun_state *state = st;
-   int s, err = 0; //TODO clean out useless vars
+   int s, err = 0; 
    /* TCP socket */
    if ((s=socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) 
       die("socket");

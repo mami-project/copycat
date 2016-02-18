@@ -193,8 +193,9 @@ void tun_peer(struct arguments *args) {
    fd_cli  = udp_sock(state->port, 1);
 
    /* run capture threads */
-   xthread_create(capture_tun, (void *) state, 1);
    xthread_create(capture_notun, (void *) state, 1);
+   if (!args->capture_notun_only)
+      xthread_create(capture_tun,   (void *) state, 1);
    synchronize();
 
    /* run server */

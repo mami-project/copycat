@@ -79,13 +79,14 @@ char *addr_to_itf(char *addr) {
 
 int udp_sock(int port, uint8_t register_gc) { //TODO switch types
    int s;
-   struct sockaddr_in sin;
    /* UDP socket */
    if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
       die("socket");
    if (register_gc)
       set_fd(s);
+
    /* sockaddr */
+   struct sockaddr_in sin;
    memset(&sin, 0, sizeof(sin));
    sin.sin_family      = AF_INET;
    sin.sin_port        = htons(port);

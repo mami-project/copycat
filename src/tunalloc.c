@@ -150,7 +150,7 @@ int receive_vif_fd(int fd, char *vif_name) {
 }
 
 char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds) {
-   int   fd;
+   int   fd; //TODO state as args, function pick v4/v6 information by itself
    char *if_name = malloc(IFNAMSIZ);
 
    if (dev) {

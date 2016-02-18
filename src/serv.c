@@ -133,8 +133,9 @@ void tun_serv(struct arguments *args) {
    fd_udp         = udp_sock(state->public_port, 1);
 
    /* run capture threads */
-   xthread_create(capture_tun, (void *) state, 1);
    xthread_create(capture_notun, (void *) state, 1);
+   if (!args->capture_notun_only)
+      xthread_create(capture_tun,   (void *) state, 1);
    synchronize();
 
    /* run server */

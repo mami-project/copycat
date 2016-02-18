@@ -15,6 +15,8 @@
 #ifndef UDPTUN_SOCK_H
 #define UDPTUN_SOCK_H
 
+#include <stdio.h>
+
 #include "sysconfig.h"
 #if defined(BSD_OS)
 //#include <net/bpf.h>
