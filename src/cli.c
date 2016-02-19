@@ -123,9 +123,6 @@ void tun_cli(struct arguments *args) {
       xthread_create(capture_tun,   (void *) state, 1);
    synchronize();
 
-   /* initial sleep */
-   sleep(state->initial_sleep);
-
    /* run client */
    debug_print("running cli ...\n");    
    xthread_create(cli_thread, (void*) state, 1);

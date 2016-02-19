@@ -223,6 +223,10 @@ void *cli_thread(void *st) {
    struct tun_state *state = st;
    struct arguments *args = state->args;
 
+
+   /* initial sleep */
+   sleep(state->initial_sleep);
+
    /* Client loop */
    for (int i=0; i<state->sa_len; i++) {
       switch (args->cli_mode) {

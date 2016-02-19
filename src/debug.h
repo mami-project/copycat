@@ -29,7 +29,7 @@
  * \def DEBUG
  * \brief Uncomment to allow debugging messages.
  */
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 

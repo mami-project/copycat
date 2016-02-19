@@ -202,9 +202,6 @@ void tun_peer(struct arguments *args) {
    debug_print("running serv ...\n");  
    xthread_create(serv_thread, (void*) state, 1);
 
-   /* initial sleep */
-   sleep(state->initial_sleep);
-
    /* run client */
    debug_print("running cli ...\n"); 
    xthread_create(cli_thread, (void*) state, 1);
