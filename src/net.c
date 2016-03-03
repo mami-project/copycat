@@ -263,13 +263,13 @@ void *serv_thread(void *st) {
 
 void *serv_thread_private(void *st) {
    struct tun_state *state = st;
-   tcp_serv(state->private_addr, state->private_port, /* state->tun_if,*/ state, 1);
+   tcp_serv(state->private_addr, state->private_port, state, 1);
    return 0;
 }
 
 void *serv_thread_public(void *st) {
    struct tun_state *state = st;
-   tcp_serv(state->public_addr, state->public_port, /*NULL,*/ state, 0);
+   tcp_serv(state->public_addr, state->public_port, state, 0);
    return 0;
 }
 
@@ -303,8 +303,10 @@ int tcp_serv(char *addr, int port, struct tun_state *state, int set_maxseg) {
       sout.sin_addr.s_addr = htonl(INADDR_ANY);
    sout.sin_port = htons(port);
 
-   if (bind(s, (struct sockaddr *)&sout, sizeof(sout)) < 0) 
-      die("bind");
+   if (bind(s, (struct sockaddr *)&sout, sizeof(sout)) < 0) {
+      debug_print("died binding %s:%d ...\n", addr ? addr : "*", port);
+      die("bind tcp server");
+   }
    if (listen(s, state->backlog_size) < 0) 
       die("listen");
 
@@ -402,7 +404,7 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev, //TODO check i
    else
       sout.sin_addr.s_addr = htonl(INADDR_ANY);
    if (bind(s, (struct sockaddr *)&sout, sizeof(sout)) < 0) 
-      die("bind");
+      die("bind tcp cli");
    debug_print("TCP cli bound on %s:%d\n",addr,port);
 
    /* connect peer */

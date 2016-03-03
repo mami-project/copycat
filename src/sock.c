@@ -77,10 +77,10 @@ char *addr_to_itf(char *addr) {
    return NULL;
 }
 
-int udp_sock(int port, uint8_t register_gc) { //TODO switch types
+int udp_sock(int port, uint8_t register_gc, char *addr) { //TODO switch types
    int s;
    /* UDP socket */
-   if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+   if ((s=socket(AF_INET, SOCK_DGRAM, 0)) == -1)
       die("socket");
    if (register_gc)
       set_fd(s);
@@ -90,11 +90,12 @@ int udp_sock(int port, uint8_t register_gc) { //TODO switch types
    memset(&sin, 0, sizeof(sin));
    sin.sin_family      = AF_INET;
    sin.sin_port        = htons(port);
-   sin.sin_addr.s_addr = htonl(INADDR_ANY);
+   //sin.sin_addr.s_addr = htonl(INADDR_ANY);
+   inet_pton(AF_INET, addr, &sin.sin_addr);
 
    /* bind to port */
    if( bind(s, (struct sockaddr*)&sin, sizeof(sin) ) == -1)
-      die("bind");
+      die("bind udp socket");
 
 #if defined(IP_RECVERR)
    /* enable icmp catching */

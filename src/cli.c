@@ -115,7 +115,7 @@ void tun_cli(struct arguments *args) {
 
    /* create tun if and sockets */   
    tun(state, &fd_tun);
-   fd_udp   = udp_sock(state->port, 1);
+   fd_udp   = udp_sock(state->port, 1, state->public_addr);
 
    /* run capture threads */
    xthread_create(capture_notun, (void *) state, 1);
