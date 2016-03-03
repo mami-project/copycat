@@ -13,10 +13,6 @@ TCP tunneling over UDP
 - libglib-devel/libglib-dev (>= 1.2.10) or libglib-2.0-devel/libglib-2.0-dev
 - libpcap
 
-## TODO list
-- IPv6
-- IPv4-IPv6 & IPv6-IPv4
-
 ### Contact
 -------------
 k.edeline

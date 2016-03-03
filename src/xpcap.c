@@ -100,9 +100,9 @@ void capture(const char *dev, const char *addr, int port, char *filename, unsign
    bpf_u_int32 net = inet_addr(addr);
 
    if (port<0)
-      sprintf(filter_exp, "not port %d or icmp", -port);
+      sprintf(filter_exp, "not port %d or (icmp and icmp[icmptype] != icmp-timxceed and icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply)", -port);
    else if (port>0)
-      sprintf(filter_exp, "port %d or icmp", port);
+      sprintf(filter_exp, "port %d or (icmp and icmp[icmptype] != icmp-timxceed and icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply)", port);
 
    if (port) {  
       if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) 

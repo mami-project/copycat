@@ -377,9 +377,9 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev, //TODO check i
    if (setsockopt (s, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout,
                 sizeof(rcv_timeout)) < 0)
       die("setsockopt rcvtimeo");
-   if (setsockopt (s, SOL_SOCKET, SO_SNDTIMEO, &snd_timeout,
+   /*if (setsockopt (s, SOL_SOCKET, SO_SNDTIMEO, &snd_timeout,
                 sizeof(snd_timeout)) < 0)
-      die("setsockopt sndtimeo");
+      die("setsockopt sndtimeo");*/
 
    /* set tunnel/notunnel specific features */
    if (tun) {
