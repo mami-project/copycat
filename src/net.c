@@ -419,7 +419,7 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev, //TODO check i
    char buf[BUFF_SIZE];
    memset(buf, 0, BUFF_SIZE);
    int bsize = 0;
-   while((bsize = xrecv(s, buf, BUFF_SIZE))) {
+   while((bsize = xrecv(s, buf, BUFF_SIZE)) > 0) {
        xfwrite(fp, buf, sizeof(char), bsize);
        memset(buf, 0, BUFF_SIZE);
    }
