@@ -50,7 +50,7 @@ char *addr_to_itf(char *addr);
  * \param register_gc Register fd to garbage collector.
  * \return The socket fd.
  */ 
-int udp_sock(int port, uint8_t register_gc);
+int udp_sock(int port, uint8_t register_gc, char *addr);
 
 #if defined(LINUX_OS)
 /**
