@@ -83,7 +83,7 @@ void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *state, c
    int recvd=xread(fd_tun, buf, BUFF_SIZE);
    debug_print("recvd %db from tun\n", recvd);
 
-   if (recvd > 32) {
+   if (recvd > MIN_PKT_SIZE) {
 
       /* Remove PlanetLab TUN PPI header */
       if (state->planetlab) {
@@ -91,13 +91,14 @@ void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *state, c
       }
 
       struct tun_rec *rec = NULL; 
-      //read sport for clients mapping
-      int dport = (int) ntohs( *((uint16_t *)(buf+22)) );
+      /* read sport for clients mapping */
+      int dport = (int)ntohs( *((uint16_t *)(buf+22)) );
 
       /* cli */
       if (dport == state->private_port) {
+
          /* lookup initial server database from file */
-         in_addr_t priv_addr = (int) *((uint32_t *)(buf+16));
+         in_addr_t priv_addr = (int)*((uint32_t *)(buf+16));
          debug_print("%s\n", inet_ntoa((struct in_addr){priv_addr}));
          /* lookup private addr */
          if ( (rec = g_hash_table_lookup(state->cli, &priv_addr)) ) {
@@ -117,68 +118,78 @@ void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *state, c
          int sent = xsendto(fd_serv, rec->sa, buf, recvd);
          debug_print("wrote %db to udp\n",sent);
       } else {
-         errno=EFAULT;
-         die("serv lookup");
+         debug_print("serv lookup failed proto:%d sport:%d dport:%d", 
+                      (int) *((uint8_t *)(buf+9)), 
+                      (int) ntohs( *((uint16_t *)(buf+20)) ), dport);
       }
    } 
 }
 
 void tun_peer_out_cli(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
-   int recvd = 0;
-   if ( (recvd=xrecv(fd_udp, buf, BUFF_SIZE)) < 0) {
+   int recvd = xrecv(fd_udp, buf, BUFF_SIZE);
+
+   if (recvd > MIN_PKT_SIZE) {
+      debug_print("cli: recvd %dB from udp\n", recvd);
+
+      /* Add PlanetLab TUN PPI header */
+      if (state->planetlab) {
+         buf-=4; recvd+=4;
+      }
+
+      int sent = xwrite(fd_tun, buf, recvd);
+      debug_print("cli: wrote %dB to tun\n", sent);
+   } else if (recvd < 0) {
       /* recvd ICMP msg */
-      xrecverr(fd_udp, buf,  BUFF_SIZE, 0, NULL);
+      xrecverr(fd_udp, buf, BUFF_SIZE, 0, NULL);
    } else {
-      debug_print("recvd %db from udp\n", recvd);
-
-      if (recvd > 32) {
-
-         /* Add PlanetLab TUN PPI header */
-         if (state->planetlab) {
-            buf-=4; recvd+=4;
-         }
-
-         int sent = xwrite(fd_tun, buf, recvd);
-         debug_print("wrote %d to tun\n", sent);     
-      } else debug_print("recvd empty pkt\n");
-   }
+      /* recvd unknown packet */
+      debug_print("cli: recvd empty pkt\n");
+   }   
 }
 
 void tun_peer_out_serv(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    struct tun_rec *nrec = init_tun_rec();
-   int recvd = 0;
-   recvd=xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, &nrec->slen, buf, BUFF_SIZE);
-   debug_print("recvd %db from udp\n", recvd);
+   int recvd = xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, 
+                         &nrec->slen, buf, BUFF_SIZE);
 
-   /* Add PlanetLab TUN PPI header */
-   if (state->planetlab) {
-      buf-=4; recvd+=4;
-   }
+   if (recvd > MIN_PKT_SIZE) {
+      debug_print("serv: recvd %dB from udp\n", recvd);
 
-   if (recvd > 32) {
+      /* Add PlanetLab TUN PPI header */
+      if (state->planetlab) {
+         buf-=4; recvd+=4;
+      }
+
       struct tun_rec *rec = NULL;
       int sport           = ntohs(((struct sockaddr_in *)nrec->sa)->sin_port);
       int sent            = 0;
       if ( (rec = g_hash_table_lookup(state->serv, &sport)) ) {
          sent = xwrite(fd_tun, buf, recvd);
-         free_tun_rec(nrec);
-      } else if (g_hash_table_size(state->serv) <= state->fd_lim) { 
+         debug_print("serv: wrote %dB to tun\n", sent); 
+      } 
+#if !defined(LOCKED)
+      else if (g_hash_table_size(state->serv) <= state->fd_lim) { 
+         
          sent = xwrite(fd_tun, buf, recvd);
 
          //add new record to lookup tables  
          nrec->sport = sport;
          g_hash_table_insert(state->serv, &nrec->sport, nrec);
          debug_print("serv: added new entry: %d\n", sport);
-      } else {
-         free_tun_rec(nrec);
-         errno=EUSERS; //no need to exit but safer
-         die("socket()");
+      } 
+#endif
+      else {
+         debug_print("dropping unknown UDP dgram (NAT ?)\n");
       }
-      debug_print("serv: wrote %d to tun\n", sent);     
+          
+   } else if (recvd < 0) {
+       /* recvd ICMP msg */
+      xrecverr(fd_udp, buf,  BUFF_SIZE, 0, NULL);
    } else {
-      debug_print("recvd empty pkt\n");
-      free_tun_rec(nrec);
+      /* recvd unknown packet */
+      debug_print("serv: recvd empty pkt\n");
    }
+   free_tun_rec(nrec);
 }
 
 void tun_peer(struct arguments *args) {
@@ -195,7 +206,7 @@ void tun_peer(struct arguments *args) {
    /* run capture threads */
    xthread_create(capture_notun, (void *) state, 1);
    if (!args->capture_notun_only)
-      xthread_create(capture_tun,   (void *) state, 1);
+      xthread_create(capture_tun, (void *) state, 1);
    synchronize();
 
    /* run server */

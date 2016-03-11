@@ -92,10 +92,11 @@ void set_fd(int fds){
 }
 
 void destruct() {
-
+   
    if (pthread_mutex_lock(&lock) != 0)
       die("mutex lock");
    debug_print("exiting ...\n");
+
    // Ensure child process is killed and socket is closed   
    /* thread ids */
    for (unsigned int i=0; i<ctid_index; i++) {

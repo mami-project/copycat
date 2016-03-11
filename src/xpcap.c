@@ -42,7 +42,8 @@ static void *term_capture(void* arg);
  * \param port 
  * \param filename The location of the trace dump file
  */ 
-static void capture(const char *dev, const char *addr, int port, char *filename, unsigned int snaplen);
+static void capture(const char *dev, const char *addr, int port, 
+                    char *filename, unsigned int snaplen);
 
 void *term_capture(void* arg) {
    pcap_t *handle = (pcap_t *)arg;
@@ -56,8 +57,7 @@ void *capture_tun(void *arg) {
    struct tun_state *state = (struct tun_state *)arg;
    struct arguments* args  = state->args;
    char file_loc[512];
-   memset(file_loc, '\0', 512);
-
+   memset(file_loc, 0, 512);
    strncpy(file_loc, state->out_dir, 512);   
    strncat(file_loc, "tun", 512);
    if (args->run_id) {
@@ -74,7 +74,7 @@ void *capture_notun(void *arg) {
    struct tun_state *state = (struct tun_state *)arg;
    struct arguments* args  = state->args;
    char file_loc[512];
-   memset(file_loc, '\0', 512);
+   memset(file_loc, 0, 512);
    strncpy(file_loc, state->out_dir, 512);   
    strncat(file_loc, "notun", 512);
    if (args->run_id) {
@@ -82,29 +82,31 @@ void *capture_notun(void *arg) {
       strncat(file_loc, args->run_id, 256);
    }
    strncat(file_loc, ".pcap", 512);
-   debug_print("%s\n", file_loc);
 
-   capture(state->default_if, state->public_addr, state->public_port, file_loc, 110);
+   capture(state->default_if, state->public_addr, 
+           state->public_port, file_loc, 110);
    return 0;
 }
 
-void capture(const char *dev, const char *addr, int port, char *filename, unsigned int snaplen) {
+void capture(const char *dev, const char *addr, int port, 
+             char *filename, unsigned int snaplen) {
 	pcap_t *handle;
    char errbuf[PCAP_ERRBUF_SIZE];
-	if ( (handle = pcap_open_live(dev, snaplen, 0, 1000, errbuf)) == NULL) 
+
+	if ( (handle = pcap_open_live(dev, snaplen, 0, 10000, errbuf)) == NULL) 
 	   die("pcap_open_live");
 
-   /* build filter */
-   char filter_exp[64];
+   /* build&set filter */
+   char filter_exp[256];
    struct bpf_program fp;	
    bpf_u_int32 net = inet_addr(addr);
 
-   if (port<0)
-      sprintf(filter_exp, "not port %d or (icmp and icmp[icmptype] != icmp-timxceed and icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply)", -port);
-   else if (port>0)
-      sprintf(filter_exp, "port %d or (icmp and icmp[icmptype] != icmp-timxceed and icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply)", port);
-
    if (port) {  
+      if (port<0)
+         sprintf(filter_exp, "not port %d or (icmp and icmp[icmptype] != icmp-timxceed and icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply)", -port);
+      else if (port>0)
+         sprintf(filter_exp, "port %d or (icmp and icmp[icmptype] != icmp-timxceed and icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply)", port);
+
       if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) 
          die("pcap_compile");
       if (pcap_setfilter(handle, &fp) == -1) 

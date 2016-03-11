@@ -103,7 +103,7 @@ struct tun_state *init_tun_state(struct arguments *args) {
 
    /* init network settings */
    state->default_if = addr_to_itf(state->public_addr);
-
+   
    /* init synchronizer and garbage collector */
    if (args->capture_notun_only)
       init_barrier(2);
@@ -115,19 +115,18 @@ struct tun_state *init_tun_state(struct arguments *args) {
 }
 
 void free_tun_state(struct tun_state *state) {
-   /* Free HTables (GLIB 1 && GLIB 2 < 2.12)  */
+
 #if defined(GLIB1)
+   /* Free HTables (GLIB 1 && GLIB 2 < 2.12)  */
    if (state->serv) 
       g_hash_table_foreach (state->serv, 
                             (GHFunc) free_tun_rec_aux,
                             NULL);
    if (state->cli) 
-      g_hash_table_foreach (state->serv, 
+      g_hash_table_foreach (state->cli, 
                             (GHFunc) free_tun_rec_aux,
                             NULL);
 #endif
-
-   /* Free HTables (GLIB 2 >= 2.12) */
    if (state->serv) 
       g_hash_table_destroy(state->serv); 
    if (state->cli)
@@ -194,7 +193,8 @@ void free_tun_rec_aux(gpointer UNUSED(key),
 }
 
 void free_tun_rec(struct tun_rec *rec) { 
-   free(rec->sa);free(rec); 
+   if (rec->sa) free(rec->sa);
+   if (rec) free(rec); 
 }
 
 int parse_cfg_file(struct tun_state *state) {
@@ -291,13 +291,20 @@ int parse_dest_file(struct arguments *args, struct tun_state *state) {
    char public[16], private[16];
    /* build port to public addr lookup table */
    while (fscanf(fp, "%d %s %s", &sport, public, private) == 3) {
-      struct tun_rec *nrec = init_tun_rec();
-      nrec->sa    = (struct sockaddr *)get_addr(public, state->public_port);
-      nrec->sport = sport;  
-      nrec->priv_addr = inet_addr(private);
-
-      g_hash_table_insert(state->cli, &nrec->priv_addr, nrec);
+      struct tun_rec *nrec_priv = init_tun_rec();
+      nrec_priv->sa    = (struct sockaddr *)get_addr(public, state->public_port);
+      nrec_priv->sport = sport;  
+      nrec_priv->priv_addr = inet_addr(private);
+      g_hash_table_insert(state->cli, &nrec_priv->priv_addr, nrec_priv);
       debug_print("%s:%d\n", public, sport);
+
+      if (state->serv) {
+         struct tun_rec *nrec_pub  = init_tun_rec();
+         nrec_pub->sa    = (struct sockaddr *)get_addr(public, sport);
+         nrec_pub->sport = sport;  
+         nrec_pub->priv_addr = inet_addr(private);
+         g_hash_table_insert(state->serv, &nrec_pub->sport, nrec_pub);
+      }
       count++;
    }   
 

@@ -52,18 +52,18 @@ static void tun_cli_in(int fd_udp, int fd_tun, struct tun_state *state, char *bu
  */ 
 static void tun_cli_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
 
+
 void cli_shutdown(int UNUSED(sig)) { 
    debug_print("shutting down client ...\n");
 
-   /* Wait for delayed acks to avoid sending icmp */
+   /* Wait for delayed acks to avoid sending icmps */
    sleep(CLOSE_TIMEOUT);
    loop = 0; 
 }
 
-void tun_cli_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {//TODO remove useless args, maybe pass struct args for faster mode lookup
-
+void tun_cli_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    int recvd=xread(fd_tun, buf, BUFF_SIZE);
-   debug_print("cli: recvd %db from tun\n", recvd);
+   debug_print("cli: recvd %dB from tun\n", recvd);
 
    /* Remove PlanetLab TUN PPI header */
    if (state->planetlab) {
@@ -78,7 +78,7 @@ void tun_cli_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {//T
    /* lookup private addr */
    if ( (rec = g_hash_table_lookup(state->cli, &priv_addr)) ) {
       int sent = xsendto(fd_udp, rec->sa, buf, recvd);
-      debug_print("cli: wrote %db to udp\n",sent);
+      debug_print("cli: wrote %dB to udp\n",sent);
 
    } else {
       errno=EFAULT;
@@ -87,24 +87,25 @@ void tun_cli_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {//T
 }
 
 void tun_cli_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
-   int recvd = 0;
-   if ( (recvd=xrecv(fd_udp, buf, BUFF_SIZE)) < 0) {
+   int recvd = xrecv(fd_udp, buf, BUFF_SIZE);
+
+   if (recvd > MIN_PKT_SIZE) {
+      debug_print("cli: recvd %dB from udp\n", recvd);
+
+      /* Add PlanetLab TUN PPI header */
+      if (state->planetlab) {
+         buf-=4; recvd+=4;
+      }
+
+      int sent = xwrite(fd_tun, buf, recvd);
+      debug_print("cli: wrote %dB to tun\n", sent);
+   } else if (recvd < 0) {
       /* recvd ICMP msg */
-      debug_print("icmp\n");
-      xrecverr(fd_udp, buf,  BUFF_SIZE, 0, NULL);
+      xrecverr(fd_udp, buf, BUFF_SIZE, 0, NULL);
    } else {
-      debug_print("cli: recvd %db from udp\n", recvd);
-
-      if (recvd > 32) {
-         /* Add PlanetLab TUN PPI header */
-         if (state->planetlab) {
-            buf-=4; recvd+=4;
-         }
-
-         int sent = xwrite(fd_tun, buf, recvd);
-         debug_print("cli: wrote %db to tun\n",sent);    
-      } else debug_print("recvd empty pkt\n");
-   }
+      /* recvd unknown packet */
+      debug_print("recvd empty pkt\n");
+   }   
 }
 
 void tun_cli(struct arguments *args) {
@@ -133,6 +134,7 @@ void tun_cli(struct arguments *args) {
    int sel = 0, fd_max = 0;
    char buf[BUFF_SIZE], *buffer;
    buffer = buf;
+
    if (state->planetlab) {
       buffer[0]=0;buffer[1]=0;
       buffer[2]=8;buffer[3]=0;

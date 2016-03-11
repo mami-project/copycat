@@ -64,24 +64,24 @@ static void tun_serv_out(int fd_udp, int fd_tun, struct tun_state *state, char *
 void serv_shutdown(int UNUSED(sig)) { loop = 0; }
 
 void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
-
    int recvd=xread(fd_tun, buf, BUFF_SIZE);
-   debug_print("serv: recvd %db from tun\n", recvd);
+   debug_print("serv: recvd %dB from tun\n", recvd);
 
-   /* Remove PlanetLab TUN PPI header */
-   if (state->planetlab) {
-      buf+=4;recvd-=4;
-   }
+   if (recvd > MIN_PKT_SIZE) {
 
-   if (recvd > 32) {
+      /* Remove PlanetLab TUN PPI header */
+      if (state->planetlab) {
+         buf+=4;recvd-=4;
+      }
 
       struct tun_rec *rec = NULL; 
       /* read sport for clients mapping */
       int sport = (int) ntohs( *((uint16_t *)(buf+22)) ); 
+
       if ( (rec = g_hash_table_lookup(state->serv, &sport)) ) {   
 
          int sent = xsendto(fd_udp, rec->sa, buf, recvd);
-         debug_print("serv: wrote %db to udp\n",sent);
+         debug_print("serv: wrote %dB to udp\n",sent);
       } else {
          errno=EFAULT;
          die("lookup");
@@ -91,35 +91,46 @@ void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
 
 void tun_serv_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    struct tun_rec *nrec = init_tun_rec();
-   int recvd=xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, &nrec->slen, buf, BUFF_SIZE);
-   debug_print("serv: recvd %db from udp\n", recvd);
+   int recvd = xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, 
+                         &nrec->slen, buf, BUFF_SIZE);
 
-   /* Add PlanetLab TUN PPI header */
-   if (state->planetlab) {
-      buf-=4; recvd+=4;
-   }
+   if (recvd > MIN_PKT_SIZE) {
+      debug_print("serv: recvd %dB from udp\n", recvd);
 
-   if (recvd > 32) {
+      /* Add PlanetLab TUN PPI header */
+      if (state->planetlab) {
+         buf-=4; recvd+=4;
+      }
+
       struct tun_rec *rec = NULL;
       int sport           = ntohs(((struct sockaddr_in *)nrec->sa)->sin_port);
       int sent            = 0;
       if ( (rec = g_hash_table_lookup(state->serv, &sport)) ) {
-         /* forward */
          sent = xwrite(fd_tun, buf, recvd);
-         free_tun_rec(nrec);
-      } else if (g_hash_table_size(state->serv) <= state->fd_lim) { 
+         debug_print("serv: wrote %dB to tun\n", sent); 
+      } 
+#if !defined(LOCKED)
+      else if (g_hash_table_size(state->serv) <= state->fd_lim) { 
          sent = xwrite(fd_tun, buf, recvd);
 
          /* add new record to lookup tables */
          nrec->sport = sport;
          g_hash_table_insert(state->serv, &nrec->sport, nrec);
          debug_print("serv: added new entry: %d\n", sport);
-      } else {
-         errno=EUSERS; //no need to exit but safer
-         die("socket()");
+      } 
+#endif
+      else {
+         debug_print("dropping unknown UDP dgram (NAT ?)\n");
       }
-      debug_print("serv: wrote %d to tun\n", sent);     
-   } else debug_print("recvd empty pkt\n");
+          
+   } else if (recvd < 0) {
+       /* recvd ICMP msg */
+      xrecverr(fd_udp, buf,  BUFF_SIZE, 0, NULL);
+   } else {
+      /* recvd unknown packet */
+      debug_print("serv: recvd empty pkt\n");
+   }
+   free_tun_rec(nrec);
 }
 
 void tun_serv(struct arguments *args) {
@@ -148,6 +159,7 @@ void tun_serv(struct arguments *args) {
    int sel = 0, fd_max = 0;
    char buf[BUFF_SIZE], *buffer;
    buffer = buf;
+
    if (state->planetlab) {
       buffer[0]=0;buffer[1]=0;
       buffer[2]=8;buffer[3]=0;

@@ -63,18 +63,21 @@ char *addr_to_itf(char *addr) {
    struct ifaddrs *addrs, *iap;
    struct sockaddr_in *sa;
    char buf[32];
+   char *dev = NULL;
 
    getifaddrs(&addrs);
    for (iap = addrs; iap != NULL; iap = iap->ifa_next) {
       if (iap->ifa_addr && (iap->ifa_flags & IFF_UP) && iap->ifa_addr->sa_family == AF_INET) {
          sa = (struct sockaddr_in *)(iap->ifa_addr);
          inet_ntop(iap->ifa_addr->sa_family, (void *)&(sa->sin_addr), buf, sizeof(buf));
-         if (!strcmp(addr, buf)) 
-            return strdup(iap->ifa_name);
+         if (!strcmp(addr, buf))  {
+            dev = strdup(iap->ifa_name);
+            break;
+         }
       }
    }
    freeifaddrs(addrs);
-   return NULL;
+   return dev;
 }
 
 int udp_sock(int port, uint8_t register_gc, char *addr) { //TODO switch types
@@ -106,7 +109,6 @@ int udp_sock(int port, uint8_t register_gc, char *addr) { //TODO switch types
    debug_print("udp socket created on port %d\n", port);
    return s;
 }
-// TODO add const
 
 #if defined(LINUX_OS)
 int raw_tcp_sock(int port, const struct sock_fprog * bpf, const char *dev) {
@@ -161,8 +163,10 @@ int xselect(fd_set *input_set, int fd_max, struct timeval *tv, int timeout) {
 
 int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen) {
    int sent = 0;
-   if ((sent = sendto(fd,buf,buflen,0,sa,sizeof(struct sockaddr))) < 0) 
-       die("sendto");
+   if ((sent = sendto(fd,buf,buflen,0,sa,sizeof(struct sockaddr))) < 0) {
+       //die("sendto");
+      return sent;
+    }
    return sent;
 }
 
