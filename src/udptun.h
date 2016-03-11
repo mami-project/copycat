@@ -22,6 +22,12 @@
  */
 #define STR_SIZE 512
 
+/** 
+ * \def MIN_PKT_SIZE
+ * \brief The minimal size of a packet to write to tun.
+ */
+#define MIN_PKT_SIZE 32
+
 /**
  * \def CLOSE_TIMEOUT
  * \brief The time to wait for delayed finack/ack while closing 
@@ -39,6 +45,12 @@
  * \def CLI_NOTUN_FILE
  */
 #define CLI_NOTUN_FILE "cli_notun.dat"
+
+/**
+ * \def LOCKED
+ * \brief Comment to accept packets from nodes not in dest file.
+ */
+#define LOCKED
 
 /** 
  * \struct arguments
