@@ -94,7 +94,7 @@ struct tun_state *init_tun_state(struct arguments *args) {
       state->dual_stack = 1; 
 
    /* File locations */
-   state->cli_file_tun = malloc(STR_SIZE); //TODO alloca/malloc at preprocess
+   state->cli_file_tun = malloc(STR_SIZE);
    state->cli_file_notun = malloc(STR_SIZE);
    strncpy(state->cli_file_tun, state->cli_dir, STR_SIZE);
    strncpy(state->cli_file_notun, state->cli_dir, STR_SIZE);

@@ -120,7 +120,8 @@ void tun_peer_in(int fd_tun, int fd_cli, int fd_serv, struct tun_state *state, c
       } else {
          debug_print("serv lookup failed proto:%d sport:%d dport:%d", 
                       (int) *((uint8_t *)(buf+9)), 
-                      (int) ntohs( *((uint16_t *)(buf+20)) ), dport);
+                      (int) ntohs( *((uint16_t *)(buf+20)) ), 
+                      dport);
       }
    } 
 }
@@ -231,7 +232,7 @@ void tun_peer(struct arguments *args) {
 
    fd_max = max(max(fd_cli, fd_tun), fd_serv);
    loop   = 1;
-   signal(SIGINT, peer_shutdown);
+   signal(SIGINT,  peer_shutdown);
    signal(SIGTERM, peer_shutdown);
 
    while (loop) {

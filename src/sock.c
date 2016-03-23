@@ -80,7 +80,7 @@ char *addr_to_itf(char *addr) {
    return dev;
 }
 
-int udp_sock(int port, uint8_t register_gc, char *addr) { //TODO switch types
+int udp_sock(int port, uint8_t register_gc, char *addr) {
    int s;
    /* UDP socket */
    if ((s=socket(AF_INET, SOCK_DGRAM, 0)) == -1)

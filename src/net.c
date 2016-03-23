@@ -41,16 +41,15 @@
 
 /** 
  * \struct cli_thread_parallel_args
- *	\brief Client thread arguments
+ *	\brief Client thread arguments (see)
  */
 struct cli_thread_parallel_args {
    struct tun_state *state;
-   struct sockaddr *sa;
-   char *dev;
+   struct sockaddr  *sa;
    char *addr;
+   char *filename;
    int port;
    int set_maxseg;
-   char *filename;
 };
 
 /**
@@ -66,7 +65,6 @@ static char *serv_file;
  *
  * \param st The program state
  * \param sa The destination sockaddr
- * \param dev The interface
  * \param addr The address to bind
  * \param port The port to bind
  * \param tun Tunneled client, set MSS accordingly (-28 Bytes)
@@ -76,8 +74,7 @@ static char *serv_file;
  *         a negative value if an error happened
  */ 
 static int tcp_cli(struct tun_state *st, struct sockaddr *sa, 
-                   char* dev, char *addr, int port, 
-                   int tun, char* filename);
+                   char *addr, int port, int tun, char* filename);
 
 /**
  * \fn static int tcp_serv(char *addr, int port, struct tun_state *state)
@@ -187,20 +184,20 @@ void tun(struct tun_state *state, int *fd_tun) {
 
 void *forked_cli(void *arg) {
    struct cli_thread_parallel_args *args = (struct cli_thread_parallel_args*) arg;
-   tcp_cli(args->state, args->sa, args->dev,
-           args->addr, args->port, args->set_maxseg,
-           args->filename);
+   tcp_cli(args->state, args->sa, 
+           args->addr, args->port,
+           args->set_maxseg, args->filename);
    return 0;
 }
 
 void cli_thread_parallel(struct tun_state *state, int index) {
    /* set thread arguments */
    struct cli_thread_parallel_args args_tun = {state, 
-                      state->cli_private[index]->sa, state->tun_if, 
+                      state->cli_private[index]->sa, 
                       state->private_addr, state->port, 1, 
                       state->cli_file_tun};
    struct cli_thread_parallel_args args_notun = {state, 
-                      state->cli_public[index]->sa, NULL, 
+                      state->cli_public[index]->sa, 
                       state->public_addr, state->port, 0, 
                       state->cli_file_notun};
 
@@ -215,19 +212,19 @@ void cli_thread_parallel(struct tun_state *state, int index) {
 
 void cli_thread_tun(struct tun_state *state, int index) {
    /* run tunneled flow */
-   tcp_cli(state, state->cli_private[index]->sa, state->tun_if, 
+   tcp_cli(state, state->cli_private[index]->sa,
            state->private_addr, state->port, 1, state->cli_file_tun);
    /* run notun flow */
-   tcp_cli(state, state->cli_public[index]->sa, NULL, 
+   tcp_cli(state, state->cli_public[index]->sa, 
            NULL, state->port, 0, state->cli_file_notun);
 }
 
 void cli_thread_notun(struct tun_state *state, int index) {
    /* run notun flow */
-   tcp_cli(state, state->cli_public[index]->sa, NULL, 
+   tcp_cli(state, state->cli_public[index]->sa, 
            NULL, state->port, 0, state->cli_file_notun);
    /* run tunneled flow */
-   tcp_cli(state, state->cli_private[index]->sa, state->tun_if, 
+   tcp_cli(state, state->cli_private[index]->sa, 
            state->private_addr, state->port, 1, state->cli_file_tun);
 }
 
@@ -294,6 +291,7 @@ int tcp_serv(char *addr, int port, struct tun_state *state, int set_maxseg) {
      die("socket");
    set_fd(s);
 
+   /* Set Modified MSS for tunneled TCP */
    if (set_maxseg) {
       int mss = state->max_segment_size;
       if (setsockopt (s, IPPROTO_TCP, TCP_MAXSEG, &mss, sizeof(mss)) < 0)
@@ -322,7 +320,7 @@ int tcp_serv(char *addr, int port, struct tun_state *state, int set_maxseg) {
       die("listen");
 
    /* listen loop */
-   debug_print("TCP server listening on %s:%d ...\n", addr ? addr : "*", port);
+   debug_print("TCP server listening at %s:%d ...\n", addr ? addr : "*", port);
    int success = 0, ws;
    while(!success) {
 
@@ -376,7 +374,7 @@ err:
    return 0;
 }
 
-int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev, //TODO check if useful
+int tcp_cli(struct tun_state *st, struct sockaddr *sa, 
             char *addr, int port, int tun, char* filename) {
    struct tun_state *state = st;
    int s, err = 0; 
@@ -387,10 +385,6 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev, //TODO check i
    set_fd(s);
 
    /* Socket opts */
-/*#if defined(SO_BINDTODEVICE)
-   if (dev && (setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev)) < 0)) 
-      die("bind to device");
-#endif*/
    struct timeval snd_timeout = {state->tcp_snd_timeout, 0}; 
    struct timeval rcv_timeout = {state->tcp_rcv_timeout, 0}; 
    if (setsockopt (s, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout,
@@ -422,7 +416,7 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa, char* dev, //TODO check i
       sout.sin_addr.s_addr = htonl(INADDR_ANY);
    if (bind(s, (struct sockaddr *)&sout, sizeof(sout)) < 0) 
       die("bind tcp cli");
-   debug_print("TCP cli bound on %s:%d\n",addr,port);
+   debug_print("TCP cli bound to %s:%d\n",addr,port);
 
    /* connect peer */
    struct sockaddr_in sin = *((struct sockaddr_in *)sa);
