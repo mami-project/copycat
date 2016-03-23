@@ -1,7 +1,10 @@
 # udptun
--------------
-TCP tunneling over UDP
 
+**TCP tunneling over UDP**
+<p align="center">
+<img src="./fig/copycat.png" alt="udptun">
+</p>
+-------------
 ## Important Files
 - src/udptun: binary executable
 - udptun.cfg: configuration file
@@ -13,6 +16,6 @@ TCP tunneling over UDP
 - libglib-devel/libglib-dev (>= 1.2.10) or libglib-2.0-devel/libglib-2.0-dev
 - libpcap
 
-### Contact
 -------------
-k.edeline
+### Contact
+@ekorian
