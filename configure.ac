@@ -51,6 +51,21 @@ AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 AC_TYPE_PID_T
 
+# Add debug support
+AC_ARG_ENABLE(debug,
+  AS_HELP_STRING(
+    [--enable-debug],
+    [enable debugging, default: no]),
+    [case "${enableval}" in
+      yes) debug=true ;;
+      no)  debug=false ;;
+      *)   AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
+    esac],
+    [debug=false])
+AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
+AM_COND_IF(DEBUG,
+    AC_DEFINE(DEBUG, 1, [Define to 0 if this is a release build]))
+
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_FORK
