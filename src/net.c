@@ -192,14 +192,19 @@ void *forked_cli(void *arg) {
 
 void cli_thread_parallel(struct tun_state *state, int index) {
    /* set thread arguments */
+
    struct cli_thread_parallel_args args_tun = {state, 
-                      state->cli_private[index]->sa, 
-                      state->private_addr, state->port, 1, 
-                      state->cli_file_tun};
+                         state->cli_private[index]->sa, 
+                         state->private_addr, 
+                         state->cli_file_tun,
+                         state->port, 1
+                      };
    struct cli_thread_parallel_args args_notun = {state, 
-                      state->cli_public[index]->sa, 
-                      state->public_addr, state->port, 0, 
-                      state->cli_file_notun};
+                         state->cli_public[index]->sa, 
+                         state->public_addr, 
+                         state->cli_file_notun,
+                         state->port, 0
+                      };
 
    /* launch threads */
    pthread_t tid_tun   = xthread_create(forked_cli, (void*)&args_tun, 0);
