@@ -22,10 +22,10 @@
 
 const char *argp_program_version     = "udptun 0.1";
 const char *argp_program_bug_address = "korian.edeline@ulg.ac.be";
-static char doc[]      = "forward tcp packets to/from a udp tunnel";
-static char args_doc[] = "\nSERVER mode usage: -s (-p) (-f) --udp-lport PORT --tcp-daddr ADDR -tcp-dport PORT\n"
-                         "CLIENT mode usage: -c (-p) (-f) --udp-daddr ADDR --udp-dport PORT --udp-sport PORT"
-                         " --tcp-saddr ADDR --tcp-sport PORT --tcp-dport PORT";
+static char doc[]      = "\nforward tcp packets to/from a udp tunnel";
+static char args_doc[] = "--server --config udptun.cfg -d dst.txt\n"
+                         "--client --config udptun.cfg -d dst.txt\n"
+                         "--fullmesh --config udptun.cfg -d dst.txt";
 
 static struct argp_option options[] = { 
   {"verbose",    'v', 0,      0,  "Produce verbose output", 0 },
