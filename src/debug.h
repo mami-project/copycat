@@ -25,10 +25,6 @@
 # define UNUSED(x) x
 #endif
 
-/**
- * \def DEBUG
- * \brief Uncomment to allow debugging messages.
- */
 //#define DEBUG
 
 #ifdef DEBUG
