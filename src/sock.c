@@ -32,6 +32,7 @@
 
 #include "sysconfig.h"
 #if defined(BSD_OS)
+#  include <net/if.h>
 #  include <net/if_tun.h>
 #  include <net/if_dl.h>
 #elif defined(LINUX_OS)

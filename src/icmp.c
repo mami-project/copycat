@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <asm/types.h>
 
 #include "sysconfig.h"
 #if defined(BSD_OS)
