@@ -3,9 +3,6 @@
 /* Define to 0 if this is a release build */
 #undef DEBUG
 
-/* Define to 1 if you have the <argp.h> header file. */
-#undef HAVE_ARGP_H
-
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 

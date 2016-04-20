@@ -72,7 +72,6 @@ struct arguments {
    uint8_t inactivity_timeout; /*!< The inactivity timeout */
 
    char *run_id;               /*!< The run ID */
-   uint8_t capture_notun_only;        /*!<  */
 };
 
 #include "debug.h"

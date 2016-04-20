@@ -120,8 +120,6 @@ void tun_cli(struct arguments *args) {
 
    /* run capture threads */
    xthread_create(capture_notun, (void *) state, 1);
-   if (!args->capture_notun_only)
-      xthread_create(capture_tun,   (void *) state, 1);
    synchronize();
 
    /* run client */

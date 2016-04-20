@@ -105,10 +105,7 @@ struct tun_state *init_tun_state(struct arguments *args) {
    state->default_if = addr_to_itf(state->public_addr);
    
    /* init synchronizer and garbage collector */
-   if (args->capture_notun_only)
-      init_barrier(2);
-   else
-      init_barrier(3);
+   init_barrier(2);
    init_destructors(state);
 
    return state;

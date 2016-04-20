@@ -12,7 +12,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
-#include <argp.h>
+#include <getopt.h>
 #include <errno.h>
 #include <signal.h>
 
@@ -20,45 +20,37 @@
 
 /* argp variables and structs */
 
-const char *argp_program_version     = "udptun 0.1";
-const char *argp_program_bug_address = "korian.edeline@ulg.ac.be";
-static char doc[]      = "\nforward tcp packets to/from a udp tunnel";
-static char args_doc[] = "--server --config udptun.cfg -d dst.txt\n"
-                         "--client --config udptun.cfg -d dst.txt\n"
-                         "--fullmesh --config udptun.cfg -d dst.txt";
-
-static struct argp_option options[] = { 
-  {"verbose",    'v', 0,      0,  "Produce verbose output", 0 },
-  {"quiet",      'q', 0,      0,  "Don't produce any output", 0 },
-
-  {"run-id",     'i',"ID",    0,  "Run ID", 0},
-
-  {"client",     'c', 0,      0,  "Client mode", 0 },
-  {"server",     's', 0,      0,  "Server mode", 0 },
-  {"fullmesh",   'f', 0,      0,  "Fullmesh mode (both client and server)", 0 },
-
-  {"parallel",   'a', 0,      0,  "Client parallel flows scheduling mode (default)", 0 },
-  {"tun-first",  'u', 0,      0,  "Client tunnel first flows scheduling mode", 0 },
-  {"notun-first",'n', 0,      0,  "Client notunnel first flows scheduling mode", 0 },
-
-  {"capture-notun-only", '3', 0, 0, "Capture only at eth0, not at tun0"},
-
-  {"ipv6",        '6', 0,      0,  "IPv6 mode", 0 },
-  {"dual-stack",  '2', 0,      0,  "IPv4-IPv6 mode", 0 },
-
-  {"planetlab",  'p', 0,      0,  "PlanetLab mode", 0 },
-  {"freebsd",    'b', 0,      0,  "FREEBSD mode", 0 },
-  {"timeout",    't', "TIME", 0,  "Inactivity timeout", 0 },
-  {"dest-file",  'd', "FILE", 0,  "Destination file", 0},
-  {"config",     'o', "FILE", 0,  "Configuration file", 0},
-    { 0, 0, 0, 0, 0, 0 } 
-};
+const char *program_version = "udptun 0.1";
+const char*   optstring     = ":abcd:fhi:no:pqst:uvV";
+const char* arg_help = "Usage: udptun [OPTION...] -s -o udptun.cfg -d dst.txt\n"
+"  or:  udptun [OPTION...] -c -o udptun.cfg -d dst.txt\n"
+"  or:  udptun [OPTION...] -f -o udptun.cfg -d dst.txt\n\n"
+"forward tcp packets to/from a udp tunnel\n\n"
+"  -2, --dual-stack           IPv4-IPv6 mode\n"
+"  -6, --ipv6                 IPv6 mode\n"
+"  -a, --parallel             Client parallel flows scheduling mode (default)\n"
+"  -b, --freebsd              FREEBSD mode\n"
+"  -c, --client               Client mode\n"
+"  -d, --dest-file FILE       Destination file\n"
+"  -f, --fullmesh             Fullmesh mode (both client and server)\n"
+"  -i, --run-id ID            Run ID\n"
+"  -n, --notun-first          Client notunnel first flows scheduling mode\n"
+"  -o, --config FILE          Configuration file\n"
+"  -p, --planetlab            PlanetLab mode\n"
+"  -q, --quiet                Don't produce any output\n"
+"  -s, --server               Server mode\n"
+"  -t, --timeout TIME         Inactivity timeout\n"
+"  -u, --tun-first            Client tunnel first flows scheduling mode\n"
+"  -v, --verbose              Produce verbose output\n"
+"  -h, --help                 Give this help list\n"
+"  -V, --version              Print program version\n\n"
+"Report bugs to korian.edeline@ulg.ac.be\n";
 
 /**
- * \fn static error_t parse_args(int key, char *arg, struct argp_state *state)
+ * \fn static int parse_args(int key, char *arg, struct arguments *args)
  * \brief Parse one argument.
  */
-static error_t parse_args(int key, char *arg, struct argp_state *state);
+static int parse_arg(int key, char *optarg, int optopt, struct arguments *args);
 
 /**
  * \fn static void init_args(struct arguments *args)
@@ -78,50 +70,71 @@ static void print_args(struct arguments *args);
  */
 static int validate_args(struct arguments *args);
 
-struct argp argp = { options, parse_args, args_doc, doc, 0, 0, 0 };
+/**
+ * \fn static int parse_args(int argc, char *argv[], struct arguments *args)
+ * \brief 
+ */
+static int parse_args(int argc, char *argv[], struct arguments *args);
 
-error_t parse_args(int key, char *arg, struct argp_state *state) {
-   struct arguments *arguments = state->input;
+int parse_args(int argc, char *argv[], struct arguments *args) {
+   int           val = 0;
+   extern char*  optarg;
+   extern int    optopt;
+
+   while((val = getopt(argc,argv,optstring))!= EOF) {
+      if (parse_arg(val, optarg, optopt, args) < 0) {
+         printf("%s", arg_help);
+         return -1;
+      } 
+   }
+   return 0;
+}
+
+int parse_arg(int key, char *optarg, int optopt, struct arguments *args) {
    switch (key) {
       case 'q':
-         arguments->silent = 1;break;
+         args->silent = 1;break;
       case 'v':
-         arguments->verbose = 1;break;
+         args->verbose = 1;break;
       case 'c': 
-         arguments->mode = CLI_MODE;break;
+         args->mode = CLI_MODE;break;
       case 's': 
-         arguments->mode = SERV_MODE;break;
+         args->mode = SERV_MODE;break;
       case 'f':
-         arguments->mode = FULLMESH_MODE; break;
+         args->mode = FULLMESH_MODE; break;
       case 'p':
-         arguments->planetlab = 1; break;
+         args->planetlab = 1; break;
       case 'b':
-         arguments->freebsd = 1; break;
+         args->freebsd = 1; break;
       case '6':
-         arguments->ipv6 = 1; break;
+         args->ipv6 = 1; break;
       case 'a':
-         arguments->cli_mode = PARALLEL_MODE; break;
+         args->cli_mode = PARALLEL_MODE; break;
       case 'u':
-         arguments->cli_mode = TUN_FIRST_MODE; break;
+         args->cli_mode = TUN_FIRST_MODE; break;
       case 'n':
-         arguments->cli_mode = NOTUN_FIRST_MODE; break;
+         args->cli_mode = NOTUN_FIRST_MODE; break;
       case '2':
-         arguments->dual_stack = 1; break;
-      case '3':
-         arguments->capture_notun_only = 1; break;
+         args->dual_stack = 1; break;
       case 't':
-         arguments->inactivity_timeout = strtol(arg, NULL, 10);
+         args->inactivity_timeout = strtol(optarg, NULL, 10);
          break;
       case 'd':
-         arguments->dest_file = arg;break;
+         args->dest_file = strdup(optarg);break;
       case 'o':
-         arguments->config_file = arg;break;
+         args->config_file = strdup(optarg);break;
       case 'i':
-         arguments->run_id = arg;break;
-      case ARGP_KEY_ARG: 
-         return 0;
+         args->run_id = strdup(optarg);break;
+      case '?':
+         printf("Option -%c not supported.\n", optopt);
+         return -2;
+      case 'V':
+         printf("%s\n", program_version);
+         return -1;
+      case 'h':
+         return -1;
       default: 
-         return ARGP_ERR_UNKNOWN;
+         return -1;
    }   
    return 0;
 }
@@ -139,7 +152,6 @@ void init_args(struct arguments *args) {
    args->dest_file   = NULL;
    args->run_id      = NULL;
    args->inactivity_timeout = 0;
-   args->capture_notun_only = 0;
 }
 
 void print_args(struct arguments *args) {
@@ -211,11 +223,14 @@ int validate_args(struct arguments *args) {
 
 int main(int argc, char *argv[]) {
    struct arguments args;
+
+   /* Process arguments */
    init_args(&args);
-   argp_parse(&argp, argc, argv, 0, 0, &args);
+   if (parse_args(argc, argv, &args) < 0) return -1;
    validate_args(&args);
    if (args.verbose) print_args(&args);
 
+   return 0;
    switch (args.mode) {
       case CLI_MODE:
          tun_cli(&args);
