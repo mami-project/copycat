@@ -230,7 +230,6 @@ int main(int argc, char *argv[]) {
    validate_args(&args);
    if (args.verbose) print_args(&args);
 
-   return 0;
    switch (args.mode) {
       case CLI_MODE:
          tun_cli(&args);
