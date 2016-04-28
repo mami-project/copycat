@@ -138,7 +138,7 @@ char *forge_icmp(int *pkt_len, struct sock_extended_err *sock_err, struct iovec 
    ipheader->prot		= 1;	
    ipheader->csum		= 0;
    ipheader->saddr 	= ((struct sockaddr_in *)sa)->sin_addr.s_addr;
-   ipheader->daddr   = (unsigned long)inet_addr(state->private_addr);
+   ipheader->daddr   = (unsigned long)inet_addr(state->private_addr4);
    icmp->type		   = sock_err->ee_type;		
    icmp->code		   = sock_err->ee_code;		
    icmp->checksum    = 0;

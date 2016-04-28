@@ -102,7 +102,10 @@ struct tun_state *init_tun_state(struct arguments *args) {
    strncat(state->cli_file_notun, CLI_NOTUN_FILE, STR_SIZE);
 
    /* init network settings */
-   state->default_if = addr_to_itf(state->public_addr);
+   if (args->ipv6)
+      state->default_if = addr_to_itf6(state->public_addr6);
+   else
+      state->default_if = addr_to_itf4(state->public_addr4);
    
    /* init synchronizer and garbage collector */
    init_barrier(2);
@@ -130,16 +133,16 @@ void free_tun_state(struct tun_state *state) {
       g_hash_table_destroy(state->cli); 
 
    /* Free mallocs */
-   if (state->private_addr)
-      free(state->private_addr);
-   if (state->private_mask)
-      free(state->private_mask);
+   if (state->private_addr4)
+      free(state->private_addr4);
+   if (state->private_mask4)
+      free(state->private_mask4);
    if (state->private_addr6)
       free(state->private_addr6);
    if (state->private_mask6)
       free(state->private_mask6);
-   if (state->public_addr)
-      free(state->public_addr);
+   if (state->public_addr4)
+      free(state->public_addr4);
    if (state->public_addr6)
       free(state->public_addr6);
    if (state->cli_dir)
@@ -218,16 +221,16 @@ int parse_cfg_file(struct tun_state *state) {
             state->private_port = strtol(val, NULL, 10);
          else if (!strcmp(key, "source-port")) 
             state->port = strtol(val, NULL, 10);
-         else if (!strcmp(key, "private-address")) 
-            state->private_addr = strdup(val);
-         else if (!strcmp(key, "private-mask")) 
-            state->private_mask = strdup(val);
+         else if (!strcmp(key, "private-address4")) 
+            state->private_addr4 = strdup(val);
+         else if (!strcmp(key, "private-mask4")) 
+            state->private_mask4 = strdup(val);
          else if (!strcmp(key, "private-address6")) 
             state->private_addr6 = strdup(val);
          else if (!strcmp(key, "private-mask6")) 
             state->private_mask6 = strdup(val);
-         else if (!strcmp(key, "public-address")) 
-            state->public_addr  = strdup(val);
+         else if (!strcmp(key, "public-address4")) 
+            state->public_addr4  = strdup(val);
          else if (!strcmp(key, "public-address6")) 
             state->public_addr6 = strdup(val);
          /* timeouts */

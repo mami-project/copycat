@@ -167,16 +167,16 @@ void tun(struct tun_state *state, int *fd_tun) {
    struct arguments *args = state->args;
 #if defined(LINUX_OS)
    if (args->planetlab)
-      state->tun_if = create_tun_pl(state->private_addr, 
-                                    state->private_mask, 
+      state->tun_if = create_tun_pl(state->private_addr4, 
+                                    state->private_mask4, 
                                     fd_tun);
    else
-      state->tun_if = create_tun(state->private_addr, 
-                                 state->private_mask, 
+      state->tun_if = create_tun(state->private_addr4, 
+                                 state->private_mask4, 
                                  state->tun_if, fd_tun); 
 #else
-   state->tun_if = create_tun(state->private_addr, 
-                              state->private_mask, 
+   state->tun_if = create_tun(state->private_addr4, 
+                              state->private_mask4, 
                               state->tun_if, fd_tun);
 #endif
    if (*fd_tun) set_fd(*fd_tun);
@@ -195,13 +195,13 @@ void cli_thread_parallel(struct tun_state *state, int index) {
 
    struct cli_thread_parallel_args args_tun = {state, 
                          state->cli_private[index]->sa, 
-                         state->private_addr, 
+                         state->private_addr4, 
                          state->cli_file_tun,
                          state->port, 1
                       };
    struct cli_thread_parallel_args args_notun = {state, 
                          state->cli_public[index]->sa, 
-                         state->public_addr, 
+                         state->public_addr4, 
                          state->cli_file_notun,
                          state->port, 0
                       };
@@ -218,7 +218,7 @@ void cli_thread_parallel(struct tun_state *state, int index) {
 void cli_thread_tun(struct tun_state *state, int index) {
    /* run tunneled flow */
    tcp_cli(state, state->cli_private[index]->sa,
-           state->private_addr, state->port, 1, state->cli_file_tun);
+           state->private_addr4, state->port, 1, state->cli_file_tun);
    /* run notun flow */
    tcp_cli(state, state->cli_public[index]->sa, 
            NULL, state->port, 0, state->cli_file_notun);
@@ -230,7 +230,7 @@ void cli_thread_notun(struct tun_state *state, int index) {
            NULL, state->port, 0, state->cli_file_notun);
    /* run tunneled flow */
    tcp_cli(state, state->cli_private[index]->sa, 
-           state->private_addr, state->port, 1, state->cli_file_tun);
+           state->private_addr4, state->port, 1, state->cli_file_tun);
 }
 
 void *cli_thread(void *st) {
@@ -276,13 +276,13 @@ void *serv_thread(void *st) {
 
 void *serv_thread_private(void *st) {
    struct tun_state *state = st;
-   tcp_serv(state->private_addr, state->private_port, state, 1);
+   tcp_serv(state->private_addr4, state->private_port, state, 1);
    return 0;
 }
 
 void *serv_thread_public(void *st) {
    struct tun_state *state = st;
-   tcp_serv(state->public_addr, state->public_port, state, 0);
+   tcp_serv(state->public_addr4, state->public_port, state, 0);
    return 0;
 }
 

@@ -41,17 +41,19 @@ struct tun_state {
    GHashTable      *serv;        /*!<  Source port to public address lookup table. */
    GHashTable      *cli;         /*!<  Private address to public address lookup table. */
    struct tun_rec **cli_private; /*!<  Destination list. (private sockaddr's) */
-   struct tun_rec **cli_public;  /*!<  Destination list. (public sockaddr's) */ //TODO v6 equivalent
+   struct tun_rec **cli_public;  /*!<  Destination list. (public sockaddr's) */ 
+
+   //TODO v6 equivalent
    uint8_t sa_len;               /*!<  Number of destinations. */
 
    /* From cfg file */
    char    *tun_if;            /*!< The tun interface name. */
    char    *default_if;         /*!< The default interface name. */
-   char    *private_addr;       /*!< The private ip address */
-   char    *private_mask;       /*!< The private ip mask */
+   char    *private_addr4;       /*!< The private ip address */
+   char    *private_mask4;       /*!< The private ip mask */
    char    *private_addr6;      /*!< The private ipv6 address */
    char    *private_mask6;      /*!< The private ipv6 mask */
-   char    *public_addr;        /*!< The public ip address */
+   char    *public_addr4;        /*!< The public ip address */
    char    *public_addr6;       /*!< The public ipv6 address */
 
    uint16_t port;               /*!< The UNIQUE per-peer port number */
@@ -74,7 +76,8 @@ struct tun_state {
    uint32_t backlog_size;       /*!< backlog size  */
    uint32_t fd_lim;             /*!< max simultaneously open fd */
    
-   uint32_t max_segment_size;   /*!< The value passed as TCP_MAXSEG optval (max mss) for tun flow */
+   uint32_t max_segment_size;   /*!< The value passed as TCP_MAXSEG 
+                                     optval (max mss) for tun flow */
 };
 
 /**
