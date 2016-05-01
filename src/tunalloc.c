@@ -114,6 +114,9 @@ static int tun_alloc46(const char *ip, const char *prefix, char *dev, int common
  */ 
 static int tun_alloc_pl(int iftype, char *if_name);
 
+static char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds, 
+      int (*func_alloc)(const char*,const char*, char*,int));
+
 /* Reads vif FD from "fd", writes interface name to vif_name, and returns vif FD.
  * vif_name should be IFNAMSIZ chars long. */
 int receive_vif_fd(int fd, char *vif_name) {
@@ -149,12 +152,25 @@ int receive_vif_fd(int fd, char *vif_name) {
 	return *(int*)CMSG_DATA(cmsg);
 }
 
-char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds) {
-   int   fd; //TODO state as args, function pick v4/v6 information by itself
-   char *if_name = malloc(IFNAMSIZ);
+char *create_tun4(const char *ip, const char *prefix, char *dev, int *tun_fds) {
+   return create_tun(ip, prefix, dev, tun_fds, &tun_alloc);
+}
+
+char *create_tun46(const char *ip, const char *prefix, char *dev, int *tun_fds) {
+   return create_tun(ip, prefix, dev, tun_fds, &tun_alloc46);
+}
+
+char *create_tun6(const char *ip, const char *prefix, char *dev, int *tun_fds) {
+   return create_tun(ip, prefix, dev, tun_fds, &tun_alloc6);
+}
+
+char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds, 
+      int (*func_alloc)(const char*,const char*, char*,int)) {
+   int   fd; 
+   char *if_name = xmalloc(IFNAMSIZ);
 
    if (dev) {
-      if ((fd = tun_alloc(ip, prefix, dev, 0)) >= 0) {
+      if ((fd = (*func_alloc)(ip, prefix, dev, 0)) >= 0) {
          strcpy(if_name, dev);
          goto succ;
       } else goto err;
@@ -162,7 +178,7 @@ char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds) {
 
    for (int i=0; i<99; i++) {
       sprintf(if_name, "tun%d", i);
-      if ((fd = tun_alloc(ip, prefix, if_name, 1)) >= 0) {
+      if ((fd = (*func_alloc)(ip, prefix, if_name, 1)) >= 0) {
          break;
       } else goto err;
    }
@@ -370,8 +386,8 @@ int tun_alloc46(const char *ip, const char *prefix, char *dev, int common) {
    tun_addr6.sin6_family = AF_INET6;
    if(inet_pton(AF_INET6, ip, (void *)&tun_addr6.sin6_addr) <= 0) 
         die("Bad address\n");
-   memcpy((char *) &ifr6.ifr6_addr, (char *) &tun_addr6.sin6_addr,
-               sizeof(struct in6_addr));
+   if(inet_pton(AF_INET6, ip, (void *)&ifr6.ifr6_addr) <= 0) 
+        die("Bad address\n");
 
     if (ioctl(s6, SIOGIFINDEX, &ifr) < 0) 
         die("SIOGIFINDEX");
@@ -484,7 +500,7 @@ int tun_alloc_pl(int iftype, char *if_name) {
 }
 
 char *create_tun_pl(const char *ip, const char *prefix, int *tun_fds) {
-   char *if_name = malloc(IFNAMSIZ);
+   char *if_name = xmalloc(IFNAMSIZ);
 
    FILE *in;
    FILE *out;

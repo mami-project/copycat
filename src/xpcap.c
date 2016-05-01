@@ -129,7 +129,7 @@ void capture(const char *dev, const char *addr, int port,
 struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dport) {
    pcap_t *handle;		
    char errbuf[PCAP_ERRBUF_SIZE];	
-   struct bpf_program *fp= malloc(sizeof(struct bpf_program));
+   struct bpf_program *fp = xmalloc(sizeof(struct bpf_program));
 
    /* build filter */
    char filter_exp[64]; 

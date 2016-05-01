@@ -21,7 +21,7 @@
 /* argp variables and structs */
 
 const char *program_version = "udptun 0.1";
-const char*   optstring     = ":abcd:fhi:no:pqst:uvV";
+const char*   optstring     = ":abcd:fhi:no:pqst:uvV62";
 const char* arg_help = "Usage: udptun [OPTION...] -s -o udptun.cfg -d dst.txt\n"
 "  or:  udptun [OPTION...] -c -o udptun.cfg -d dst.txt\n"
 "  or:  udptun [OPTION...] -f -o udptun.cfg -d dst.txt\n\n"
@@ -81,7 +81,7 @@ int parse_args(int argc, char *argv[], struct arguments *args) {
    extern char*  optarg;
    extern int    optopt;
 
-   while((val = getopt(argc,argv,optstring))!= EOF) {
+   while((val = getopt(argc, argv, optstring))!= EOF) {
       if (parse_arg(val, optarg, optopt, args) < 0) {
          printf("%s", arg_help);
          return -1;
@@ -120,11 +120,11 @@ int parse_arg(int key, char *optarg, int optopt, struct arguments *args) {
          args->inactivity_timeout = strtol(optarg, NULL, 10);
          break;
       case 'd':
-         args->dest_file = strdup(optarg);break;
+         args->dest_file = optarg;break;
       case 'o':
-         args->config_file = strdup(optarg);break;
+         args->config_file = optarg;break;
       case 'i':
-         args->run_id = strdup(optarg);break;
+         args->run_id = optarg;break;
       case '?':
          printf("Option -%c not supported.\n", optopt);
          return -2;

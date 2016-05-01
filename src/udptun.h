@@ -36,15 +36,26 @@
 #define CLOSE_TIMEOUT 1
 
 /**
- * \def CLI_TUN_FILE
+ * \def CLI_TUN_FILE4
  * \brief 
  */
-#define CLI_TUN_FILE "cli_tun.dat"
+#define CLI_TUN_FILE4 "cli_tun4.dat"
 
 /**
- * \def CLI_NOTUN_FILE
+ * \def CLI_NOTUN_FILE4
  */
-#define CLI_NOTUN_FILE "cli_notun.dat"
+#define CLI_NOTUN_FILE4 "cli_notun4.dat"
+
+/**
+ * \def CLI_TUN_FILE6
+ * \brief 
+ */
+#define CLI_TUN_FILE6 "cli_tun6.dat"
+
+/**
+ * \def CLI_NOTUN_FILE6
+ */
+#define CLI_NOTUN_FILE6 "cli_notun6.dat"
 
 /**
  * \def LOCKED

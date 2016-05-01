@@ -12,7 +12,6 @@
  * \version 0.1
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -60,52 +59,69 @@
  */ 
 static void build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw);
 
-char *addr_to_itf4(char *addr) {
-   struct ifaddrs *addrs, *iap;
-   struct sockaddr_in *sa;
-   char buf[32];
-   char *dev = NULL;
-
-   getifaddrs(&addrs);
-   for (iap = addrs; iap != NULL; iap = iap->ifa_next) {
-      if (iap->ifa_addr && (iap->ifa_flags & IFF_UP) 
-                        &&  iap->ifa_addr->sa_family == AF_INET) {
-         sa = (struct sockaddr_in *)(iap->ifa_addr);
-         inet_ntop(iap->ifa_addr->sa_family, (void *)&(sa->sin_addr), buf, sizeof(buf));
-         if (!strcmp(addr, buf))  {
-            dev = strdup(iap->ifa_name);
-            break;
-         }
-      }
+struct sockaddr_in *get_addr4(const char *addr, int port) {
+   struct sockaddr_in *ret = calloc(0, sizeof(struct sockaddr_in));
+   if (addr) {
+      if (!inet_pton(AF_INET, addr, &ret->sin_addr))
+         die("inet_pton");
+   } else {
+      ret->sin_addr.s_addr = htonl(INADDR_ANY);
    }
-   freeifaddrs(addrs);
-   return dev;
+   ret->sin_family         = AF_INET;
+   ret->sin_port           = htons(port);
+   
+   return ret;
+}
+struct sockaddr_in6 *get_addr6(const char *addr, int port) {
+   struct sockaddr_in6 *ret = calloc(0, sizeof(struct sockaddr_in6));
+   if (addr) {
+      if (!inet_pton(AF_INET6, addr, &ret->sin6_addr))
+         die("inet_pton");
+   } else {
+      ret->sin6_addr = in6addr_any;
+   }
+   ret->sin6_family         = AF_INET6;
+   ret->sin6_port           = htons(port);
+
+   return ret;
 }
 
-char *addr_to_itf6(char *addr) {
-  struct ifaddrs *addrs, *iap;
-  struct sockaddr_in6 *sa;
-  char buf[128];
-  char *dev = NULL;
+int udp_sock6(int port, uint8_t register_gc, char *addr) {
+   int s;
+   /* UDP socket */
+   if ((s=socket(AF_INET6, SOCK_DGRAM, 0)) == -1)
+      die("socket");
+   if (register_gc)
+      set_fd(s);
 
-  getifaddrs(&addrs);
-  for (iap = addrs; iap != NULL; iap = iap->ifa_next) {
-    if (iap->ifa_addr && (iap->ifa_flags & IFF_UP)
-        &&  iap->ifa_addr->sa_family == AF_INET6) {
-      sa = (struct sockaddr_in6 *)(iap->ifa_addr);
-      inet_ntop(iap->ifa_addr->sa_family, (void *)&(sa->sin6_addr), buf, sizeof\
-(buf));
-      if (!strcmp(addr, buf))  {
-        dev = strdup(iap->ifa_name);
-        break;
-      }
-    }
-  }
-  freeifaddrs(addrs);
-  return dev;
+   /* sockaddr */
+   struct sockaddr_in6 sin;
+   memset(&sin, 0, sizeof(sin));
+   sin.sin6_family      = AF_INET6;
+   sin.sin6_port        = htons(port);
+   inet_pton(AF_INET6, addr, &sin.sin6_addr);
+
+   /* bind to port */
+   if( bind(s, (struct sockaddr*)&sin, sizeof(sin) ) == -1)
+      die("bind udp socket");
+
+   int sndbuf = 1024*1024, rcvbuf = 1024*1024;
+   if (setsockopt(s, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf)))
+      die("SNDBUF");
+   if (setsockopt(s, SOL_SOCKET, SO_RCVBUF, &rcvbuf, sizeof(rcvbuf)))
+      die("RCVBUF");
+
+#if defined(IPV6_RECVERR)
+   /* enable icmp catching */
+   int on = 1;
+   if (setsockopt(s, SOL_IPV6, IPV6_RECVERR, (char*)&on, sizeof(on))) 
+      die("IPV6_RECVERR");
+#endif
+   debug_print("udp socket created at %s:%d\n", addr, port);
+   return s;
 }
 
-int udp_sock(int port, uint8_t register_gc, char *addr) {
+int udp_sock4(int port, uint8_t register_gc, char *addr) {
    int s;
    /* UDP socket */
    if ((s=socket(AF_INET, SOCK_DGRAM, 0)) == -1)
@@ -118,12 +134,17 @@ int udp_sock(int port, uint8_t register_gc, char *addr) {
    memset(&sin, 0, sizeof(sin));
    sin.sin_family      = AF_INET;
    sin.sin_port        = htons(port);
-   //sin.sin_addr.s_addr = htonl(INADDR_ANY);
    inet_pton(AF_INET, addr, &sin.sin_addr);
 
    /* bind to port */
    if( bind(s, (struct sockaddr*)&sin, sizeof(sin) ) == -1)
       die("bind udp socket");
+
+   int sndbuf = 1024*1024, rcvbuf = 1024*1024;
+   if (setsockopt(s, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf)))
+      die("SNDBUF");
+   if (setsockopt(s, SOL_SOCKET, SO_RCVBUF, &rcvbuf, sizeof(rcvbuf)))
+      die("RCVBUF");
 
 #if defined(IP_RECVERR)
    /* enable icmp catching */
@@ -131,7 +152,7 @@ int udp_sock(int port, uint8_t register_gc, char *addr) {
    if (setsockopt(s, SOL_IP, IP_RECVERR, (char*)&on, sizeof(on))) 
       die("IP_RECVERR");
 #endif
-   debug_print("udp socket created on port %d\n", port);
+   debug_print("udp socket created at %s:%d\n", addr, port);
    return s;
 }
 
@@ -186,9 +207,20 @@ int xselect(fd_set *input_set, int fd_max, struct timeval *tv, int timeout) {
    return sel;
 }
 
-int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen) {
+int xsendto4(int fd, struct sockaddr *sa, const void *buf, 
+            size_t buflen) {
    int sent = 0;
-   if ((sent = sendto(fd,buf,buflen,0,sa,sizeof(struct sockaddr))) < 0) {
+   if ((sent = sendto(fd, buf, buflen, 0, sa, sizeof(struct sockaddr_in))) < 0) {
+       //die("sendto");
+      return sent;
+    }
+   return sent;
+}
+
+int xsendto6(int fd, struct sockaddr *sa, const void *buf, 
+            size_t buflen) {
+   int sent = 0;
+   if ((sent = sendto(fd, buf, buflen, 0, sa, sizeof(struct sockaddr_in6))) < 0) {
        //die("sendto");
       return sent;
     }
@@ -302,5 +334,57 @@ void build_sel(fd_set *input_set, int *fds_raw, int len, int *max_fd_raw) {
    }
 
    *max_fd_raw = max_fd;
+}
+
+void *xmalloc(size_t size) {
+   void *mem = malloc(size);
+   if (!mem)
+      die("malloc");
+   return mem;
+}
+
+char *addr_to_itf4(char *addr) {
+   struct ifaddrs *addrs, *iap;
+   struct sockaddr_in *sa;
+   char buf[32];
+   char *dev = NULL;
+
+   getifaddrs(&addrs);
+   for (iap = addrs; iap != NULL; iap = iap->ifa_next) {
+      if (iap->ifa_addr && (iap->ifa_flags & IFF_UP) 
+                        &&  iap->ifa_addr->sa_family == AF_INET) {
+         sa = (struct sockaddr_in *)(iap->ifa_addr);
+         inet_ntop(iap->ifa_addr->sa_family, (void *)&(sa->sin_addr), buf, sizeof(buf));
+         if (!strcmp(addr, buf))  {
+            dev = strdup(iap->ifa_name);
+            break;
+         }
+      }
+   }
+   freeifaddrs(addrs);
+   return dev;
+}
+
+char *addr_to_itf6(char *addr) {
+  struct ifaddrs *addrs, *iap;
+  struct sockaddr_in6 *sa;
+  char buf[128];
+  char *dev = NULL;
+
+  getifaddrs(&addrs);
+  for (iap = addrs; iap != NULL; iap = iap->ifa_next) {
+    if (iap->ifa_addr && (iap->ifa_flags & IFF_UP)
+        &&  iap->ifa_addr->sa_family == AF_INET6) {
+      sa = (struct sockaddr_in6 *)(iap->ifa_addr);
+      inet_ntop(iap->ifa_addr->sa_family, (void *)&(sa->sin6_addr), buf, sizeof\
+(buf));
+      if (!strcmp(addr, buf))  {
+        dev = strdup(iap->ifa_name);
+        break;
+      }
+    }
+  }
+  freeifaddrs(addrs);
+  return dev;
 }
 

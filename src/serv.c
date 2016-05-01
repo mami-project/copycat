@@ -48,7 +48,16 @@ static void serv_shutdown(int sig);
  * \param state The state of the server.
  * \param buf The buffer.
  */ 
-static void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
+static void tun_serv_in4(int fd_tun, int fd_udp, 
+                         struct tun_state *state, char *buf);
+static void tun_serv_in6(int fd_tun, int fd_udp, 
+                         struct tun_state *state, char *buf);
+static void tun_serv_in4_aux(int fd_udp, 
+                             struct tun_state *state, char *buf, int recvd);
+static void tun_serv_in6_aux(int fd_udp, 
+                             struct tun_state *state, char *buf, int recvd);
+static void tun_serv_in(int fd_tun, int fd_udp4, 
+                 int fd_udp6, struct tun_state *state, char *buf);
 
 /**
  * \fn static void tun_serv_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf)
@@ -59,13 +68,40 @@ static void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *b
  * \param state The state of the server.
  * \param buf The buffer.
  */ 
-static void tun_serv_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
+static void tun_serv_out4(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
+static void tun_serv_out6(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
+
+static void tun_serv_single(struct arguments *args);
+static void tun_serv_dual(struct arguments *args);
 
 void serv_shutdown(int UNUSED(sig)) { loop = 0; }
 
-void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
+void tun_serv(struct arguments *args) {
+   if (args->dual_stack)
+      tun_serv_dual(args);
+   else
+      tun_serv_single(args);
+}
+
+void tun_serv_in(int fd_tun, int fd_udp4, 
+                 int fd_udp6, struct tun_state *state, char *buf) {
    int recvd=xread(fd_tun, buf, BUFF_SIZE);
-   debug_print("serv: recvd %dB from tun\n", recvd);
+   debug_print("recvd %db from tun\n", recvd);
+
+   switch (buf[0] & 0xf0) {
+      case 0x40:
+         tun_serv_in4_aux(fd_udp4, state, buf, recvd);
+         break;
+      case 0x60:
+         tun_serv_in6_aux(fd_udp6, state, buf, recvd);
+         break;
+      default:
+         debug_print("non-ip proto:%d\n", buf[0]);
+         break;
+   }
+}
+
+void tun_serv_in4_aux(int fd_udp, struct tun_state *state, char *buf, int recvd) {
 
    if (recvd > MIN_PKT_SIZE) {
 
@@ -80,19 +116,57 @@ void tun_serv_in(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
 
       if ( (rec = g_hash_table_lookup(state->serv, &sport)) ) {   
 
-         int sent = xsendto(fd_udp, rec->sa, buf, recvd);
+         int sent = xsendto4(fd_udp, rec->sa4, buf, recvd);
          debug_print("serv: wrote %dB to udp\n",sent);
       } else {
          errno=EFAULT;
          die("lookup");
       }
-   } 
+   }
 }
 
-void tun_serv_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
-   struct tun_rec *nrec = init_tun_rec();
-   int recvd = xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa, 
-                         &nrec->slen, buf, BUFF_SIZE);
+void tun_serv_in6_aux(int fd_udp, struct tun_state *state, char *buf, int recvd) {
+ 
+   if (recvd > MIN_PKT_SIZE) {
+
+      /* Remove PlanetLab TUN PPI header */
+      if (state->planetlab) {
+         buf+=4;recvd-=4;
+      }
+
+      struct tun_rec *rec = NULL; 
+      /* read sport for clients mapping */
+      int sport = (int) ntohs( *((uint16_t *)(buf+42)) ); 
+
+      if ( (rec = g_hash_table_lookup(state->serv, &sport)) ) {   
+
+         int sent = xsendto6(fd_udp, rec->sa6, buf, recvd);
+         debug_print("serv: wrote %dB to udp\n",sent);
+      } else {
+         errno=EFAULT;
+         die("lookup");
+      }
+   }
+}
+
+void tun_serv_in6(int fd_tun, int fd_udp, 
+                 struct tun_state *state, char *buf) {
+   int recvd=xread(fd_tun, buf, BUFF_SIZE);
+   debug_print("recvd %db from tun\n", recvd);
+   tun_serv_in6_aux(fd_udp, state, buf, recvd);
+}
+
+void tun_serv_in4(int fd_tun, int fd_udp, 
+                 struct tun_state *state, char *buf) {
+   int recvd=xread(fd_tun, buf, BUFF_SIZE);
+   debug_print("recvd %db from tun\n", recvd);
+   tun_serv_in4_aux(fd_udp, state, buf, recvd);
+}
+
+void tun_serv_out4(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
+   struct tun_rec *nrec = init_tun_rec(state);
+   int recvd = xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa4, 
+                         &nrec->slen4, buf, BUFF_SIZE);
 
    if (recvd > MIN_PKT_SIZE) {
       debug_print("serv: recvd %dB from udp\n", recvd);
@@ -103,7 +177,7 @@ void tun_serv_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
       }
 
       struct tun_rec *rec = NULL;
-      int sport           = ntohs(((struct sockaddr_in *)nrec->sa)->sin_port);
+      int sport           = ntohs(((struct sockaddr_in *)nrec->sa4)->sin_port);
       int sent            = 0;
       if ( (rec = g_hash_table_lookup(state->serv, &sport)) ) {
          sent = xwrite(fd_tun, buf, recvd);
@@ -133,15 +207,69 @@ void tun_serv_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    free_tun_rec(nrec);
 }
 
-void tun_serv(struct arguments *args) {
+void tun_serv_out6(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
+   struct tun_rec *nrec = init_tun_rec(state);
+   int recvd = xrecvfrom(fd_udp, (struct sockaddr *)nrec->sa6, 
+                         &nrec->slen6, buf, BUFF_SIZE);
+
+   if (recvd > MIN_PKT_SIZE) {
+      debug_print("serv: recvd %dB from udp\n", recvd);
+
+      /* Add PlanetLab TUN PPI header */
+      if (state->planetlab) {
+         buf-=4; recvd+=4;
+      }
+
+      struct tun_rec *rec = NULL;
+      int sport           = ntohs(((struct sockaddr_in *)nrec->sa6)->sin_port);
+      int sent            = 0;
+      if ( (rec = g_hash_table_lookup(state->serv, &sport)) ) {
+         sent = xwrite(fd_tun, buf, recvd);
+         debug_print("serv: wrote %dB to tun\n", sent); 
+      } 
+#if !defined(LOCKED)
+      else if (g_hash_table_size(state->serv) <= state->fd_lim) { 
+         sent = xwrite(fd_tun, buf, recvd);
+
+         /* add new record to lookup tables */
+         nrec->sport = sport;
+         g_hash_table_insert(state->serv, &nrec->sport, nrec);
+         debug_print("serv: added new entry: %d\n", sport);
+      } 
+#endif
+      else {
+         debug_print("dropping unknown UDP dgram (NAT ?)\n");
+      }
+          
+   } else if (recvd < 0) {
+       /* recvd ICMP msg */
+      xrecverr(fd_udp, buf,  BUFF_SIZE, 0, NULL);
+   } else {
+      /* recvd unknown packet */
+      debug_print("serv: recvd empty pkt\n");
+   }
+   free_tun_rec(nrec);
+}
+
+void tun_serv_single(struct arguments *args) {
    int fd_udp = 0, fd_tun = 0;
+   void (*tun_serv_in_func)(int,int,struct tun_state*,char*);
+   void (*tun_serv_out)(int,int,struct tun_state*,char*);
 
    /* init server state */
    struct tun_state *state = init_tun_state(args);
 
    /* create tun if and sockets */
    tun(state, &fd_tun); 
-   fd_udp         = udp_sock(state->public_port, 1, state->public_addr4);
+   if (state->ipv6) {
+      fd_udp = udp_sock6(state->public_port, 1, state->public_addr6);
+      tun_serv_in_func = &tun_serv_in6;
+      tun_serv_out     = &tun_serv_out6;
+   } else {
+      fd_udp = udp_sock4(state->public_port, 1, state->public_addr4);
+      tun_serv_in_func = &tun_serv_in4;
+      tun_serv_out     = &tun_serv_out4;
+   }
 
    /* run capture threads */
    xthread_create(capture_notun, (void *) state, 1);
@@ -183,8 +311,68 @@ void tun_serv(struct arguments *args) {
          if (FD_ISSET(fd_udp, &input_set)) 
             tun_serv_out(fd_udp, fd_tun, state, buffer);
          if (FD_ISSET(fd_tun, &input_set)) 
-            tun_serv_in(fd_udp, fd_tun, state, buffer);
+            (*tun_serv_in_func)(fd_udp, fd_tun, state, buffer);
       }
    }
 }
+
+void tun_serv_dual(struct arguments *args) {
+   int fd_udp4 = 0, fd_udp6 = 0, fd_tun = 0;
+
+   /* init server state */
+   struct tun_state *state = init_tun_state(args);
+
+   /* create tun if and sockets */
+   tun(state, &fd_tun); 
+   fd_udp4 = udp_sock4(state->public_port, 1, state->public_addr4);
+   fd_udp6 = udp_sock6(state->public_port, 1, state->public_addr6);
+
+   /* run capture threads */
+   xthread_create(capture_notun, (void *) state, 1);
+   synchronize();
+
+   /* run server */
+   debug_print("running serv ...\n");  
+   xthread_create(serv_thread, (void*) state, 1);
+
+   /* init select loop */
+   fd_set input_set;
+   struct timeval tv;
+   int sel = 0, fd_max = 0;
+   char buf[BUFF_SIZE], *buffer;
+   buffer = buf;
+
+   if (state->planetlab) {
+      buffer[0]=0;buffer[1]=0;
+      buffer[2]=8;buffer[3]=0;
+      buffer+=4;
+   }
+
+   fd_max=max(fd_tun,max(fd_udp4, fd_udp6));
+   loop=1;
+   signal(SIGINT, serv_shutdown);
+   signal(SIGTERM, serv_shutdown);
+
+   while (loop) {
+      FD_ZERO(&input_set);
+      FD_SET(fd_udp4, &input_set);
+      FD_SET(fd_udp6, &input_set);
+      FD_SET(fd_tun, &input_set);
+  
+      sel = xselect(&input_set, fd_max, &tv, state->inactivity_timeout);
+
+      if (sel == 0) {
+         debug_print("timeout\n"); 
+         break;
+      } else if (sel > 0) {
+         if (FD_ISSET(fd_udp4, &input_set)) 
+            tun_serv_out4(fd_udp4, fd_tun, state, buffer);
+         if (FD_ISSET(fd_udp6, &input_set)) 
+            tun_serv_out6(fd_udp6, fd_tun, state, buffer);
+         if (FD_ISSET(fd_tun, &input_set)) 
+            tun_serv_in(fd_tun, fd_udp4, fd_udp6, state, buffer);
+      }
+   }
+}
+
 

@@ -59,7 +59,7 @@ struct cli_thread_parallel_args {
 static char *serv_file;
 
 /**
- * \fn static int tcp_cli(struct tun_state *st, struct sockaddr *sa, char *filename)
+ * \fn static int tcp_cli4(struct tun_state *st, struct sockaddr *sa, char *filename)
  * \brief Receive an error msg from MSG_ERRQUEUE and print a description 
  *        of it via the debug macro.
  *
@@ -74,7 +74,7 @@ static char *serv_file;
  *         a negative value if an error happened
  */ 
 static int tcp_cli(struct tun_state *st, struct sockaddr *sa, 
-                   char *addr, int port, int tun, char* filename);
+            char *addr, int port, int tun, char* filename, sa_family_t sfam);
 
 /**
  * \fn static int tcp_serv(char *addr, int port, struct tun_state *state)
@@ -89,7 +89,8 @@ static int tcp_cli(struct tun_state *st, struct sockaddr *sa,
  * \return 0 if an error msg was received, 
  *         a negative value if an error happened
  */ 
-static int tcp_serv(char *addr, int port, struct tun_state *state, int set_maxseg);
+static int tcp_serv(char *addr, int port, struct tun_state *state, 
+                     int set_maxseg, sa_family_t sfam);
 
 /**
  * \fn void *serv_worker_thread(void *socket_desc)
@@ -104,159 +105,279 @@ static int tcp_serv(char *addr, int port, struct tun_state *state, int set_maxse
 static void *serv_worker_thread(void *socket_desc);
 
 /**
- * \fn static void *serv_thread_private(void *socket_desc)
+ * \fn static void *serv_thread_private4(void *socket_desc)
  * \brief Run a TCP file server bound on private addr:port
  *
  * \param st The node state (struct tun_state *)
  */
-static void *serv_thread_private(void *st);
+static void *serv_thread_private4(void *st);
+static void *serv_thread_private6(void *st);
 
 /**
- * \fn static void *serv_thread_public(void *socket_desc)
+ * \fn static void *serv_thread_public4(void *socket_desc)
  * \brief Run a TCP file server bound on public addr:port
  *
  * \param st The node state (struct tun_state *)
  */
-static void *serv_thread_public(void *st);
+static void *serv_thread_public4(void *st);
+static void *serv_thread_public6(void *st);
 
 /**
- * \fn static void cli_thread_parallel(struct tun_state *state, int index)
+ * \fn static void cli_thread_parallel4(struct tun_state *state, int index)
  * \brief Run the TCP file clients in parallel.
  *
  * \param state The node state 
  * \param index The peer index (cli_private & cli_public)
  */
-static void cli_thread_parallel(struct tun_state *state, int index);
+static void cli_thread_parallel4(struct tun_state *state, int index);
+static void cli_thread_parallel6(struct tun_state *state, int index);
+static void cli_thread_parallel46(struct tun_state *state, int index);
 
-/**
- * \fn static void cli_thread_notun(struct tun_state *state, int index)
+/**cli_thread_notun4
+ * \fn static void cli_thread_notun4(struct tun_state *state, int index)
  * \brief Run the TCP file clients sequentially, NOTUN flow first.
  *
  * \param state The node state 
  * \param index The peer index (cli_private & cli_public)
  */
-static void cli_thread_notun(struct tun_state *state,  int index);
+static void cli_thread_notun4(struct tun_state *state,  int index);
+static void cli_thread_notun6(struct tun_state *state,  int index);
 
 /**
- * \fn static void cli_thread_tun(struct tun_state *state, int index)
+ * \fn static void cli_thread_tun4(struct tun_state *state, int index)
  * \brief Run the TCP file clients sequentially, TUN flow first.
  *
  * \param state The node state 
  * \param index The peer index (cli_private & cli_public)
  */
-static void cli_thread_tun(struct tun_state *state, int index);
+static void cli_thread_tun4(struct tun_state *state, int index);
+static void cli_thread_tun6(struct tun_state *state, int index);
 
 /**
- * \fn  void *forked_cli(void *arg)
+ * \fn  void *forked_cli4(void *arg)
  * \brief Stub for tcp_cli fork, used in parallel scheduling mode
  *
  * \aram arg A struct cli_thread_parallel_args specified tcp_cli's args.
  */
-static void *forked_cli(void *arg);
-
-struct sockaddr_in *get_addr(const char *addr, int port) {
-   struct sockaddr_in *ret = calloc(1, sizeof(struct sockaddr));
-   ret->sin_family         = AF_INET;
-   ret->sin_addr.s_addr    = inet_addr(addr);
-   ret->sin_port           = htons(port);
-
-   return ret;
-}
+static void *forked_cli4(void *arg);
+static void *forked_cli6(void *arg);
 
 void tun(struct tun_state *state, int *fd_tun) {
    struct arguments *args = state->args;
+   char *new_if = NULL;
 #if defined(LINUX_OS)
    if (args->planetlab)
-      state->tun_if = create_tun_pl(state->private_addr4, 
+      new_if = create_tun_pl(state->private_addr4, 
                                     state->private_mask4, 
                                     fd_tun);
-   else
-      state->tun_if = create_tun(state->private_addr4, 
+   else 
+#endif
+   if (args->ipv6 || args->dual_stack)
+      new_if = create_tun46(state->private_addr4, 
                                  state->private_mask4, 
                                  state->tun_if, fd_tun); 
-#else
-   state->tun_if = create_tun(state->private_addr4, 
-                              state->private_mask4, 
-                              state->tun_if, fd_tun);
-#endif
+   else
+      new_if = create_tun4(state->private_addr4, 
+                                 state->private_mask4, 
+                                 state->tun_if, fd_tun); 
+
+   /* swap wished name with actual name */
+   if (new_if) {
+      if (state->tun_if)
+         free(state->tun_if);
+      state->tun_if = new_if;
+   }
    if (*fd_tun) set_fd(*fd_tun);
 }
 
-void *forked_cli(void *arg) {
+void *forked_cli4(void *arg) {
    struct cli_thread_parallel_args *args = (struct cli_thread_parallel_args*) arg;
    tcp_cli(args->state, args->sa, 
            args->addr, args->port,
-           args->set_maxseg, args->filename);
+           args->set_maxseg, args->filename, AF_INET);
    return 0;
 }
 
-void cli_thread_parallel(struct tun_state *state, int index) {
+void *forked_cli6(void *arg) {
+   struct cli_thread_parallel_args *args = (struct cli_thread_parallel_args*) arg;
+   tcp_cli(args->state, args->sa, 
+           args->addr, args->port,
+           args->set_maxseg, args->filename, AF_INET6);
+   return 0;
+}
+
+void cli_thread_parallel4(struct tun_state *state, int index) {
    /* set thread arguments */
 
    struct cli_thread_parallel_args args_tun = {state, 
-                         state->cli_private[index]->sa, 
+                         state->cli_private[index]->sa4, 
                          state->private_addr4, 
-                         state->cli_file_tun,
+                         state->cli_file_tun4,
                          state->port, 1
                       };
    struct cli_thread_parallel_args args_notun = {state, 
-                         state->cli_public[index]->sa, 
+                         state->cli_public[index]->sa4, 
                          state->public_addr4, 
-                         state->cli_file_notun,
+                         state->cli_file_notun4,
                          state->port, 0
                       };
 
    /* launch threads */
-   pthread_t tid_tun   = xthread_create(forked_cli, (void*)&args_tun, 0);
-   pthread_t tid_notun = xthread_create(forked_cli, (void*)&args_notun, 0);
+   pthread_t tid_tun   = xthread_create(forked_cli4, (void*)&args_tun, 0);
+   pthread_t tid_notun = xthread_create(forked_cli4, (void*)&args_notun, 0);
    
    /* join threads */
    pthread_join(tid_tun, NULL);
    pthread_join(tid_notun, NULL);
 }
 
-void cli_thread_tun(struct tun_state *state, int index) {
-   /* run tunneled flow */
-   tcp_cli(state, state->cli_private[index]->sa,
-           state->private_addr4, state->port, 1, state->cli_file_tun);
-   /* run notun flow */
-   tcp_cli(state, state->cli_public[index]->sa, 
-           NULL, state->port, 0, state->cli_file_notun);
+void cli_thread_parallel6(struct tun_state *state, int index) {
+   /* set thread arguments */
+
+   struct cli_thread_parallel_args args_tun = {state, 
+                         state->cli_private[index]->sa6, 
+                         state->private_addr6, 
+                         state->cli_file_tun6,
+                         state->port, 1
+                      };
+   struct cli_thread_parallel_args args_notun = {state, 
+                         state->cli_public[index]->sa6, 
+                         state->public_addr6, 
+                         state->cli_file_notun6,
+                         state->port, 0
+                      };
+
+   /* launch threads */
+   pthread_t tid_tun   = xthread_create(forked_cli6, (void*)&args_tun, 0);
+   pthread_t tid_notun = xthread_create(forked_cli6, (void*)&args_notun, 0);
+   
+   /* join threads */
+   pthread_join(tid_tun, NULL);
+   pthread_join(tid_notun, NULL);
 }
 
-void cli_thread_notun(struct tun_state *state, int index) {
-   /* run notun flow */
-   tcp_cli(state, state->cli_public[index]->sa, 
-           NULL, state->port, 0, state->cli_file_notun);
+void cli_thread_parallel46(struct tun_state *state, int index) {
+   struct cli_thread_parallel_args args_tun4 = {state, 
+                         state->cli_private[index]->sa4, 
+                         state->private_addr4, 
+                         state->cli_file_tun4,
+                         state->port, 1
+                      };
+   struct cli_thread_parallel_args args_notun4 = {state, 
+                         state->cli_public[index]->sa4, 
+                         state->public_addr4, 
+                         state->cli_file_notun4,
+                         state->port, 0
+                      };
+   struct cli_thread_parallel_args args_tun6 = {state, 
+                         state->cli_private[index]->sa6, 
+                         state->private_addr6, 
+                         state->cli_file_tun6,
+                         state->port, 1
+                      };
+   struct cli_thread_parallel_args args_notun6 = {state, 
+                         state->cli_public[index]->sa6, 
+                         state->public_addr6, 
+                         state->cli_file_notun6,
+                         state->port, 0
+                      };
+
+   /* launch IPv4 cli */
+   pthread_t tid4 = xthread_create(forked_cli4, (void*)&args_notun4, 0);
+   pthread_t tid6 = xthread_create(forked_cli6, (void*)&args_notun6, 0);
+   
+   /* join threads */
+   pthread_join(tid4, NULL);
+   pthread_join(tid6, NULL);
+
+   /* launch IPv6 cli */
+   tid4 = xthread_create(forked_cli4, (void*)&args_tun4, 0);
+   tid6 = xthread_create(forked_cli6, (void*)&args_tun6, 0);
+   
+   /* join threads */
+   pthread_join(tid4, NULL);
+   pthread_join(tid6, NULL);
+}
+
+void cli_thread_tun4(struct tun_state *state, int index) {
    /* run tunneled flow */
-   tcp_cli(state, state->cli_private[index]->sa, 
-           state->private_addr4, state->port, 1, state->cli_file_tun);
+   tcp_cli(state, state->cli_private[index]->sa4,
+           state->private_addr4, state->port, 1, state->cli_file_tun4, AF_INET);
+   /* run notun flow */
+   tcp_cli(state, state->cli_public[index]->sa4, 
+           NULL, state->port, 0, state->cli_file_notun4, AF_INET);
+}
+
+void cli_thread_tun6(struct tun_state *state, int index) {
+   /* run tunneled flow */
+   tcp_cli(state, state->cli_private[index]->sa6,
+           state->private_addr6, state->port, 1, state->cli_file_tun6, AF_INET6);
+   /* run notun flow */
+   tcp_cli(state, state->cli_public[index]->sa6, 
+           NULL, state->port, 0, state->cli_file_notun6, AF_INET6);
+}
+
+void cli_thread_notun4(struct tun_state *state, int index) {
+   /* run notun flow */
+   tcp_cli(state, state->cli_public[index]->sa4, 
+           NULL, state->port, 0, state->cli_file_notun4, AF_INET);
+   /* run tunneled flow */
+   tcp_cli(state, state->cli_private[index]->sa4, 
+           state->private_addr4, state->port, 1, state->cli_file_tun4, AF_INET);
+}
+
+void cli_thread_notun6(struct tun_state *state, int index) {
+   /* run notun flow */
+   tcp_cli(state, state->cli_public[index]->sa6, 
+           NULL, state->port, 0, state->cli_file_notun6, AF_INET6);
+   /* run tunneled flow */
+   tcp_cli(state, state->cli_private[index]->sa6, 
+           state->private_addr6, state->port, 1, state->cli_file_tun6, AF_INET6);
 }
 
 void *cli_thread(void *st) {
    struct tun_state *state = st;
    struct arguments *args = state->args;
 
+   /* pick functions */
+   void (*cli_thread)(struct tun_state*, int);
+   switch (args->cli_mode) {
+      case PARALLEL_MODE:
+         if (state->dual_stack)
+            cli_thread = &cli_thread_parallel46;
+         else if (state->ipv6)
+            cli_thread = &cli_thread_parallel6;
+         else
+            cli_thread = &cli_thread_parallel4;
+         break;
+      case TUN_FIRST_MODE:
+         if (state->dual_stack)
+            cli_thread = &cli_thread_parallel46;
+         else if (state->ipv6)
+            cli_thread = &cli_thread_tun6;
+         else
+            cli_thread = &cli_thread_tun4;
+         break;
+      case NOTUN_FIRST_MODE:
+         if (state->dual_stack)
+            cli_thread = &cli_thread_parallel46;
+         else if (state->ipv6)
+            cli_thread =  &cli_thread_notun6;
+         else
+            cli_thread =  &cli_thread_notun4;
+         break;
+      default:
+         errno=EINVAL;
+         die("cli_mode");
+   }  
+      
+
    /* initial sleep */
    sleep(state->initial_sleep);
 
    /* Client loop */
-   for (int i=0; i<state->sa_len; i++) {
-      switch (args->cli_mode) {
-         case PARALLEL_MODE:
-            cli_thread_parallel(state, i);
-            break;
-         case TUN_FIRST_MODE:
-            cli_thread_tun(state, i);
-            break;
-         case NOTUN_FIRST_MODE:
-            cli_thread_notun(state, i);
-            break;
-         default:
-            errno=EINVAL;
-            die("cli_mode");
-      }
-   }
+   for (int i=0; i<state->sa_len; i++) 
+      (*cli_thread)(state, i);
 
    /* Shutdown client, not peer */
    if (args->mode == CLI_MODE)
@@ -268,31 +389,55 @@ void *cli_thread(void *st) {
 void *serv_thread(void *st) {
    struct tun_state *state = st;
    serv_file = state->serv_file;
-   xthread_create(serv_thread_private, st, 1);
-   xthread_create(serv_thread_public, st, 1);
+
+   /* fork servers */
+   if (state->dual_stack) {
+      xthread_create(serv_thread_private4, st, 1);
+      xthread_create(serv_thread_public4,  st, 1);
+      xthread_create(serv_thread_private6, st, 1);
+      xthread_create(serv_thread_public6,  st, 1);
+   } else if (state->ipv6) {
+      xthread_create(serv_thread_private6, st, 1);
+      xthread_create(serv_thread_public6,  st, 1);
+   } else {
+      xthread_create(serv_thread_private4, st, 1);
+      xthread_create(serv_thread_public4,  st, 1);
+   }
 
    return 0;
 }
 
-void *serv_thread_private(void *st) {
+void *serv_thread_private4(void *st) {
    struct tun_state *state = st;
-   tcp_serv(state->private_addr4, state->private_port, state, 1);
+   tcp_serv(state->private_addr4, state->private_port, state, 1, AF_INET);
    return 0;
 }
 
-void *serv_thread_public(void *st) {
+void *serv_thread_private6(void *st) {
    struct tun_state *state = st;
-   tcp_serv(state->public_addr4, state->public_port, state, 0);
+   tcp_serv(state->private_addr6, state->private_port, state, 1, AF_INET6);
    return 0;
 }
 
-int tcp_serv(char *addr, int port, struct tun_state *state, int set_maxseg) {
+void *serv_thread_public4(void *st) {
+   struct tun_state *state = st;
+   tcp_serv(state->public_addr4, state->public_port, state, 0, AF_INET);
+   return 0;
+}
+
+void *serv_thread_public6(void *st) {
+   struct tun_state *state = st;
+   tcp_serv(state->public_addr6, state->public_port, state, 0, AF_INET6);
+   return 0;
+}
+
+int tcp_serv(char *addr, int port, struct tun_state *state, 
+               int set_maxseg, sa_family_t sfam) {
    int s;
    unsigned int sin_size;
-   struct sockaddr_in sin, sout;
 
    /* TCP socket */
-   if ((s=socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+   if ((s=socket(sfam, SOCK_STREAM, 0)) < 0) 
      die("socket");
    set_fd(s);
 
@@ -309,15 +454,19 @@ int tcp_serv(char *addr, int port, struct tun_state *state, int set_maxseg) {
       die("setsockopt failed");
 
    /* bind to sport */
-   memset(&sout, 0, sizeof(sout));
-   sout.sin_family = AF_INET;
-   if (addr)
-      inet_pton(AF_INET, addr, &sout.sin_addr);
-   else
-      sout.sin_addr.s_addr = htonl(INADDR_ANY);
-   sout.sin_port = htons(port);
+   size_t salen;
+   struct sockaddr *sout, *sin;
+   if (sfam == AF_INET6) {
+      sout  = (struct sockaddr *)get_addr6(addr, port);
+      salen = sizeof(struct sockaddr_in6);
+      sin   = xmalloc(sizeof(struct sockaddr_in6));
+   } else {
+      sout  = (struct sockaddr *)get_addr4(addr, port);
+      salen = sizeof(struct sockaddr_in);
+      sin   = xmalloc(sizeof(struct sockaddr_in));
+   }
 
-   if (bind(s, (struct sockaddr *)&sout, sizeof(sout)) < 0) {
+   if (bind(s, sout, salen) < 0) {
       debug_print("died binding %s:%d ...\n", addr ? addr : "*", port);
       die("bind tcp server");
    }
@@ -327,18 +476,28 @@ int tcp_serv(char *addr, int port, struct tun_state *state, int set_maxseg) {
    /* listen loop */
    debug_print("TCP server listening at %s:%d ...\n", addr ? addr : "*", port);
    int success = 0, ws;
+   char accepted_addr[INET6_ADDRSTRLEN];
    while(!success) {
 
-      sin_size = sizeof(struct sockaddr_in);
-      if ((ws = accept(s, (struct sockaddr *)&sin, &sin_size)) < 0) 
+      sin_size = salen;
+      if ((ws = accept(s, sin, &sin_size)) < 0) 
          die("accept");
-      debug_print("accepted connection from %s on socket %d.\n", inet_ntoa(sin.sin_addr), ws);
+
+      if (sfam == AF_INET6)
+         debug_print("accepted connection from %s on socket %d.\n", 
+                        inet_ntop(AF_INET6, &((struct sockaddr_in6 *)sin)->sin6_addr, 
+                                 accepted_addr, INET6_ADDRSTRLEN), ws);
+      else
+         debug_print("accepted connection from %s on socket %d.\n", 
+                        inet_ntoa(((struct sockaddr_in *)sin)->sin_addr), ws);
+
 
       /* Fork worker thread */
       xthread_create(serv_worker_thread, (void*) &ws, 1);
    }
 
    close(s);
+   free(sout);free(sin);
    return 0;
 }
 
@@ -380,12 +539,12 @@ err:
 }
 
 int tcp_cli(struct tun_state *st, struct sockaddr *sa, 
-            char *addr, int port, int tun, char* filename) {
+            char *addr, int port, int tun, char* filename, sa_family_t sfam) {
    struct tun_state *state = st;
    int s, err = 0; 
    FILE *fp = NULL;
    /* TCP socket */
-   if ((s=socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) 
+   if ((s=socket(sfam, SOCK_STREAM, IPPROTO_TCP)) == -1) 
       die("socket");
    set_fd(s);
 
@@ -411,22 +570,23 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa,
       die("setsockopt failed");
    
    /* bind socket to local addr */
-   struct sockaddr_in sout;
-   memset(&sout, 0, sizeof(sout));
-   sout.sin_family = AF_INET;
-   sout.sin_port   = htons(port);
-   if (addr)
-      inet_pton(AF_INET, addr, &sout.sin_addr);
-   else
-      sout.sin_addr.s_addr = htonl(INADDR_ANY);
-   if (bind(s, (struct sockaddr *)&sout, sizeof(sout)) < 0) 
+   size_t salen;
+   struct sockaddr *sout;
+   if (sfam == AF_INET6) {
+      sout  = (struct sockaddr *)get_addr6(addr, port);
+      salen = sizeof(struct sockaddr_in6);
+   } else {
+      sout  = (struct sockaddr *)get_addr4(addr, port);
+      salen = sizeof(struct sockaddr_in);
+   }
+
+   if (bind(s, (struct sockaddr *)sout, salen) < 0) 
       die("bind tcp cli");
-   debug_print("TCP cli bound to %s:%d\n",addr,port);
+   debug_print("TCP cli bound to %s:%d\n", addr, port);
 
    /* connect peer */
-   struct sockaddr_in sin = *((struct sockaddr_in *)sa);
    debug_print("connecting socket %d\n", s);
-   if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {     
+   if (connect(s, sa, salen) < 0) {     
       err = (errno == EINPROGRESS) ? ETIMEDOUT : errno;
       goto err;
    }
@@ -454,16 +614,17 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa,
    }
 
    /* close & set file permission */
-   fclose(fp);close(s);
+   fclose(fp);close(s);free(sout);
    mode_t m = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
    if (chmod(filename, m) < 0)
       die("chmod");
 
    debug_print("socket %d successfuly closed.\n", s);
+   free(sout);
    return 0;
 err:
-   if (fp) fclose(fp);
-   close(s);
+   if (fp) fclose(fp); 
+   close(s);free(sout);
    debug_print("socket %d closed on error: %s\n", s, strerror(err));
    return -1;
 }

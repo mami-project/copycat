@@ -42,15 +42,5 @@ void *cli_thread(void *st);
  */
 void *serv_thread(void *st);
 
-/**
- * \fn struct sockaddr_in *get_addr(const char *addr, int port)
- * \brief Allocate an AF_INET socket address structure.
- *
- * \param addr The sockaddr address.
- * \param port The sockaddr port.
- * \return A pointer (malloc) to the created struct sockaddr_in
- */ 
-struct sockaddr_in *get_addr(const char *addr, int port);
-
 #endif
 

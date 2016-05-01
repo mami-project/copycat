@@ -21,7 +21,9 @@
  * \param tun_fds A pointer to an int to be set to the tun interface fd.
  * \return A pointer (malloc) to the interface name.
  */ 
-char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds);
+char *create_tun4(const char *ip, const char *prefix, char *dev, int *tun_fds);
+char *create_tun46(const char *ip, const char *prefix, char *dev, int *tun_fds);
+char *create_tun6(const char *ip, const char *prefix, char *dev, int *tun_fds);
 
 #  if defined(LINUX_OS)
 /**

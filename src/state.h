@@ -11,16 +11,23 @@
 #include <glib.h>
 #include <stdint.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
 
 /** 
  * \struct tun_rec
  *	\brief Represents a peer of the node.
  */
 struct tun_rec {
-   struct sockaddr *sa;        /*!<  The address of the client. */
-   unsigned int     slen;      /*!<  The size of the sockaddr. */
+   struct sockaddr *sa4;        /*!<  The v4 address of the client. */
+   unsigned int     slen4;      /*!<  The size of the v4 sockaddr. */
+   in_addr_t        priv_addr4; /*!<  The private v4 address in network byte order to be used as a key */
+
+   struct sockaddr *sa6;        /*!<  The v6 address of the client. */
+   unsigned int     slen6;      /*!<  The size of the v6 sockaddr. */
+   unsigned char   priv_addr6[16];
+   //struct in6_addr  priv_addr6;  /*!<  The private v6 address in network byte order to be used as a key */
+
    int              sport;     /*!<  The udp source port. */
-   in_addr_t        priv_addr; /*!<  The private address in network byte order to be used as a key */
 };
 
 /** 
@@ -39,11 +46,10 @@ struct tun_state {
 
    /* From destination file */
    GHashTable      *serv;        /*!<  Source port to public address lookup table. */
-   GHashTable      *cli;         /*!<  Private address to public address lookup table. */
+   GHashTable      *cli4;        /*!<  Private IPv4 address to public address lookup table. */
+   GHashTable      *cli6;        /*!<  Private IPv6 address to public address lookup table. */
    struct tun_rec **cli_private; /*!<  Destination list. (private sockaddr's) */
    struct tun_rec **cli_public;  /*!<  Destination list. (public sockaddr's) */ 
-
-   //TODO v6 equivalent
    uint8_t sa_len;               /*!<  Number of destinations. */
 
    /* From cfg file */
@@ -69,8 +75,10 @@ struct tun_state {
    char    *cli_dir;            /*!< The data directory (for client) */
    char    *out_dir;            /*!< The output directory */
    /* cli_dir+macro from udptun.h */
-   char    *cli_file_tun;       /*!< The client file location */
-   char    *cli_file_notun;     /*!< The client file location */
+   char    *cli_file_tun4;       /*!< The client file location */
+   char    *cli_file_notun4;     /*!< The client file location */
+   char    *cli_file_tun6;       /*!< The client file location */
+   char    *cli_file_notun6;     /*!< The client file location */
 
    uint32_t buf_length;         /*!< buffer length */
    uint32_t backlog_size;       /*!< backlog size  */
@@ -103,7 +111,7 @@ void free_tun_state(struct tun_state *state);
  *
  * \return The allocated structure. 
  */
-struct tun_rec *init_tun_rec();
+struct tun_rec *init_tun_rec(struct tun_state *state);
 
 /**
  * \fn void free_tun_rec(struct tun_rec *rec)

@@ -30,27 +30,68 @@
 #include "state.h"
 
 /**
- * \fn char *addr_to_itf(char *addr)
- * \brief Lookup interface name from address.
+ * \fn struct sockaddr_in *get_addr4(const char *addr, int port)
+ * \brief Allocate an AF_INET socket address structure.
+ *
+ * \param addr The sockaddr address.
+ * \param port The sockaddr port.
+ * \return A pointer (malloc) to the created struct sockaddr_in
+ */ 
+struct sockaddr_in *get_addr4(const char *addr, int port);
+
+/**
+ * \fn struct sockaddr_in *get_addr6(const char *addr, int port)
+ * \brief Allocate an AF_INET6 socket address structure.
+ *
+ * \param addr The sockaddr address.
+ * \param port The sockaddr port.
+ * \return A pointer (malloc) to the created struct in6_addr
+ */ 
+struct sockaddr_in6 *get_addr6(const char *addr, int port);
+
+/**
+ * \fn char *addr_to_itf4(char *addr)
+ * \brief Lookup interface name from IPv4 address.
  *    Warning: 
  *          You must provide the actual IP bound to the interface,
- *          not the public address (if behind a NAT).    
+ *          not the publicly-routable address (if behind a NAT).    
  *
  * \param addr The ip address 
  * \return The associated interface name.
  */
 char *addr_to_itf4(char *addr);
+
+/**
+ * \fn char *addr_to_itf4(char *addr)
+ * \brief Lookup interface name from IPv6 address.
+ *    Warning: 
+ *          You must provide the actual IP bound to the interface,
+ *          not the publicly-routable address (if behind a NAT).    
+ *
+ * \param addr The ip address 
+ * \return The associated interface name.
+ */
 char *addr_to_itf6(char *addr);
 
 /**
- * \fn int udp_sock(int port)
- * \brief Create and bind a UDP DGRAM socket.
+ * \fn int udp_sock4(int port, uint8_t register_gc, char *addr)
+ * \brief Create and bind an IPv4 UDP DGRAM socket.
  *
  * \param port The port for the bind call.
  * \param register_gc Register fd to garbage collector.
  * \return The socket fd.
  */ 
-int udp_sock(int port, uint8_t register_gc, char *addr);
+int udp_sock4(int port, uint8_t register_gc, char *addr);
+
+/**
+ * \fn int udp_sock6(int port, uint8_t register_gc, char *addr)
+ * \brief Create and bind an IPv6 UDP DGRAM socket.
+ *
+ * \param port The port for the bind call.
+ * \param register_gc Register fd to garbage collector.
+ * \return The socket fd.
+ */ 
+int udp_sock6(int port, uint8_t register_gc, char *addr);
 
 #if defined(LINUX_OS)
 /**
@@ -90,7 +131,8 @@ int raw_sock(int port, const struct sock_fprog * bpf, const char *dev, int proto
  * \param buflen The size of the buffer.
  * \return The amount of bytes sent.
  */ 
-int xsendto(int fd, struct sockaddr *sa, const void *buf, size_t buflen);
+int xsendto4(int fd, struct sockaddr *sa, const void *buf, size_t buflen);
+int xsendto6(int fd, struct sockaddr *sa, const void *buf, size_t buflen);
 
 /**
  * \fn int xrecv(int fd, void *buf, size_t buflen)
@@ -185,6 +227,8 @@ int xfwrite(FILE *fp, char *buf, int size, int nmemb);
  * \param s The error message.
  */ 
 void die(char *s);
+
+void *xmalloc(size_t size);
 
 #endif
 
