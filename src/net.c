@@ -261,7 +261,7 @@ void cli_thread_parallel46(struct tun_state *state, int index) {
                          state->cli_private[index]->sa4, 
                          state->private_addr4, 
                          state->cli_file_tun4,
-                         state->port, 1
+                         state->port, state->max_segment_size,
                       };
    struct cli_thread_parallel_args args_notun4 = {state, 
                          state->cli_public[index]->sa4, 
@@ -273,7 +273,7 @@ void cli_thread_parallel46(struct tun_state *state, int index) {
                          state->cli_private[index]->sa6, 
                          state->private_addr6, 
                          state->cli_file_tun6,
-                         state->port, 1
+                         state->port, state->max_segment_size
                       };
    struct cli_thread_parallel_args args_notun6 = {state, 
                          state->cli_public[index]->sa6, 
@@ -302,7 +302,8 @@ void cli_thread_parallel46(struct tun_state *state, int index) {
 void cli_thread_tun4(struct tun_state *state, int index) {
    /* run tunneled flow */
    tcp_cli(state, state->cli_private[index]->sa4,
-           state->private_addr4, state->port, 1, state->cli_file_tun4, AF_INET);
+           state->private_addr4, state->port, state->max_segment_size, 
+            state->cli_file_tun4, AF_INET);
    /* run notun flow */
    tcp_cli(state, state->cli_public[index]->sa4, 
            NULL, state->port, 0, state->cli_file_notun4, AF_INET);
@@ -311,7 +312,8 @@ void cli_thread_tun4(struct tun_state *state, int index) {
 void cli_thread_tun6(struct tun_state *state, int index) {
    /* run tunneled flow */
    tcp_cli(state, state->cli_private[index]->sa6,
-           state->private_addr6, state->port, 1, state->cli_file_tun6, AF_INET6);
+           state->private_addr6, state->port, state->max_segment_size, 
+           state->cli_file_tun6, AF_INET6);
    /* run notun flow */
    tcp_cli(state, state->cli_public[index]->sa6, 
            NULL, state->port, 0, state->cli_file_notun6, AF_INET6);
@@ -323,7 +325,8 @@ void cli_thread_notun4(struct tun_state *state, int index) {
            NULL, state->port, 0, state->cli_file_notun4, AF_INET);
    /* run tunneled flow */
    tcp_cli(state, state->cli_private[index]->sa4, 
-           state->private_addr4, state->port, 1, state->cli_file_tun4, AF_INET);
+           state->private_addr4, state->port, state->max_segment_size, 
+           state->cli_file_tun4, AF_INET);
 }
 
 void cli_thread_notun6(struct tun_state *state, int index) {
@@ -332,7 +335,8 @@ void cli_thread_notun6(struct tun_state *state, int index) {
            NULL, state->port, 0, state->cli_file_notun6, AF_INET6);
    /* run tunneled flow */
    tcp_cli(state, state->cli_private[index]->sa6, 
-           state->private_addr6, state->port, 1, state->cli_file_tun6, AF_INET6);
+           state->private_addr6, state->port, state->max_segment_size, 
+           state->cli_file_tun6, AF_INET6);
 }
 
 void *cli_thread(void *st) {
@@ -409,13 +413,15 @@ void *serv_thread(void *st) {
 
 void *serv_thread_private4(void *st) {
    struct tun_state *state = st;
-   tcp_serv(state->private_addr4, state->private_port, state, 1, AF_INET);
+   tcp_serv(state->private_addr4, state->private_port, state, 
+            state->max_segment_size, AF_INET);
    return 0;
 }
 
 void *serv_thread_private6(void *st) {
    struct tun_state *state = st;
-   tcp_serv(state->private_addr6, state->private_port, state, 1, AF_INET6);
+   tcp_serv(state->private_addr6, state->private_port, state, 
+            state->max_segment_size, AF_INET6);
    return 0;
 }
 
@@ -553,10 +559,10 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa,
    struct timeval rcv_timeout = {state->tcp_rcv_timeout, 0}; 
    if (setsockopt (s, SOL_SOCKET, SO_RCVTIMEO, &rcv_timeout,
                 sizeof(rcv_timeout)) < 0)
-      die("setsockopt rcvtimeo");
+      debug_print("setsockopt rcvtimeo");
    if (setsockopt (s, SOL_SOCKET, SO_SNDTIMEO, &snd_timeout,
                 sizeof(snd_timeout)) < 0)
-      die("setsockopt sndtimeo");
+      debug_print("setsockopt sndtimeo");
 
    /* set tunnel/notunnel specific features */
    if (tun) {
@@ -620,7 +626,6 @@ int tcp_cli(struct tun_state *st, struct sockaddr *sa,
       die("chmod");
 
    debug_print("socket %d successfuly closed.\n", s);
-   free(sout);
    return 0;
 err:
    if (fp) fclose(fp); 

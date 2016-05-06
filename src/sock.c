@@ -376,8 +376,7 @@ char *addr_to_itf6(char *addr) {
     if (iap->ifa_addr && (iap->ifa_flags & IFF_UP)
         &&  iap->ifa_addr->sa_family == AF_INET6) {
       sa = (struct sockaddr_in6 *)(iap->ifa_addr);
-      inet_ntop(iap->ifa_addr->sa_family, (void *)&(sa->sin6_addr), buf, sizeof\
-(buf));
+      inet_ntop(iap->ifa_addr->sa_family, (void *)&(sa->sin6_addr), buf, sizeof(buf));
       if (!strcmp(addr, buf))  {
         dev = strdup(iap->ifa_name);
         break;

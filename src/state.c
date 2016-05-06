@@ -73,9 +73,9 @@ GHashTable *init_table(int v) {
    //htable = g_hash_table_new_full(g_int_hash, g_int_equal, NULL, 
    //                              (GDestroyNotify) free_tun_rec);
    //XXX: g_hash_table_new_full does not work with duplicated data
-   htable = g_hash_table_new(g_int_hash, (v==4) ? g_int_equal : g_str_equal);
+   htable = g_hash_table_new((v==4) ? g_int_hash : g_str_hash, (v==4) ? g_int_equal : g_str_equal);
 #elif defined(GLIB1)
-   htable = g_hash_table_new(g_int_hash, (v==4) ? g_int_equal : g_str_equal);
+   htable = g_hash_table_new((v==4) ? g_int_hash : g_str_hash, (v==4) ? g_int_equal : g_str_equal);
 #endif
    return htable;
 }
@@ -261,14 +261,17 @@ int parse_cfg_file(struct tun_state *state) {
    }
 
    char key[256], val[256], c;
+   int ret;
    /* build port to public addr lookup table */
    while ((c =fgetc(fp)) != EOF) {
 
       if (c == '\n') continue;
       if (c != '#') {   
          ungetc(c, fp);
-         if (fscanf(fp, "%s %s", key, val) < 0)
+         ret =fscanf(fp, "%s %s", key, val);
+         if (ret < 0)
             die("configuration file");
+         else if (ret != 2) break;
          debug_print("%s %s\n", key, val); 
          /* networking parameters */
          if (!strcmp(key, "public-server-port")) 
