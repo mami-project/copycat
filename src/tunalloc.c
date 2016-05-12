@@ -81,7 +81,9 @@ struct in6_ifreq {
  * \param if_name buffer to be filled with newly created if name.
  * \return fd
  */ 
-static int tun_alloc(const char *ip, const char *prefix, char *dev, int common);
+static int tun_alloc(const char *ip4, const char *prefix4, 
+                       const char *ip6, const char *prefix6, 
+                       char *dev, int common);
 
 /**
  * \fn int tun_alloc6(int iftype, char *if_name)
@@ -91,7 +93,9 @@ static int tun_alloc(const char *ip, const char *prefix, char *dev, int common);
  * \param if_name buffer to be filled with newly created if name.
  * \return fd
  */ 
-static int tun_alloc6(const char *ip, const char *prefix, char *dev, int common);
+static int tun_alloc6(const char *ip4, const char *prefix4, 
+                       const char *ip6, const char *prefix6, 
+                       char *dev, int common);
 
 /**
  * \fn int tun_alloc46(int iftype, char *if_name)
@@ -101,7 +105,9 @@ static int tun_alloc6(const char *ip, const char *prefix, char *dev, int common)
  * \param if_name buffer to be filled with newly created if name.
  * \return fd
  */ 
-static int tun_alloc46(const char *ip, const char *prefix, char *dev, int common);
+static int tun_alloc46(const char *ip4, const char *prefix4, 
+                       const char *ip6, const char *prefix6, 
+                       char *dev, int common);
 
 /**
  * \fn int tun_alloc_pl(int iftype, char *if_name)
@@ -114,8 +120,11 @@ static int tun_alloc46(const char *ip, const char *prefix, char *dev, int common
  */ 
 static int tun_alloc_pl(int iftype, char *if_name);
 
-static char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds, 
-      int (*func_alloc)(const char*,const char*, char*,int));
+static char *create_tun(const char *ip4, const char *prefix4, 
+                       const char *ip6, const char *prefix6, 
+                       char *dev, int *tun_fds, 
+                       int (*func_alloc)(const char*,const char*, 
+                       const char*,const char*, char*,int));
 
 /* Reads vif FD from "fd", writes interface name to vif_name, and returns vif FD.
  * vif_name should be IFNAMSIZ chars long. */
@@ -152,25 +161,32 @@ int receive_vif_fd(int fd, char *vif_name) {
 	return *(int*)CMSG_DATA(cmsg);
 }
 
-char *create_tun4(const char *ip, const char *prefix, char *dev, int *tun_fds) {
-   return create_tun(ip, prefix, dev, tun_fds, &tun_alloc);
+char *create_tun4(const char *ip4, const char *prefix4, 
+                  char *dev, int *tun_fds) {
+   return create_tun(ip4, prefix4, NULL, NULL, dev, tun_fds, &tun_alloc);
 }
 
-char *create_tun46(const char *ip, const char *prefix, char *dev, int *tun_fds) {
-   return create_tun(ip, prefix, dev, tun_fds, &tun_alloc46);
+char *create_tun46(const char *ip4, const char *prefix4, 
+                  const char *ip6, const char *prefix6, 
+                  char *dev, int *tun_fds) {
+   return create_tun(ip4, prefix4, ip6, prefix6, dev, tun_fds, &tun_alloc46);
 }
 
-char *create_tun6(const char *ip, const char *prefix, char *dev, int *tun_fds) {
-   return create_tun(ip, prefix, dev, tun_fds, &tun_alloc6);
+char *create_tun6(const char *ip6, const char *prefix6, 
+                  char *dev, int *tun_fds) {
+   return create_tun(NULL, NULL, ip6, prefix6, dev, tun_fds, &tun_alloc6);
 }
 
-char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds, 
-      int (*func_alloc)(const char*,const char*, char*,int)) {
+char *create_tun(const char *ip4, const char *prefix4, 
+                 const char *ip6, const char *prefix6, 
+                 char *dev, int *tun_fds, 
+                 int (*func_alloc)(const char*,const char*, 
+                  const char*,const char*, char*,int)) {
    int   fd; 
    char *if_name = xmalloc(IFNAMSIZ);
 
    if (dev) {
-      if ((fd = (*func_alloc)(ip, prefix, dev, 0)) >= 0) {
+      if ((fd = (*func_alloc)(ip4, prefix4, ip6, prefix6, dev, 0)) >= 0) {
          strcpy(if_name, dev);
          goto succ;
       } else goto err;
@@ -178,7 +194,7 @@ char *create_tun(const char *ip, const char *prefix, char *dev, int *tun_fds,
 
    for (int i=0; i<99; i++) {
       sprintf(if_name, "tun%d", i);
-      if ((fd = (*func_alloc)(ip, prefix, if_name, 1)) >= 0) {
+      if ((fd = (*func_alloc)(ip4, prefix4, ip6, prefix6, if_name, 1)) >= 0) {
          break;
       } else goto err;
    }
@@ -194,7 +210,8 @@ err:
 
 #if defined(BSD_OS)
 
-int tun_alloc(const char *ip, const char *prefix, char *dev, int common) {
+int tun_alloc(const char *ip4, const char *prefix4, 
+              const char *ip6, const char *prefix6, char *dev, int common) {
    struct ifreq ifr; 
    int fd;
    
@@ -237,14 +254,14 @@ int tun_alloc(const char *ip, const char *prefix, char *dev, int common) {
    struct sockaddr_in  tun_addr;
    memset((char *) &tun_addr, 0, sizeof(tun_addr));
    tun_addr.sin_family = AF_INET;
-   tun_addr.sin_addr.s_addr = htonl(inet_network(ip));
+   tun_addr.sin_addr.s_addr = htonl(inet_network(ip4));
    memcpy(&ifr.ifr_addr, &tun_addr, sizeof(struct sockaddr));
 
    if (ioctl(s, SIOCSIFADDR, &ifr) < 0) 
       die("cannot set IP address. ");
 
    char net_prefix_cmd[128];
-   sprintf(net_prefix_cmd, "ip addr add %s/%s dev %s", ip, prefix, dev);
+   sprintf(net_prefix_cmd, "ip addr add %s/%s dev %s", ip4, prefix4, dev);
    if (system(net_prefix_cmd) < 0) 
       die("tun prefix");
 
@@ -252,15 +269,18 @@ int tun_alloc(const char *ip, const char *prefix, char *dev, int common) {
    return fd;
 }       
 
-int tun_alloc6(const char *ip, const char *prefix, char *dev, int common) {
+int tun_alloc6(const char *ip4, const char *prefix4, 
+                const char *ip6, const char *prefix6, char *dev, int common) {
    return 0;
 }
-int tun_alloc46(const char *ip, const char *prefix, char *dev, int common) {
+int tun_alloc46(const char *ip4, const char *prefix4, 
+                const char *ip6, const char *prefix6, char *dev, int common) {
    return 0;
 }
 #elif defined(LINUX_OS)
 
-int tun_alloc(const char *ip, const char *prefix, char *dev, int common) {
+int tun_alloc(const char *ip4, const char *prefix4, 
+              const char *ip6, const char *prefix6, char *dev, int common) {
    struct ifreq ifr; 
    int fd, err;
    
@@ -303,14 +323,14 @@ int tun_alloc(const char *ip, const char *prefix, char *dev, int common) {
    struct sockaddr_in  tun_addr;
    memset((char *) &tun_addr, 0, sizeof(tun_addr));
    tun_addr.sin_family = AF_INET;
-   tun_addr.sin_addr.s_addr = htonl(inet_network(ip));
+   tun_addr.sin_addr.s_addr = htonl(inet_network(ip4));
    memcpy(&ifr.ifr_addr, &tun_addr, sizeof(struct sockaddr));
 
    if (ioctl(s, SIOCSIFADDR, &ifr) < 0) 
       die("cannot set IP address. ");
 
    char net_prefix_cmd[128];
-   sprintf(net_prefix_cmd, "ip addr add %s/%s dev %s", ip, prefix, dev);
+   sprintf(net_prefix_cmd, "ip addr add %s/%s dev %s", ip4, prefix4, dev);
    if (system(net_prefix_cmd) < 0) 
       die("tun prefix");
 
@@ -318,7 +338,8 @@ int tun_alloc(const char *ip, const char *prefix, char *dev, int common) {
    return fd;
 }                   
 
-int tun_alloc46(const char *ip, const char *prefix, char *dev, int common) {
+int tun_alloc46(const char *ip4, const char *prefix4, 
+                const char *ip6, const char *prefix6, char *dev, int common) {
    struct ifreq ifr; //TODO:compact
    struct in6_ifreq ifr6;
    int fd, err;
@@ -364,7 +385,7 @@ int tun_alloc46(const char *ip, const char *prefix, char *dev, int common) {
    struct sockaddr_in  tun_addr4;
    memset((char *) &tun_addr4, 0, sizeof(tun_addr4));
    tun_addr4.sin_family = AF_INET;
-   tun_addr4.sin_addr.s_addr = htonl(inet_network(ip));
+   tun_addr4.sin_addr.s_addr = htonl(inet_network(ip4));
    memcpy(&ifr.ifr_addr, &tun_addr4, sizeof(struct sockaddr));
 
    if (ioctl(s4, SIOCSIFADDR, &ifr) < 0) 
@@ -374,25 +395,23 @@ int tun_alloc46(const char *ip, const char *prefix, char *dev, int common) {
    //   die("cannot get interface flags");
 
    char net_prefix_cmd[128];
-   sprintf(net_prefix_cmd, "ip addr add %s/%s dev %s", ip, prefix, dev);
+   sprintf(net_prefix_cmd, "ip addr add %s/%s dev %s", ip4, prefix4, dev);
    if (system(net_prefix_cmd) < 0) 
       die("tun prefix");
 
-
-   ip = "2001:412:abcd:2::";
    /* Set interface address */
    struct sockaddr_in6  tun_addr6;
    memset(&tun_addr6, 0, sizeof(tun_addr6));
    tun_addr6.sin6_family = AF_INET6;
-   if(inet_pton(AF_INET6, ip, (void *)&tun_addr6.sin6_addr) <= 0) 
+   if(inet_pton(AF_INET6, ip6, (void *)&tun_addr6.sin6_addr) <= 0) 
         die("Bad address\n");
-   if(inet_pton(AF_INET6, ip, (void *)&ifr6.ifr6_addr) <= 0) 
+   if(inet_pton(AF_INET6, ip6, (void *)&ifr6.ifr6_addr) <= 0) 
         die("Bad address\n");
 
     if (ioctl(s6, SIOGIFINDEX, &ifr) < 0) 
         die("SIOGIFINDEX");
     ifr6.ifr6_ifindex   = ifr.ifr_ifindex;
-    ifr6.ifr6_prefixlen = strtol(prefix, NULL, 10);
+    ifr6.ifr6_prefixlen = strtol(prefix6, NULL, 10);
     if (ioctl(s6, SIOCSIFADDR, &ifr6) < 0) 
         die("SIOCSIFADDR");
 
@@ -403,11 +422,12 @@ int tun_alloc46(const char *ip, const char *prefix, char *dev, int common) {
    return fd;
 }              
 
-int tun_alloc6(const char *ip, const char *prefix, char *dev, int common) {
+int tun_alloc6(const char *ip4, const char *prefix4, 
+                const char *ip6, const char *prefix6, char *dev, int common) {
    struct ifreq ifr;
    struct in6_ifreq ifr6;
    int fd, err;
-   ip = "2001:412:abcd:2::";
+
    if (common) {
       if((fd = open("/dev/net/tun", O_RDWR)) < 0 ) 
          die("err opening tun fd\n");
@@ -446,7 +466,7 @@ int tun_alloc6(const char *ip, const char *prefix, char *dev, int common) {
    struct sockaddr_in6  tun_addr;
    memset(&tun_addr, 0, sizeof(tun_addr));
    tun_addr.sin6_family = AF_INET6;
-   if(inet_pton(AF_INET6, ip, (void *)&tun_addr.sin6_addr) <= 0) 
+   if(inet_pton(AF_INET6, ip6, (void *)&tun_addr.sin6_addr) <= 0) 
         die("Bad address\n");
    memcpy((char *) &ifr6.ifr6_addr, (char *) &tun_addr.sin6_addr,
                sizeof(struct in6_addr));
@@ -454,7 +474,7 @@ int tun_alloc6(const char *ip, const char *prefix, char *dev, int common) {
     if (ioctl(s, SIOGIFINDEX, &ifr) < 0) 
         die("SIOGIFINDEX");
     ifr6.ifr6_ifindex   = ifr.ifr_ifindex;
-    ifr6.ifr6_prefixlen = strtol(prefix, NULL, 10);
+    ifr6.ifr6_prefixlen = strtol(prefix6, NULL, 10);
     if (ioctl(s, SIOCSIFADDR, &ifr6) < 0) 
         die("SIOCSIFADDR");
 

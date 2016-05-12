@@ -173,13 +173,13 @@ void tun(struct tun_state *state, int *fd_tun) {
    else 
 #endif
    if (args->ipv6 || args->dual_stack)
-      new_if = create_tun46(state->private_addr4, 
-                                 state->private_mask4, 
-                                 state->tun_if, fd_tun); 
+      new_if = create_tun46(state->private_addr4, state->private_mask4, 
+                            state->private_addr6, state->private_mask6, 
+                            state->tun_if, fd_tun); 
    else
       new_if = create_tun4(state->private_addr4, 
-                                 state->private_mask4, 
-                                 state->tun_if, fd_tun); 
+                           state->private_mask4, 
+                           state->tun_if, fd_tun); 
 
    /* swap wished name with actual name */
    if (new_if) {
@@ -213,7 +213,7 @@ void cli_thread_parallel4(struct tun_state *state, int index) {
                          state->cli_private[index]->sa4, 
                          state->private_addr4, 
                          state->cli_file_tun4,
-                         state->port, 1
+                         state->port, state->max_segment_size
                       };
    struct cli_thread_parallel_args args_notun = {state, 
                          state->cli_public[index]->sa4, 
@@ -238,7 +238,7 @@ void cli_thread_parallel6(struct tun_state *state, int index) {
                          state->cli_private[index]->sa6, 
                          state->private_addr6, 
                          state->cli_file_tun6,
-                         state->port, 1
+                         state->port, state->max_segment_size
                       };
    struct cli_thread_parallel_args args_notun = {state, 
                          state->cli_public[index]->sa6, 
