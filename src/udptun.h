@@ -58,6 +58,42 @@
 #define CLI_NOTUN_FILE6 "cli_notun6.dat"
 
 /**
+ * \def TUN_SNAPLEN4
+ * \brief libpcap snapshot length in bytes for IPv4 measurements.
+ */
+#define TUN_SNAPLEN4 54
+
+/**
+ * \def TUN_SNAPLEN6
+ * \brief libpcap snapshot length in bytes for IPv6 measurements.
+ */
+#define TUN_SNAPLEN6 74
+
+/**
+ * \def TUN_SNAPLEN46
+ * \brief libpcap snapshot length in bytes for IPv6 measurements.
+ */
+#define TUN_SNAPLEN46 74
+
+/**
+ * \def NOTUN_SNAPLEN4
+ * \brief libpcap snapshot length in bytes for IPv4 measurements.
+ */
+#define NOTUN_SNAPLEN4 82
+
+/**
+ * \def NOTUN_SNAPLEN6
+ * \brief libpcap snapshot length in bytes for IPv6 measurements.
+ */
+#define NOTUN_SNAPLEN6 122
+
+/**
+ * \def NOTUN_SNAPLEN46
+ * \brief libpcap snapshot length in bytes for IPv6 measurements.
+ */
+#define NOTUN_SNAPLEN46 140
+
+/**
  * \def LOCKED
  * \brief Comment to accept packets from nodes not in dest file.
  */

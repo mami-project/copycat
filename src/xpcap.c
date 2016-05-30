@@ -66,7 +66,16 @@ void *capture_tun(void *arg) {
    }
    strncat(file_loc, ".pcap", 512);
    debug_print("%s\n", file_loc);
-   capture(state->tun_if, state->private_addr4, 0, file_loc, 70);
+
+   int snaplen;
+   if (state->ipv6)
+      snaplen = TUN_SNAPLEN6;
+   else if (state->dual_stack)
+      snaplen = TUN_SNAPLEN46;
+   else
+      snaplen = TUN_SNAPLEN4;
+
+   capture(state->tun_if, state->private_addr4, 0, file_loc, snaplen);
    return 0;
 }
 
@@ -82,9 +91,17 @@ void *capture_notun(void *arg) {
       strncat(file_loc, args->run_id, 256);
    }
    strncat(file_loc, ".pcap", 512);
+   
+   int snaplen;
+   if (state->ipv6)
+      snaplen = NOTUN_SNAPLEN6;
+   else if (state->dual_stack)
+      snaplen = NOTUN_SNAPLEN46;
+   else
+      snaplen = NOTUN_SNAPLEN4;
 
    capture(state->default_if, state->public_addr4, 
-           state->public_port, file_loc, 110);
+           state->public_port, file_loc, snaplen);
    return 0;
 }
 
