@@ -167,8 +167,8 @@ char *create_tun4(const char *ip4, const char *prefix4,
 }
 
 char *create_tun46(const char *ip4, const char *prefix4, 
-                  const char *ip6, const char *prefix6, 
-                  char *dev, int *tun_fds) {
+                   const char *ip6, const char *prefix6, 
+                   char *dev, int *tun_fds) {
    return create_tun(ip4, prefix4, ip6, prefix6, dev, tun_fds, &tun_alloc46);
 }
 
@@ -181,7 +181,8 @@ char *create_tun(const char *ip4, const char *prefix4,
                  const char *ip6, const char *prefix6, 
                  char *dev, int *tun_fds, 
                  int (*func_alloc)(const char*,const char*, 
-                  const char*,const char*, char*,int)) {
+                                   const char*,const char*, 
+                                   char*,int)) {
    int   fd; 
    char *if_name = xmalloc(IFNAMSIZ);
 

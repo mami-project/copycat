@@ -120,9 +120,13 @@ void capture(const char *dev, const char *addr, int port,
 
    if (port) {  
       if (port<0)
-         sprintf(filter_exp, "not port %d or (icmp and icmp[icmptype] != icmp-timxceed and icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply)", -port);
+         sprintf(filter_exp, "not port %d or (icmp and icmp[icmptype] != "
+                             "icmp-timxceed and icmp[icmptype] != icmp-echo "
+                             "and icmp[icmptype] != icmp-echoreply) or icmp6", -port);
       else if (port>0)
-         sprintf(filter_exp, "port %d or (icmp and icmp[icmptype] != icmp-timxceed and icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply)", port);
+         sprintf(filter_exp, "port %d or (icmp and icmp[icmptype] != "
+                             "icmp-timxceed and icmp[icmptype] != icmp-echo "
+                             "and icmp[icmptype] != icmp-echoreply) or icmp6", port);
 
       if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) 
          die("pcap_compile");

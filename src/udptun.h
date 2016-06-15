@@ -61,37 +61,37 @@
  * \def TUN_SNAPLEN4
  * \brief libpcap snapshot length in bytes for IPv4 measurements.
  */
-#define TUN_SNAPLEN4 54
+#define TUN_SNAPLEN4 74
 
 /**
  * \def TUN_SNAPLEN6
  * \brief libpcap snapshot length in bytes for IPv6 measurements.
  */
-#define TUN_SNAPLEN6 74
+#define TUN_SNAPLEN6 94
 
 /**
  * \def TUN_SNAPLEN46
  * \brief libpcap snapshot length in bytes for IPv6 measurements.
  */
-#define TUN_SNAPLEN46 74
+#define TUN_SNAPLEN46 94
 
 /**
  * \def NOTUN_SNAPLEN4
  * \brief libpcap snapshot length in bytes for IPv4 measurements.
  */
-#define NOTUN_SNAPLEN4 82
+#define NOTUN_SNAPLEN4 102
 
 /**
  * \def NOTUN_SNAPLEN6
  * \brief libpcap snapshot length in bytes for IPv6 measurements.
  */
-#define NOTUN_SNAPLEN6 122
+#define NOTUN_SNAPLEN6 142
 
 /**
  * \def NOTUN_SNAPLEN46
  * \brief libpcap snapshot length in bytes for IPv6 measurements.
  */
-#define NOTUN_SNAPLEN46 140
+#define NOTUN_SNAPLEN46 160
 
 /**
  * \def LOCKED
