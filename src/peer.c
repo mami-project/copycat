@@ -60,7 +60,7 @@ static void tun_peer_in(int fd_tun, int fd_cli4, int fd_serv4,
                  struct tun_state *state, char *buf);
 
 /**
- * \fn static void tun_serv_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf)
+ * \fn static void tun_peer_out_cli4(int fd_udp, int fd_tun, struct tun_state *state, char *buf)
  * \brief Forward a packet out of the tunnel.
  *
  * \param fd_udp The udp socket fd.
@@ -68,7 +68,8 @@ static void tun_peer_in(int fd_tun, int fd_cli4, int fd_serv4,
  * \param state The state of the server.
  * \param buf The buffer.
  */ 
-static void tun_peer_out_cli(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
+static void tun_peer_out_cli4(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
+static void tun_peer_out_cli6(int fd_udp, int fd_tun, struct tun_state *state, char *buf);
 
 /**
  * \fn static void tun_serv_out4(int fd_udp, int fd_tun, struct tun_state *state, char *buf)
@@ -167,7 +168,7 @@ void tun_peer_in4_aux(int fd_cli, int fd_serv,
             }
 
             int sent = xsendto4(fd_cli, rec->sa4, buf, recvd);
-            debug_print("wrote %db to udp\n",sent);
+            debug_print("wrote %db to internet\n",sent);
 
          } else {
             errno=EFAULT;
@@ -184,7 +185,7 @@ void tun_peer_in4_aux(int fd_cli, int fd_serv,
          }
 
          int sent = xsendto4(fd_serv, rec->sa4, buf, recvd);
-         debug_print("wrote %db to udp\n",sent);
+         debug_print("wrote %db to internet\n",sent);
       } else {
          debug_print("serv lookup failed proto:%d sport:%d dport:%d\n", 
                       (int) *((uint8_t *)(buf+9)), 
@@ -227,7 +228,7 @@ void tun_peer_in6_aux(int fd_cli, int fd_serv,
                recvd += state->raw_header_size;
             }
             int sent = xsendto6(fd_cli, rec->sa6, buf, recvd);
-            debug_print("wrote %db to udp\n",sent);
+            debug_print("wrote %db to internet\n",sent);
             if (sent <0) debug_perror();
          } else {
             errno=EFAULT;
@@ -244,7 +245,7 @@ void tun_peer_in6_aux(int fd_cli, int fd_serv,
          }
 
          int sent = xsendto6(fd_serv, rec->sa6, buf, recvd);
-         debug_print("wrote %db to udp\n",sent);
+         debug_print("wrote %db to internet\n",sent);
       } else {
          debug_print("serv lookup failed proto:%d sport:%d dport:%d\n", 
                       (int) *((uint8_t *)(buf+6)), 
@@ -254,14 +255,45 @@ void tun_peer_in6_aux(int fd_cli, int fd_serv,
    } 
 }
 
-void tun_peer_out_cli(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
+void tun_peer_out_cli4(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    int recvd = xrecv(fd_udp, buf, BUFF_SIZE);
 
    if (recvd > MIN_PKT_SIZE) {
-      debug_print("cli: recvd %dB from udp\n", recvd);
+      debug_print("cli: recvd %dB from internet\n", recvd);
 
       /* Remove layer 4.5 header */
       if (state->raw_header) {
+         if (!state->udp)
+            recvd -= 20; 
+         recvd -= state->raw_header_size;
+         memmove(buf, buf+state->raw_header_size, recvd);
+      }
+      /* Add PlanetLab TUN PPI header */
+      if (state->planetlab) {
+         buf-=4; recvd+=4;
+      }
+
+      int sent = xwrite(fd_tun, buf, recvd);
+      debug_print("cli: wrote %dB to tun\n", sent);
+   } else if (recvd < 0) {
+      /* recvd ICMP msg */
+      xrecverr(fd_udp, buf, BUFF_SIZE, 0, NULL);
+   } else {
+      /* recvd unknown packet */
+      debug_print("cli: recvd empty pkt\n");
+   }   
+}
+
+void tun_peer_out_cli6(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
+   int recvd = xrecv(fd_udp, buf, BUFF_SIZE);
+
+   if (recvd > MIN_PKT_SIZE) {
+      debug_print("cli: recvd %dB from internet\n", recvd);
+
+      /* Remove layer 4.5 header */
+      if (state->raw_header) {
+         if (!state->udp)
+            recvd -= 40; 
          recvd -= state->raw_header_size;
          memmove(buf, buf+state->raw_header_size, recvd);
       }
@@ -287,11 +319,12 @@ void tun_peer_out_serv4(int fd_udp, int fd_tun, struct tun_state *state, char *b
                          &nrec->slen4, buf, BUFF_SIZE);
 
    if (recvd > MIN_PKT_SIZE) {
-      debug_print("serv: recvd %dB from udp\n", recvd);
+      debug_print("serv: recvd %dB from internet\n", recvd);
 
       /* Remove layer 4.5 header */
       if (state->raw_header) {
-         debug_print("removing layer 4.5\n");
+         if (!state->udp)
+            recvd -= 20; 
          recvd -= state->raw_header_size;
          memmove(buf, buf+state->raw_header_size, recvd);
       }
@@ -306,7 +339,7 @@ void tun_peer_out_serv4(int fd_udp, int fd_tun, struct tun_state *state, char *b
       if ( (rec = g_hash_table_lookup(state->serv, &sport)) ) {
 
          sent = xwrite(fd_tun, buf, recvd);
-         debug_print("serv: wrote %dB to tun\n", sent); 
+         debug_print("serv: wrote %dB to internet\n", sent); 
       } 
 #if !defined(LOCKED)
       else if (g_hash_table_size(state->serv) <= state->fd_lim) { 
@@ -339,11 +372,12 @@ void tun_peer_out_serv6(int fd_udp, int fd_tun, struct tun_state *state, char *b
                          &nrec->slen6, buf, BUFF_SIZE);
 
    if (recvd > MIN_PKT_SIZE) {
-      debug_print("serv: recvd %dB from udp\n", recvd);
+      debug_print("serv: recvd %dB from internet\n", recvd);
 
       /* Remove layer 4.5 header */
       if (state->raw_header) {
-         debug_print("removing layer 4.5\n");
+         if (!state->udp)
+            recvd -= 40; 
          recvd -= state->raw_header_size;
          memmove(buf, buf+state->raw_header_size, recvd);
       }
@@ -386,6 +420,7 @@ void tun_peer_out_serv6(int fd_udp, int fd_tun, struct tun_state *state, char *b
 void tun_peer_single(struct arguments *args) {
    int fd_tun = 0, fd_serv = 0, fd_cli = 0;
    void (*tun_peer_in_func)(int,int,int,struct tun_state*,char*);
+   void (*tun_peer_out_cli)(int,int,struct tun_state*,char*);
    void (*tun_peer_out_serv)(int,int,struct tun_state*,char*);
    
    /* init state */ 
@@ -394,13 +429,42 @@ void tun_peer_single(struct arguments *args) {
    /* create tun if and sockets */
    tun(state, &fd_tun);   
    if (state->ipv6) {
-      fd_serv = udp_sock6(state->public_port, 1, state->public_addr6);
-      fd_cli  = udp_sock6(state->port, 1, state->public_addr6);
+      if (state->udp) {
+         fd_serv = udp_sock6(state->public_port, 1, state->public_addr6);
+         fd_cli  = udp_sock6(state->port, 1, state->public_addr6);
+      } else {
+         fd_serv = raw_sock6(state->public_port, state->public_addr6, 
+                            gen_bpf(state->default_if, state->public_addr6, 
+                                    state->public_port, 0), 
+                            state->default_if, state->protocol_num, 
+                            1, state->planetlab);
+         fd_cli  = raw_sock6(state->port, state->public_addr6, 
+                            gen_bpf(state->default_if, state->public_addr6, 
+                                    state->port, 0), 
+                            state->default_if, state->protocol_num, 
+                            1, state->planetlab);
+      }
+      tun_peer_out_cli = &tun_peer_out_cli6;
       tun_peer_out_serv = &tun_peer_out_serv6;
       tun_peer_in_func = &tun_peer_in6;
    } else {
-      fd_serv = udp_sock4(state->public_port, 1, state->public_addr4);
-      fd_cli  = udp_sock4(state->port, 1, state->public_addr4);
+      if (state->udp) {
+         fd_serv = udp_sock4(state->public_port, 1, state->public_addr4);
+         fd_cli  = udp_sock4(state->port, 1, state->public_addr4);
+      } else {
+         fd_serv = raw_sock4(state->public_port, state->public_addr4, 
+                            gen_bpf(state->default_if, state->public_addr4, 
+                                    state->public_port, 0), 
+                            state->default_if, state->protocol_num, 
+                            1, state->planetlab);
+         fd_cli  = raw_sock4(state->port, state->public_addr4, 
+                            gen_bpf(state->default_if, state->public_addr4, 
+                                    state->port, 0), 
+                            state->default_if, state->protocol_num, 
+                            1, state->planetlab);
+      }
+
+      tun_peer_out_cli = &tun_peer_out_cli4;
       tun_peer_out_serv = &tun_peer_out_serv4;
       tun_peer_in_func = &tun_peer_in4;
    }
@@ -456,7 +520,7 @@ void tun_peer_single(struct arguments *args) {
          if (FD_ISSET(fd_tun, &input_set))      
             (*tun_peer_in_func)(fd_tun, fd_cli, fd_serv, state, inbuffer); 
          if (FD_ISSET(fd_cli, &input_set)) 
-            tun_peer_out_cli(fd_cli, fd_tun, state, outbuffer);
+            (*tun_peer_out_cli)(fd_cli, fd_tun, state, outbuffer);
          if (FD_ISSET(fd_serv, &input_set)) 
             (*tun_peer_out_serv)(fd_serv, fd_tun, state, outbuffer);
       }
@@ -471,10 +535,33 @@ void tun_peer_dual(struct arguments *args) {
 
    /* create tun if and sockets */
    tun(state, &fd_tun);   
-   fd_serv4 = udp_sock4(state->public_port, 1, state->public_addr4);
-   fd_cli4  = udp_sock4(state->port, 1, state->public_addr4);
-   fd_serv6 = udp_sock6(state->public_port, 1, state->public_addr6);
-   fd_cli6  = udp_sock6(state->port, 1, state->public_addr6);
+   if (state->udp) {
+      fd_serv4 = udp_sock4(state->public_port, 1, state->public_addr4);
+      fd_cli4  = udp_sock4(state->port, 1, state->public_addr4);
+      fd_serv6 = udp_sock6(state->public_port, 1, state->public_addr6);
+      fd_cli6  = udp_sock6(state->port, 1, state->public_addr6);
+   } else {
+      fd_serv4 = raw_sock4(state->public_port, state->public_addr4, 
+                            gen_bpf(state->default_if, state->public_addr4, 
+                                    state->public_port, 0), 
+                            state->default_if, state->protocol_num, 
+                            1, state->planetlab);
+      fd_cli4  = raw_sock4(state->port, state->public_addr4, 
+                            gen_bpf(state->default_if, state->public_addr4, 
+                                    state->port, 0), 
+                            state->default_if, state->protocol_num, 
+                            1, state->planetlab);
+      fd_serv6 = raw_sock6(state->public_port, state->public_addr6, 
+                            gen_bpf(state->default_if, state->public_addr6, 
+                                    state->public_port, 0), 
+                            state->default_if, state->protocol_num, 
+                            1, state->planetlab);
+      fd_cli6  = raw_sock6(state->port, state->public_addr6, 
+                            gen_bpf(state->default_if, state->public_addr6, 
+                                    state->port, 0), 
+                            state->default_if, state->protocol_num, 
+                            1, state->planetlab);
+   }
 
    /* run capture threads */
    xthread_create(capture_notun, (void *) state, 1);
@@ -527,9 +614,9 @@ void tun_peer_dual(struct arguments *args) {
          break;
       } else if (sel > 0) {
          if (FD_ISSET(fd_cli4, &input_set)) 
-            tun_peer_out_cli(fd_cli4, fd_tun, state, outbuffer);
+            tun_peer_out_cli4(fd_cli4, fd_tun, state, outbuffer);
          if (FD_ISSET(fd_cli6, &input_set)) 
-            tun_peer_out_cli(fd_cli6, fd_tun, state, outbuffer);
+            tun_peer_out_cli6(fd_cli6, fd_tun, state, outbuffer);
          if (FD_ISSET(fd_tun, &input_set))      
             tun_peer_in(fd_tun, fd_cli4, fd_serv4, fd_cli6, fd_serv6, 
                         state, inbuffer); 

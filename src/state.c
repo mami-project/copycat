@@ -80,16 +80,6 @@ GHashTable *init_table(int v) {
    return htable;
 }
 
-//XXX:delete
-void print_bytes(uint8_t *bytes, uint8_t size) {      
-    int count;
-
-    printf("0x");
-    for(count = 0; count < size; count++)
-        printf("%02x", bytes[count]);
-    printf("\n");
-}
-
 struct tun_state *init_tun_state(struct arguments *args) {
    struct tun_state *state = calloc(1, sizeof(struct tun_state));
    state->args = args;   
@@ -135,13 +125,22 @@ struct tun_state *init_tun_state(struct arguments *args) {
 
       char *pos = args->raw_header;
       size_t count = 0;
-      /* WARNING: no sanitization or error-checking whatsoever */
+      /* WARNING: no sanitization */
       for(count = 0; count < state->raw_header_size; count++) {
          char buf[3] = {pos[0], pos[1], 0};
          state->raw_header[count] = strtol(buf, NULL, 16);
          pos += 2;
       }
    }
+
+   /* compute snaplen */
+   if (state->ipv6)
+      state->snaplen = NOTUN_SNAPLEN6;
+   else if (state->dual_stack)
+      state->snaplen = NOTUN_SNAPLEN46;
+   else
+      state->snaplen = NOTUN_SNAPLEN4;
+   state->snaplen += state->raw_header_size;
 
    /* File locations */
    state->cli_file_tun4   = xmalloc(STR_SIZE);

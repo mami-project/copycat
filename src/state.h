@@ -90,6 +90,8 @@ struct tun_state {
    
    uint32_t max_segment_size;   /*!< The value passed as TCP_MAXSEG 
                                      optval (max mss) for tun flow */
+
+   uint16_t snaplen;            /*!< the size of saved packets in pcap traces  */
 };
 
 /**
@@ -124,8 +126,6 @@ struct tun_rec *init_tun_rec(struct tun_state *state);
  * \param rec The tun_rec structure. 
  */
 void free_tun_rec(struct tun_rec *rec);
-
-void print_bytes(uint8_t *bytes, uint8_t size);
 
 #endif
 

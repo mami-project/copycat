@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([udptun], [0.1], [korian.edeline@ulg.ac.be])
+AC_INIT([copycat], [0.1], [korian.edeline@ulg.ac.be])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
@@ -67,7 +67,7 @@ AM_COND_IF(DEBUG,
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_FORK
-AC_CHECK_FUNCS([inet_ntoa memset select socket strdup strtol atexit strerror])
+AC_CHECK_FUNCS([inet_ntoa memset select socket strdup strtol atexit strerror memmove])
 
 #PKG_CHECK_MODULES(GLIB, [glib-2.0])
 AM_CONDITIONAL([HAVE_DOXYGEN],

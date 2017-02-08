@@ -31,7 +31,7 @@
  *
  * \param arg pcap_t handle
  */ 
-static void *term_capture(void* arg);
+static void term_capture(void* arg);
 
 /**
  * \fn static void capture(char *dev, const char *addr, int port, char *filename)
@@ -42,15 +42,15 @@ static void *term_capture(void* arg);
  * \param port 
  * \param filename The location of the trace dump file
  */ 
-static void capture(const char *dev, const char *addr, int port, 
-                    char *filename, unsigned int snaplen);
+static void capture(const char *dev, const char *addr4, const char *addr6,  
+                    int port, int proto, char *filename, unsigned int snaplen);
 
-void *term_capture(void* arg) {
+void term_capture(void* arg) {
    pcap_t *handle = (pcap_t *)arg;
    pcap_breakloop(handle);
    pcap_close(handle);
    debug_print("closing pcap dump process...\n");
-   return 0;
+   return;
 }
 
 void *capture_tun(void *arg) {
@@ -67,15 +67,16 @@ void *capture_tun(void *arg) {
    strncat(file_loc, ".pcap", 512);
    debug_print("%s\n", file_loc);
 
-   int snaplen;
+   /*int snaplen;
    if (state->ipv6)
       snaplen = TUN_SNAPLEN6;
    else if (state->dual_stack)
       snaplen = TUN_SNAPLEN46;
    else
-      snaplen = TUN_SNAPLEN4;
+      snaplen = TUN_SNAPLEN4;*/
 
-   capture(state->tun_if, state->private_addr4, 0, file_loc, snaplen);
+   capture(state->tun_if, state->private_addr4, state->private_addr6, 0, 
+          state->protocol_num, file_loc, state->snaplen);
    return 0;
 }
 
@@ -91,22 +92,14 @@ void *capture_notun(void *arg) {
       strncat(file_loc, args->run_id, 256);
    }
    strncat(file_loc, ".pcap", 512);
-   
-   int snaplen;
-   if (state->ipv6)
-      snaplen = NOTUN_SNAPLEN6;
-   else if (state->dual_stack)
-      snaplen = NOTUN_SNAPLEN46;
-   else
-      snaplen = NOTUN_SNAPLEN4;
 
-   capture(state->default_if, state->public_addr4, 
-           state->public_port, file_loc, snaplen);
+   capture(state->default_if, state->public_addr4, state->public_addr6, 
+           state->public_port, state->protocol_num, file_loc, state->snaplen);
    return 0;
 }
 
-void capture(const char *dev, const char *addr, int port, 
-             char *filename, unsigned int snaplen) {
+void capture(const char *dev, const char *addr4, const char *addr6, 
+             int port, int proto, char *filename, unsigned int snaplen) {
 	pcap_t *handle;
    char errbuf[PCAP_ERRBUF_SIZE];
 
@@ -116,18 +109,24 @@ void capture(const char *dev, const char *addr, int port,
    /* build&set filter */
    char filter_exp[256];
    struct bpf_program fp;	
-   bpf_u_int32 net = inet_addr(addr);
+   bpf_u_int32 net = inet_addr(addr4);
 
    if (port) {  
       if (port<0)
          sprintf(filter_exp, "not port %d or (icmp and icmp[icmptype] != "
                              "icmp-timxceed and icmp[icmptype] != icmp-echo "
                              "and icmp[icmptype] != icmp-echoreply) or icmp6", -port);
-      else if (port>0)
-         sprintf(filter_exp, "port %d or (icmp and icmp[icmptype] != "
-                             "icmp-timxceed and icmp[icmptype] != icmp-echo "
-                             "and icmp[icmptype] != icmp-echoreply) or icmp6", port);
-
+      else if (port>0) {
+         if (!proto || proto == IPPROTO_UDP || proto == IPPROTO_TCP)         
+            sprintf(filter_exp, "(host %s or host %s) and "
+                                "(port %d or icmp or icmp6)", 
+                    addr4, addr6, port);
+         else
+            sprintf(filter_exp, "(host %s or host %s) and "
+                                "(port %d or icmp or icmp6 or "
+                                "ip proto %d or ip6 proto %d)",
+                   addr4, addr6, port, proto, proto);
+      }
       if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) 
          die("pcap_compile");
       if (pcap_setfilter(handle, &fp) == -1) 
@@ -141,7 +140,7 @@ void capture(const char *dev, const char *addr, int port,
       die("chmod");
 
    /* capture & dump */
-   pthread_cleanup_push(term_capture, handle);
+   pthread_cleanup_push(&term_capture, handle);
    synchronize();
 	pcap_loop(handle, -1, pcap_dump, (void*) dumper);
    pthread_cleanup_pop(0);
@@ -165,7 +164,7 @@ struct sock_fprog *gen_bpf(const char *dev, const char *addr, int sport, int dpo
    bpf_u_int32 net = inet_addr(addr);
    handle = pcap_open_live(dev, BUFSIZ, 0, 1000, errbuf);
    if (!handle) 
-      die( "Couldn't open device %s: %s");
+      die("Couldn't open device %s: %s");
    if (pcap_compile(handle, fp, filter_exp, 0, net) == -1) 
       die("Couldn't parse filter %s: %s\n");
 

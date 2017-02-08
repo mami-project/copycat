@@ -157,33 +157,68 @@ int udp_sock4(int port, uint8_t register_gc, char *addr) {
 }
 
 #if defined(LINUX_OS)
-int raw_tcp_sock(int port, const struct sock_fprog * bpf, const char *dev) {
-   return raw_sock(port, bpf, dev, IPPROTO_TCP);
+int raw_tcp_sock4(int port, char *addr, const struct sock_fprog * bpf, const char *dev,
+                 int planetlab) {
+   return raw_sock4(port, addr, bpf, dev, IPPROTO_TCP, 1, planetlab);
 }
 
-int raw_sock(int port, const struct sock_fprog * bpf, const char *dev, int proto) {
+int raw_sock4(int port, char *addr, const struct sock_fprog * bpf, const char *dev,
+             int proto, uint8_t register_gc, int planetlab) {
    int s;
    struct sockaddr_in sin;
    if ((s=socket(PF_INET, SOCK_RAW, proto)) == -1) 
       die("socket");
+   if (register_gc)
+      set_fd(s);
 
-   int on = 1;
-   if (setsockopt(s, 0, IP_HDRINCL, &on, sizeof(on))) 
-      die("IP_HDRINCL");
-
-#if defined(SO_BINDTODEVICE)
+#  if defined(SO_BINDTODEVICE)
    if (dev && setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev))) 
       die("bind to device");
-#endif
-#if defined(SO_ATTACH_FILTER)
+#  endif
+#  if defined(SO_ATTACH_FILTER)
    /* set bpf */
-   if (bpf && setsockopt(s, SOL_SOCKET, SO_ATTACH_FILTER, 
+   if (bpf && (proto == IPPROTO_UDP || proto == IPPROTO_TCP) && 
+          setsockopt(s, SOL_SOCKET, SO_ATTACH_FILTER, 
                          bpf, sizeof(struct sock_fprog)) < 0 ) 
        die("attach filter");
-#endif
+#  endif
    memset(&sin, 0, sizeof(sin));
    sin.sin_family = AF_INET;
    sin.sin_port = htons(port);
+   inet_pton(AF_INET, addr, &sin.sin_addr);
+
+   /* bind socket to port (PL-specific) */
+   if(port && bind(s, (struct sockaddr*)&sin, sizeof(sin) ) == -1) 
+     die("bind");
+
+   debug_print("raw socket created on %s port %d\n", dev, port);
+   return s;
+}
+
+int raw_sock6(int port, char *addr, const struct sock_fprog * bpf, const char *dev,
+             int proto, uint8_t register_gc, int planetlab) {
+   int s;
+   struct sockaddr_in6 sin;
+   if ((s=socket(PF_INET, SOCK_RAW, proto)) == -1) 
+      die("socket");
+   if (register_gc)
+      set_fd(s);
+
+#  if defined(SO_BINDTODEVICE)
+   if (dev && setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, dev, strlen(dev))) 
+      die("bind to device");
+#  endif
+#  if defined(SO_ATTACH_FILTER)
+   /* set bpf */
+   if (bpf && (proto == IPPROTO_UDP || proto == IPPROTO_TCP) && 
+         setsockopt(s, SOL_SOCKET, SO_ATTACH_FILTER, 
+                         bpf, sizeof(struct sock_fprog)) < 0 ) 
+       die("attach filter");
+#  endif
+   memset(&sin, 0, sizeof(sin));
+   sin.sin6_family = AF_INET6;
+   sin.sin6_port = htons(port);
+   inet_pton(AF_INET6, addr, &sin.sin6_addr);
 
    /* bind socket to port (PL-specific) */
    if(port && bind(s, (struct sockaddr*)&sin, sizeof(sin) ) == -1) 

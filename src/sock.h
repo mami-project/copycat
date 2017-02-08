@@ -95,30 +95,39 @@ int udp_sock6(int port, uint8_t register_gc, char *addr);
 
 #if defined(LINUX_OS)
 /**
- * \fn int raw_tcp_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev)
+ * \fn int raw_tcp_sock4(const char *addr, int port, const struct sock_fprog * bpf, const char *dev)
  * \brief Create and bind a TCP RAW socket.
  *    Equivalent to raw_sock(addr, port, bpf, dev, IPPROTO_TCP).
  *    This function is planetlab-specific.
  *
  * \param port The port for the bind call.
+ * \param addr The adr for the bind call.
  * \param bpf A pointer to a BPF to be attached or NULL.
  * \param dev A pointer to the name of the device to bind. 
+ * \param planetlab if running on a PL OS 1 else 0
  * \return The socket fd.
  */ 
-int raw_tcp_sock(int port, const struct sock_fprog * bpf, const char *dev);
+int raw_tcp_sock4(int port, char *addr, const struct sock_fprog * bpf, 
+                 const char *dev, int planetlab);
 
 /**
- * \fn int raw_sock(const char *addr, int port, const struct sock_fprog * bpf, const char *dev, int proto)
+ * \fn int raw_sock4(const char *addr, int port, const struct sock_fprog * bpf, const char *dev, int proto)
  * \brief Create and bind a RAW socket.
  *    This function is planetlab-specific.
  *
  * \param port The port for the bind call.
+ * \param addr The adr for the bind call.
  * \param bpf A pointer to a BPF to be attached or NULL.
  * \param dev A pointer to the name of the device to bind. 
  * \param proto The protocol of the raw socket (planetlab-specific).
+ * \param register_gc Register fd to garbage collector
+ * \param planetlab if running on a PL OS 1 else 0
  * \return The socket fd.
  */ 
-int raw_sock(int port, const struct sock_fprog * bpf, const char *dev, int proto);
+int raw_sock4(int port, char *addr, const struct sock_fprog * bpf, const char *dev, 
+             int proto, uint8_t register_gc, int planetlab);
+int raw_sock6(int port, char *addr, const struct sock_fprog * bpf, const char *dev, 
+             int proto, uint8_t register_gc, int planetlab);
 #endif
 
 /**
