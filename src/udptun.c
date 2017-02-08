@@ -20,11 +20,11 @@
 
 /* argp variables and structs */
 
-const char *program_version = "udptun 0.1";
+const char *program_version = "copycat 0.1";
 const char*   optstring     = ":abcd:fhi:nNo:pP:qr:sS:tUvV62";
-const char* arg_help = "Usage: udptun [OPTION...] -s -o udptun.cfg -d dst.txt\n"
-"  or:  udptun [OPTION...] -c -o udptun.cfg -d dst.txt\n"
-"  or:  udptun [OPTION...] -f -o udptun.cfg -d dst.txt\n\n"
+const char* arg_help = "Usage: copycat [OPTION...] -s -o copycat.cfg -d dst.txt\n"
+"  or:  copycat [OPTION...] -c -o copycat.cfg -d dst.txt\n"
+"  or:  copycat [OPTION...] -f -o copycat.cfg -d dst.txt\n\n"
 "forward tcp packets to/from a udp tunnel\n\n"
 
 "  -d, --dest-file FILE         Destination file\n"
@@ -240,7 +240,7 @@ void print_args(struct arguments *args) {
 int validate_args(struct arguments *args) {
    if (!args->config_file) {
       errno=EINVAL;
-      die("set a configuration file (udptun.cfg)");
+      die("set a configuration file (copycat.cfg)");
    } 
 
    switch (args->mode) {
