@@ -141,7 +141,8 @@ void tun_peer_in4_aux(int fd_cli, int fd_serv,
 
       /* Remove PlanetLab TUN PPI header */
       if (state->planetlab) {
-         buf+=4;recvd-=4;
+         recvd-=4;
+         memmove(buf, buf+4, recvd);
       }
 
       struct tun_rec *rec = NULL; 
@@ -159,6 +160,12 @@ void tun_peer_in4_aux(int fd_cli, int fd_serv,
          if ( (rec = g_hash_table_lookup(state->cli4, &priv_addr)) ) {
             debug_print("priv addr lookup: OK\n");
 
+            /* Add layer 4.5 header */
+            if (state->raw_header) {
+               buf -= state->raw_header_size;
+               recvd += state->raw_header_size;
+            }
+
             int sent = xsendto4(fd_cli, rec->sa4, buf, recvd);
             debug_print("wrote %db to udp\n",sent);
 
@@ -169,6 +176,12 @@ void tun_peer_in4_aux(int fd_cli, int fd_serv,
 
       /* serv */
       } else if ((rec = g_hash_table_lookup(state->serv, &dport))) {   
+
+         /* Add layer 4.5 header */
+         if (state->raw_header) {
+            buf -= state->raw_header_size;
+            recvd += state->raw_header_size;
+         }
 
          int sent = xsendto4(fd_serv, rec->sa4, buf, recvd);
          debug_print("wrote %db to udp\n",sent);
@@ -184,6 +197,12 @@ void tun_peer_in4_aux(int fd_cli, int fd_serv,
 void tun_peer_in6_aux(int fd_cli, int fd_serv, 
                       struct tun_state *state, char *buf, int recvd) {
    if (recvd > MIN_PKT_SIZE) {
+
+      /* Remove PlanetLab TUN PPI header */
+      if (state->planetlab) {
+         recvd-=4;
+         memmove(buf, buf+4, recvd);
+      }
 
       struct tun_rec *rec = NULL; 
       /* read sport for clients mapping */
@@ -202,6 +221,11 @@ void tun_peer_in6_aux(int fd_cli, int fd_serv,
          if ( (rec = g_hash_table_lookup(state->cli6, priv_addr6)) ) {
             debug_print("priv addr lookup: OK\n");
 
+            /* Add layer 4.5 header */
+            if (state->raw_header) {
+               buf -= state->raw_header_size;
+               recvd += state->raw_header_size;
+            }
             int sent = xsendto6(fd_cli, rec->sa6, buf, recvd);
             debug_print("wrote %db to udp\n",sent);
             if (sent <0) debug_perror();
@@ -212,6 +236,12 @@ void tun_peer_in6_aux(int fd_cli, int fd_serv,
 
       /* serv */
       } else if ((rec = g_hash_table_lookup(state->serv, &dport))) {   
+
+         /* Add layer 4.5 header */
+         if (state->raw_header) {
+            buf -= state->raw_header_size;
+            recvd += state->raw_header_size;
+         }
 
          int sent = xsendto6(fd_serv, rec->sa6, buf, recvd);
          debug_print("wrote %db to udp\n",sent);
@@ -230,6 +260,11 @@ void tun_peer_out_cli(int fd_udp, int fd_tun, struct tun_state *state, char *buf
    if (recvd > MIN_PKT_SIZE) {
       debug_print("cli: recvd %dB from udp\n", recvd);
 
+      /* Remove layer 4.5 header */
+      if (state->raw_header) {
+         recvd -= state->raw_header_size;
+         memmove(buf, buf+state->raw_header_size, recvd);
+      }
       /* Add PlanetLab TUN PPI header */
       if (state->planetlab) {
          buf-=4; recvd+=4;
@@ -254,6 +289,12 @@ void tun_peer_out_serv4(int fd_udp, int fd_tun, struct tun_state *state, char *b
    if (recvd > MIN_PKT_SIZE) {
       debug_print("serv: recvd %dB from udp\n", recvd);
 
+      /* Remove layer 4.5 header */
+      if (state->raw_header) {
+         debug_print("removing layer 4.5\n");
+         recvd -= state->raw_header_size;
+         memmove(buf, buf+state->raw_header_size, recvd);
+      }
       /* Add PlanetLab TUN PPI header */
       if (state->planetlab) {
          buf-=4; recvd+=4;
@@ -263,6 +304,7 @@ void tun_peer_out_serv4(int fd_udp, int fd_tun, struct tun_state *state, char *b
       int sport           = ntohs(((struct sockaddr_in *)nrec->sa4)->sin_port);
       int sent            = 0;
       if ( (rec = g_hash_table_lookup(state->serv, &sport)) ) {
+
          sent = xwrite(fd_tun, buf, recvd);
          debug_print("serv: wrote %dB to tun\n", sent); 
       } 
@@ -299,6 +341,12 @@ void tun_peer_out_serv6(int fd_udp, int fd_tun, struct tun_state *state, char *b
    if (recvd > MIN_PKT_SIZE) {
       debug_print("serv: recvd %dB from udp\n", recvd);
 
+      /* Remove layer 4.5 header */
+      if (state->raw_header) {
+         debug_print("removing layer 4.5\n");
+         recvd -= state->raw_header_size;
+         memmove(buf, buf+state->raw_header_size, recvd);
+      }
       /* Add PlanetLab TUN PPI header */
       if (state->planetlab) {
          buf-=4; recvd+=4;
@@ -372,13 +420,20 @@ void tun_peer_single(struct arguments *args) {
    /* init select main loop */
    fd_set input_set;
    struct timeval tv;
-   int fd_max = 0, sel = 0;
-   char buf[BUFF_SIZE], *buffer;
-   buffer = buf;
+   int sel = 0, fd_max = 0;
+   char inbuf[BUFF_SIZE], outbuf[BUFF_SIZE];
+   char *inbuffer, *outbuffer;
+   inbuffer = inbuf;
+   outbuffer = outbuf;
+
+   if (state->raw_header) {
+      memcpy(inbuffer, state->raw_header, state->raw_header_size);
+      inbuffer += state->raw_header_size;
+   }
    if (state->planetlab) {
-      buffer[0]=0;buffer[1]=0;
-      buffer[2]=8;buffer[3]=0;
-      buffer+=4;
+      outbuffer[0]=0;outbuffer[1]=0;
+      outbuffer[2]=8;outbuffer[3]=0;
+      outbuffer += 4;
    }
 
    fd_max = max(max(fd_cli, fd_tun), fd_serv);
@@ -399,11 +454,11 @@ void tun_peer_single(struct arguments *args) {
          break;
       } else if (sel > 0) {
          if (FD_ISSET(fd_tun, &input_set))      
-            (*tun_peer_in_func)(fd_tun, fd_cli, fd_serv, state, buffer); 
+            (*tun_peer_in_func)(fd_tun, fd_cli, fd_serv, state, inbuffer); 
          if (FD_ISSET(fd_cli, &input_set)) 
-            tun_peer_out_cli(fd_cli, fd_tun, state, buffer);
+            tun_peer_out_cli(fd_cli, fd_tun, state, outbuffer);
          if (FD_ISSET(fd_serv, &input_set)) 
-            (*tun_peer_out_serv)(fd_serv, fd_tun, state, buffer);
+            (*tun_peer_out_serv)(fd_serv, fd_tun, state, outbuffer);
       }
    }
 }
@@ -436,13 +491,20 @@ void tun_peer_dual(struct arguments *args) {
    /* init select main loop */
    fd_set input_set;
    struct timeval tv;
-   int fd_max = 0, sel = 0;
-   char buf[BUFF_SIZE], *buffer;
-   buffer = buf;
+   int sel = 0, fd_max = 0;
+   char inbuf[BUFF_SIZE], outbuf[BUFF_SIZE];
+   char *inbuffer, *outbuffer;
+   inbuffer = inbuf;
+   outbuffer = outbuf;
+
+   if (state->raw_header) {
+      memcpy(inbuffer, state->raw_header, state->raw_header_size);
+      inbuffer += state->raw_header_size;
+   }
    if (state->planetlab) {
-      buffer[0]=0;buffer[1]=0;
-      buffer[2]=8;buffer[3]=0;
-      buffer+=4;
+      outbuffer[0]=0;outbuffer[1]=0;
+      outbuffer[2]=8;outbuffer[3]=0;
+      outbuffer += 4;
    }
 
    fd_max = max(max(max(max(fd_cli4, fd_tun), fd_serv4), fd_cli6), fd_serv6);
@@ -465,15 +527,16 @@ void tun_peer_dual(struct arguments *args) {
          break;
       } else if (sel > 0) {
          if (FD_ISSET(fd_cli4, &input_set)) 
-            tun_peer_out_cli(fd_cli4, fd_tun, state, buffer);
+            tun_peer_out_cli(fd_cli4, fd_tun, state, outbuffer);
          if (FD_ISSET(fd_cli6, &input_set)) 
-            tun_peer_out_cli(fd_cli6, fd_tun, state, buffer);
+            tun_peer_out_cli(fd_cli6, fd_tun, state, outbuffer);
          if (FD_ISSET(fd_tun, &input_set))      
-            tun_peer_in(fd_tun, fd_cli4, fd_serv4, fd_cli6, fd_serv6, state, buffer); 
+            tun_peer_in(fd_tun, fd_cli4, fd_serv4, fd_cli6, fd_serv6, 
+                        state, inbuffer); 
          if (FD_ISSET(fd_serv4, &input_set)) 
-            tun_peer_out_serv4(fd_serv4, fd_tun, state, buffer);
+            tun_peer_out_serv4(fd_serv4, fd_tun, state, outbuffer);
          if (FD_ISSET(fd_serv6, &input_set)) 
-            tun_peer_out_serv6(fd_serv6, fd_tun, state, buffer);
+            tun_peer_out_serv6(fd_serv6, fd_tun, state, outbuffer);
       }
    }
 }

@@ -21,29 +21,42 @@
 /* argp variables and structs */
 
 const char *program_version = "udptun 0.1";
-const char*   optstring     = ":abcd:fhi:no:pqst:uvV62";
+const char*   optstring     = ":abcd:fhi:nNo:pP:qr:sS:tUvV62";
 const char* arg_help = "Usage: udptun [OPTION...] -s -o udptun.cfg -d dst.txt\n"
 "  or:  udptun [OPTION...] -c -o udptun.cfg -d dst.txt\n"
 "  or:  udptun [OPTION...] -f -o udptun.cfg -d dst.txt\n\n"
 "forward tcp packets to/from a udp tunnel\n\n"
-"  -2, --dual-stack           IPv4-IPv6 mode\n"
-"  -6, --ipv6                 IPv6 mode\n"
-"  -a, --parallel             Client parallel flows scheduling mode (default)\n"
-"  -b, --freebsd              FREEBSD mode\n"
-"  -c, --client               Client mode\n"
-"  -d, --dest-file FILE       Destination file\n"
-"  -f, --fullmesh             Fullmesh mode (both client and server)\n"
-"  -i, --run-id ID            Run ID\n"
-"  -n, --notun-first          Client notunnel first flows scheduling mode\n"
-"  -o, --config FILE          Configuration file\n"
-"  -p, --planetlab            PlanetLab mode\n"
-"  -q, --quiet                Don't produce any output\n"
-"  -s, --server               Server mode\n"
-"  -t, --timeout TIME         Inactivity timeout\n"
-"  -u, --tun-first            Client tunnel first flows scheduling mode\n"
-"  -v, --verbose              Produce verbose output\n"
-"  -h, --help                 Give this help list\n"
-"  -V, --version              Print program version\n\n"
+
+"  -d, --dest-file FILE         Destination file\n"
+"  -o, --config FILE            Configuration file\n"
+"\n"
+"  -c, --client                 Client mode\n"
+"  -s, --server                 Server mode\n"
+"  -f, --fullmesh               Fullmesh mode (both client and server)\n"
+"\n"
+"  -U, --udp                    UDP outer transport\n"
+"  -N, --non-udp                non-UDP outer transport\n"
+"\n"
+"  -r, --raw-header BYTES       Raw header (hex string)\n"
+"  -S, --raw-header-size SIZE   Raw header size (number of bytes)\n"
+"  -P, --protocol-num NUM       Protocol\n"
+"\n"
+"  -b, --freebsd                FREEBSD mode\n"
+"  -p, --planetlab              PlanetLab mode\n"
+"\n"
+"  -2, --dual-stack             IPv4-IPv6 mode\n"
+"  -6, --ipv6                   IPv6 mode\n"
+"\n"
+"  -a, --parallel               Client parallel flows scheduling mode (default)\n"
+"  -t, --tun-first              Client tunnel first flows scheduling mode\n"
+"  -n, --notun-first            Client notunnel first flows scheduling mode\n"
+"\n"
+"  -q, --quiet                  Don't produce any output\n"
+"  -i, --run-id ID              Run ID (in pcap name)\n"
+"\n"
+"  -v, --verbose                Produce verbose output\n"
+"  -h, --help                   Give this help list\n"
+"  -V, --version                Print program version\n\n"
 "Report bugs to korian.edeline@ulg.ac.be\n";
 
 /**
@@ -93,13 +106,13 @@ int parse_args(int argc, char *argv[], struct arguments *args) {
 int parse_arg(int key, char *optarg, int optopt, struct arguments *args) {
    switch (key) {
       case 'q':
-         args->silent = 1;break;
+         args->silent = 1; break;
       case 'v':
-         args->verbose = 1;break;
+         args->verbose = 1; break;
       case 'c': 
-         args->mode = CLI_MODE;break;
+         args->mode = CLI_MODE; break;
       case 's': 
-         args->mode = SERV_MODE;break;
+         args->mode = SERV_MODE; break;
       case 'f':
          args->mode = FULLMESH_MODE; break;
       case 'p':
@@ -110,21 +123,33 @@ int parse_arg(int key, char *optarg, int optopt, struct arguments *args) {
          args->ipv6 = 1; break;
       case 'a':
          args->cli_mode = PARALLEL_MODE; break;
-      case 'u':
+      case 't':
          args->cli_mode = TUN_FIRST_MODE; break;
       case 'n':
          args->cli_mode = NOTUN_FIRST_MODE; break;
       case '2':
          args->dual_stack = 1; break;
-      case 't':
-         args->inactivity_timeout = strtol(optarg, NULL, 10);
+      case 'U':
+         args->udp = 1;
+         break;
+      case 'N':
+         args->udp = 0;
+         break;
+      case 'r':
+         args->raw_header = optarg;
+         break;
+      case 'S':
+         args->raw_header_size = strtol(optarg, NULL, 10);
+         break;
+      case 'P':
+         args->protocol_num = strtol(optarg, NULL, 10);
          break;
       case 'd':
-         args->dest_file = optarg;break;
+         args->dest_file = optarg; break;
       case 'o':
-         args->config_file = optarg;break;
+         args->config_file = optarg; break;
       case 'i':
-         args->run_id = optarg;break;
+         args->run_id = optarg; break;
       case '?':
          printf("Option -%c not supported.\n", optopt);
          return -2;
@@ -140,17 +165,23 @@ int parse_arg(int key, char *optarg, int optopt, struct arguments *args) {
 }
 
 void init_args(struct arguments *args) {
-   args->mode        = NONE_MODE;
-   args->cli_mode    = PARALLEL_MODE; 
-   args->verbose     = 0;
-   args->silent      = 0;
-   args->planetlab   = 0;
-   args->freebsd     = 0;
-   args->ipv6        = 0;
-   args->dual_stack  = 0;
+   args->mode            = NONE_MODE;
+   args->cli_mode        = PARALLEL_MODE; 
+   args->verbose         = 0;
+   args->silent          = 0;
+   args->planetlab       = 0;
+   args->freebsd         = 0;
+   args->ipv6            = 0;
+   args->dual_stack      = 0;
+   args->udp             = 1;
+   args->raw_header_size = 0;    
+   args->protocol_num    = 0;    
+
    args->config_file = NULL;
    args->dest_file   = NULL;
    args->run_id      = NULL;
+   args->raw_header  = NULL;
+
    args->inactivity_timeout = 0;
 }
 
@@ -194,6 +225,16 @@ void print_args(struct arguments *args) {
             break;
       }
    }
+
+   if (args->udp) {
+      debug_print("UDP mode\n");
+      debug_print("extra header size %d\n", args->raw_header_size);
+   } else {
+      debug_print("non-UDP/RAW mode\n");
+      debug_print("protocol number %d\n", args->protocol_num);
+      debug_print("extra header size %d\n", args->raw_header_size);
+   }  
+   debug_print("extra header:%s\n", args->raw_header);
 }
 
 int validate_args(struct arguments *args) {
@@ -209,6 +250,11 @@ int validate_args(struct arguments *args) {
             errno=EINVAL;
             die("set a destination file (dest.txt)");
          } 
+
+         if (args->raw_header && !args->raw_header_size) {
+            errno=EINVAL;
+            die("specify raw header size");
+         } 
          break;
       case SERV_MODE:
          break;
@@ -216,6 +262,11 @@ int validate_args(struct arguments *args) {
          errno=EINVAL;
          die("set a mode");
          break;
+   }
+
+   if (!args->udp && !args->protocol_num) {
+      errno=EINVAL;
+      die("specifiy a protocol number in non-UDP mode");
    }
 
    return 0;

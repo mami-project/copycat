@@ -108,8 +108,14 @@ struct arguments {
    enum { PARALLEL_MODE, TUN_FIRST_MODE, NOTUN_FIRST_MODE } cli_mode; /*!<  The client scheduling mode. */
    uint8_t verbose;            /*!<  verbose mode */
    uint8_t silent;             /*!<  silent mode */
+
    uint8_t planetlab;          /*!<  PlanetLab mode */
    uint8_t freebsd;            /*!<  FREEBSD mode */
+
+   uint8_t udp;                /*!<  UDP mode:1 non-UDP mode:0 */
+   char *raw_header;           /*!<  raw header hexstring */
+   uint8_t raw_header_size;    /*!<  raw header size */
+   uint8_t protocol_num;       /*!<  protocol number */
 
    uint8_t ipv6;               /*!< IPv6 mode */
    uint8_t dual_stack;         /*!< Dual stack mode */

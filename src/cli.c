@@ -42,9 +42,9 @@ static volatile int loop;
  */ 
 static void tun_cli_in(int fd_tun, int fd_udp4,  int fd_udp6,
                        struct tun_state *state, char *buf);
-static void tun_cli_in4(int fd_tun, int fd_udp, 
+static void tun_cli_in4(int fd_udp, int fd_tun, 
                         struct tun_state *state, char *buf);
-static void tun_cli_in6(int fd_tun, int fd_udp, 
+static void tun_cli_in6(int fd_udp, int fd_tun, 
                         struct tun_state *state, char *buf);
 static void tun_cli_in4_aux(int fd_udp, struct tun_state *state, char *buf, int recvd);
 static void tun_cli_in6_aux(int fd_udp, struct tun_state *state, char *buf, int recvd);
@@ -96,14 +96,14 @@ void tun_cli_in(int fd_tun, int fd_udp4, int fd_udp6,
    }
 }
 
-void tun_cli_in6(int fd_tun, int fd_udp, 
+void tun_cli_in6(int fd_udp, int fd_tun, 
                  struct tun_state *state, char *buf) {
    int recvd=xread(fd_tun, buf, BUFF_SIZE);
    debug_print("recvd %db from tun\n", recvd);
    tun_cli_in6_aux(fd_udp, state, buf, recvd);
 }
 
-void tun_cli_in4(int fd_tun, int fd_udp,
+void tun_cli_in4(int fd_udp, int fd_tun, 
                  struct tun_state *state, char *buf) {
    int recvd=xread(fd_tun, buf, BUFF_SIZE);
    debug_print("recvd %db from tun\n", recvd);
@@ -111,10 +111,6 @@ void tun_cli_in4(int fd_tun, int fd_udp,
 }
 
 void tun_cli_in4_aux(int fd_udp, struct tun_state *state, char *buf, int recvd) {
-   /* Remove PlanetLab TUN PPI header */
-   if (state->planetlab) {
-      buf+=4;recvd-=4;
-   }
 
    /* lookup initial server database from file */
    struct tun_rec *rec = NULL; 
@@ -123,22 +119,31 @@ void tun_cli_in4_aux(int fd_udp, struct tun_state *state, char *buf, int recvd) 
 
    /* lookup private addr */
    if ( (rec = g_hash_table_lookup(state->cli4, &priv_addr4)) ) {
+
+      /* Remove PlanetLab TUN PPI header */
+      if (state->planetlab) {
+         recvd-=4;
+         memmove(buf, buf+4, recvd);
+      }
+      /* Add layer 4.5 header */
+      if (state->raw_header) {
+         buf -= state->raw_header_size;
+         recvd += state->raw_header_size;
+      }
+
       int sent = xsendto4(fd_udp, rec->sa4, buf, recvd);
       debug_print("cli: wrote %dB to udp\n",sent);
 
    } else {
-      errno=EFAULT;
-      die("cli lookup");
+      debug_print("lookup failed proto:%d sport:%d dport:%d\n", 
+                   (int) *((uint8_t *)(buf+9)), 
+                   (int) ntohs( *((uint16_t *)(buf+20)) ), 
+                   (int)ntohs( *((uint16_t *)(buf+22)) ));
    }
 }
 
 void tun_cli_in6_aux(int fd_udp, struct tun_state *state, char *buf, int recvd) {
    struct tun_rec *rec = NULL; 
-
-   /* Remove PlanetLab TUN PPI header */
-   if (state->planetlab) {
-      buf+=4;recvd-=4;
-   }
 
    /* lookup initial server database from file */
    char priv_addr6[16], str_addr6[INET6_ADDRSTRLEN];
@@ -148,12 +153,26 @@ void tun_cli_in6_aux(int fd_udp, struct tun_state *state, char *buf, int recvd) 
 
    /* lookup private addr */
    if ( (rec = g_hash_table_lookup(state->cli6, priv_addr6)) ) {
+
+      /* Remove PlanetLab TUN PPI header */
+      if (state->planetlab) {
+         recvd-=4;
+         memmove(buf, buf+4, recvd);
+      }
+      /* Add layer 4.5 header */
+      if (state->raw_header) {
+         buf -= state->raw_header_size;
+         recvd += state->raw_header_size;
+      }
+
       int sent = xsendto6(fd_udp, rec->sa6, buf, recvd);
       debug_print("cli: wrote %dB to udp\n",sent);
 
    } else {
-      errno=EFAULT;
-      die("cli lookup");
+      debug_print("lookup failed proto:%d sport:%d dport:%d\n", 
+                   (int) *((uint8_t *)(buf+6)), 
+                   (int) ntohs( *((uint16_t *)(buf+40)) ), 
+                   (int)ntohs( *((uint16_t *)(buf+42)) ));
    }
 }
 
@@ -163,6 +182,11 @@ void tun_cli_out(int fd_udp, int fd_tun, struct tun_state *state, char *buf) {
    if (recvd > MIN_PKT_SIZE) {
       debug_print("cli: recvd %dB from udp\n", recvd);
 
+      /* Remove layer 4.5 header */
+      if (state->raw_header) {
+         recvd -= state->raw_header_size;
+         memmove(buf, buf+state->raw_header_size, recvd);
+      }
       /* Add PlanetLab TUN PPI header */
       if (state->planetlab) {
          buf-=4; recvd+=4;
@@ -208,13 +232,19 @@ void tun_cli_single(struct arguments *args) {
    fd_set input_set;
    struct timeval tv;
    int sel = 0, fd_max = 0;
-   char buf[BUFF_SIZE], *buffer;
-   buffer = buf;
+   char inbuf[BUFF_SIZE], outbuf[BUFF_SIZE];
+   char *inbuffer, *outbuffer;
+   inbuffer = inbuf;
+   outbuffer = outbuf;
 
+   if (state->raw_header) {
+      memcpy(inbuffer, state->raw_header, state->raw_header_size);
+      inbuffer += state->raw_header_size;
+   }
    if (state->planetlab) {
-      buffer[0]=0;buffer[1]=0;
-      buffer[2]=8;buffer[3]=0;
-      buffer+=4;
+      outbuffer[0]=0;outbuffer[1]=0;
+      outbuffer[2]=8;outbuffer[3]=0;
+      outbuffer += 4;
    }
 
    fd_max = max(fd_udp, fd_tun);
@@ -233,10 +263,10 @@ void tun_cli_single(struct arguments *args) {
          debug_print("timeout\n"); 
          break;
       } else if (sel > 0) {
-         if (FD_ISSET(fd_tun, &input_set))      
-            (*tun_cli_in_func)(fd_udp, fd_tun, state, buffer);
+         if (FD_ISSET(fd_tun, &input_set)) { 
+            (*tun_cli_in_func)(fd_udp, fd_tun, state, inbuffer);}
          if (FD_ISSET(fd_udp, &input_set)) 
-            tun_cli_out(fd_udp, fd_tun, state, buffer);
+            tun_cli_out(fd_udp, fd_tun, state, outbuffer);
       }
    }
 }
@@ -265,13 +295,19 @@ void tun_cli_dual(struct arguments *args) {
    fd_set input_set;
    struct timeval tv;
    int sel = 0, fd_max = 0;
-   char buf[BUFF_SIZE], *buffer;
-   buffer = buf;
+   char inbuf[BUFF_SIZE], outbuf[BUFF_SIZE];
+   char *inbuffer, *outbuffer;
+   inbuffer = inbuf;
+   outbuffer = outbuf;
 
+   if (state->raw_header) {
+      memcpy(inbuffer, state->raw_header, state->raw_header_size);
+      inbuffer += state->raw_header_size;
+   }
    if (state->planetlab) {
-      buffer[0]=0;buffer[1]=0;
-      buffer[2]=8;buffer[3]=0;
-      buffer+=4;
+      outbuffer[0]=0;outbuffer[1]=0;
+      outbuffer[2]=8;outbuffer[3]=0;
+      outbuffer += 4;
    }
 
    fd_max = max(max(fd_udp4, fd_udp6), fd_tun);
@@ -292,11 +328,11 @@ void tun_cli_dual(struct arguments *args) {
          break;
       } else if (sel > 0) {
          if (FD_ISSET(fd_tun, &input_set))      
-            tun_cli_in(fd_tun, fd_udp4, fd_udp6, state, buffer);
+            tun_cli_in(fd_tun, fd_udp4, fd_udp6, state, inbuffer);
          if (FD_ISSET(fd_udp4, &input_set)) 
-            tun_cli_out(fd_udp4, fd_tun, state, buffer);
+            tun_cli_out(fd_udp4, fd_tun, state, outbuffer);
          if (FD_ISSET(fd_udp6, &input_set)) 
-            tun_cli_out(fd_udp6, fd_tun, state, buffer);
+            tun_cli_out(fd_udp6, fd_tun, state, outbuffer);
       }
    }
 }

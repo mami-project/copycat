@@ -43,6 +43,10 @@ struct tun_state {
    uint8_t freebsd;            /*!<  FREEBSD mode */
    uint8_t ipv6;               /*!< IPv6 mode */
    uint8_t dual_stack;         /*!< Dual stack mode */
+   uint8_t udp;                /*!< UDP mode:1 non-UDP mode:0 */
+   char *raw_header;        /*!<  raw header hexstring */
+   uint8_t raw_header_size;    /*!<  raw header size */
+   uint8_t protocol_num;       /*!<  protocol number */
 
    /* From destination file */
    GHashTable      *serv;        /*!<  Source port to public address lookup table. */
@@ -120,6 +124,8 @@ struct tun_rec *init_tun_rec(struct tun_state *state);
  * \param rec The tun_rec structure. 
  */
 void free_tun_rec(struct tun_rec *rec);
+
+void print_bytes(uint8_t *bytes, uint8_t size);
 
 #endif
 

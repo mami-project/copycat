@@ -80,6 +80,16 @@ GHashTable *init_table(int v) {
    return htable;
 }
 
+//XXX:delete
+void print_bytes(uint8_t *bytes, uint8_t size) {      
+    int count;
+
+    printf("0x");
+    for(count = 0; count < size; count++)
+        printf("%02x", bytes[count]);
+    printf("\n");
+}
+
 struct tun_state *init_tun_state(struct arguments *args) {
    struct tun_state *state = calloc(1, sizeof(struct tun_state));
    state->args = args;   
@@ -114,6 +124,24 @@ struct tun_state *init_tun_state(struct arguments *args) {
       state->ipv6 = 1;
    if (args->dual_stack)
       state->dual_stack = 1; 
+   state->udp = args->udp;
+   state->protocol_num = args->protocol_num;
+   state->raw_header_size = args->raw_header_size;
+
+   if (args->raw_header) {
+      /* overwrite with observed size */
+      state->raw_header_size = strlen(args->raw_header)/2;
+      state->raw_header = xmalloc(state->raw_header_size);
+
+      char *pos = args->raw_header;
+      size_t count = 0;
+      /* WARNING: no sanitization or error-checking whatsoever */
+      for(count = 0; count < state->raw_header_size; count++) {
+         char buf[3] = {pos[0], pos[1], 0};
+         state->raw_header[count] = strtol(buf, NULL, 16);
+         pos += 2;
+      }
+   }
 
    /* File locations */
    state->cli_file_tun4   = xmalloc(STR_SIZE);
@@ -198,6 +226,8 @@ void free_tun_state(struct tun_state *state) {
       free(state->cli_file_notun6);
    if (state->out_dir)
       free(state->out_dir);
+   if (state->raw_header)
+      free(state->raw_header);
 
    /* Free tun_rec's */
    if (state->cli_private) {
