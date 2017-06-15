@@ -1,6 +1,6 @@
 # copycat
 
-**TCP tunneling over UDP**
+**Network/Transport Protocol Comparison Tool (UDP vs TCP, Custom vs TCP, IPv4 vs IPv6)**
 <p align="center">
 <img src="./fig/copycat.png" alt="copycat">
 </p>
